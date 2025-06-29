@@ -12,11 +12,14 @@ config = {
     "app_title": "AI Service - CarePlan Generator",
     "app_version": "1.0.0",
     "app_description": "AI Service for diabetes care plan generation and measurement analysis",
-    # LLM Configuration
-    "openrouter_api_key": os.getenv("OPENROUTER_API_KEY"),
-    "default_model": "deepseek/deepseek-r1-distill-llama-70b:free",
-    "default_temperature": 0.3,
-    "openrouter_base_url": "https://openrouter.ai/api/v1",
+    # LLM Configuration - Đơn giản chỉ cần 3 thứ
+    "llm_base_url": os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1"),
+    "llm_api_key": os.getenv("LLM_API_KEY")
+    or os.getenv("OPENROUTER_API_KEY"),  # Backward compatibility
+    "llm_model": os.getenv("LLM_MODEL", "deepseek/deepseek-r1-distill-llama-70b:free"),
+    # Common LLM Settings
+    "default_temperature": float(os.getenv("LLM_TEMPERATURE", "0.3")),
+    "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "2048")),
     # Validation limits
     "max_reason_length": 150,
     "max_feedback_length": 250,
@@ -29,9 +32,28 @@ def get_config(key: str, default=None):
     return config.get(key, default)
 
 
+def get_llm_config():
+    """Lấy cấu hình LLM đơn giản."""
+    return {
+        "base_url": config["llm_base_url"],
+        "api_key": config["llm_api_key"],
+        "model": config["llm_model"],
+        "temperature": config["default_temperature"],
+        "max_tokens": config["max_tokens"],
+    }
+
+
 def get_api_key():
-    """Lấy OpenRouter API key."""
-    key = config["openrouter_api_key"]
-    if not key:
-        raise ValueError("Missing OPENROUTER_API_KEY in environment variables")
-    return key
+    """Lấy API key (để tương thích với code cũ)."""
+    api_key = config["llm_api_key"]
+
+    # Chỉ check nếu không phải localhost hoặc ollama
+    base_url = config["llm_base_url"].lower()
+    is_local = any(x in base_url for x in ["localhost", "127.0.0.1", "11434"])
+
+    if not is_local and not api_key:
+        raise ValueError(
+            "Missing LLM_API_KEY for remote API. For localhost/ollama, API key is optional."
+        )
+
+    return api_key
