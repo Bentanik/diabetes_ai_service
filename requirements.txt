@@ -10,5 +10,6 @@ openai
 faiss-cpu
 sentence-transformers
 python-dotenv
+pydantic-settings
 pytest
 pytest-asyncio
