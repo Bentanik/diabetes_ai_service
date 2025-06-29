@@ -1,15 +1,22 @@
 langchain
 langchain-community
 langchain-ollama
+langchain-chroma
 ollama
 tqdm
 requests
 fastapi
 uvicorn
 openai
-faiss-cpu
 sentence-transformers
 python-dotenv
 pydantic-settings
 pytest
 pytest-asyncio
+
+# RAG Dependencies
+langchain-qdrant  # Official Qdrant integration for LangChain
+pypdf
+python-docx
+unstructured
+tiktoken

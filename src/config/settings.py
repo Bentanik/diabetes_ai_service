@@ -20,6 +20,19 @@ config = {
     # Common LLM Settings
     "default_temperature": float(os.getenv("LLM_TEMPERATURE", "0.3")),
     "max_tokens": int(os.getenv("LLM_MAX_TOKENS", "2048")),
+    # RAG Configuration
+    "rag_embedding_provider": os.getenv(
+        "RAG_EMBEDDING_PROVIDER", "local"
+    ),  # local, openai
+    "rag_embedding_model": os.getenv("RAG_EMBEDDING_MODEL"),  # auto-select if not set
+    "rag_embedding_api_key": os.getenv("RAG_EMBEDDING_API_KEY")
+    or os.getenv("OPENAI_API_KEY"),
+    "rag_collection_name": os.getenv("RAG_COLLECTION_NAME", "knowledge_base"),
+    "rag_vectorstore_dir": os.getenv("RAG_VECTORSTORE_DIR", "./data/vectorstore"),
+    "rag_chunk_size": int(os.getenv("RAG_CHUNK_SIZE", "1000")),
+    "rag_chunk_overlap": int(os.getenv("RAG_CHUNK_OVERLAP", "200")),
+    "rag_retrieval_k": int(os.getenv("RAG_RETRIEVAL_K", "5")),
+    "rag_score_threshold": float(os.getenv("RAG_SCORE_THRESHOLD", "0.3")),
     # Validation limits
     "max_reason_length": 150,
     "max_feedback_length": 250,
@@ -40,6 +53,21 @@ def get_llm_config():
         "model": config["llm_model"],
         "temperature": config["default_temperature"],
         "max_tokens": config["max_tokens"],
+    }
+
+
+def get_rag_config():
+    """Lấy cấu hình RAG."""
+    return {
+        "embedding_provider": config["rag_embedding_provider"],
+        "embedding_model": config["rag_embedding_model"],
+        "embedding_api_key": config["rag_embedding_api_key"],
+        "collection_name": config["rag_collection_name"],
+        "vectorstore_dir": config["rag_vectorstore_dir"],
+        "chunk_size": config["rag_chunk_size"],
+        "chunk_overlap": config["rag_chunk_overlap"],
+        "retrieval_k": config["rag_retrieval_k"],
+        "score_threshold": config["rag_score_threshold"],
     }
 
 

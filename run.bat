@@ -1,3 +1,0 @@
-@echo off
-echo Starting AI Service - CarePlan Generator...
-python run.py 
