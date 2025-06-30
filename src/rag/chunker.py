@@ -176,9 +176,9 @@ class VietnameseDocumentChunker:
             ". ",  # Kết thúc câu
             "! ",  # Cảm thán
             "? ",  # Nghi vấn
-            "。",  # Dấu chấm Trung/Nhật
-            "！",  # Cảm thán Trung/Nhật
-            "？",  # Nghi vấn Trung/Nhật
+            "。",  # Dấu chấm
+            "！",  # Cảm thán
+            "？",  # Nghi vấn
             "; ",  # Chấm phẩy
             ": ",  # Hai chấm
             " ",  # Khoảng trắng

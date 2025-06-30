@@ -2,6 +2,7 @@ langchain
 langchain-community
 langchain-ollama
 langchain-chroma
+langchain-qdrant  # Official Qdrant integration for LangChain
 ollama
 tqdm
 requests
@@ -14,9 +15,20 @@ pydantic-settings
 pytest
 pytest-asyncio
 
-# RAG Dependencies
-langchain-qdrant  # Official Qdrant integration for LangChain
+# PDF Processing
+PyMuPDF
+pdfplumber
 pypdf
 python-docx
+
+# Document Processing
 unstructured
 tiktoken
+beautifulsoup4  # HTML parsing
+
+# Vietnamese NLP
+pyvi
+underthesea
+
+# Data Processing
+pandas
