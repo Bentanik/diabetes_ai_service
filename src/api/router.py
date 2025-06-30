@@ -13,5 +13,4 @@ router = APIRouter()
 router.include_router(careplan_router, prefix="/careplan")
 router.include_router(analyze_router, prefix="/analyze")
 router.include_router(system_router, prefix="/system")
-
-router.include_router(rag_router, prefix="/chatbot")
+router.include_router(rag_router, prefix="/rag")
