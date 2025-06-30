@@ -1,7 +1,18 @@
 """Models cho RAG API - Request và Response schemas."""
 
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
+
+
+class FileInfoModel(BaseModel):
+    """Model cho thông tin file."""
+
+    filename: str = Field(description="Tên file")
+    file_size: int = Field(description="Kích thước file (bytes)")
+    file_extension: str = Field(description="Extension của file")
+    content_type: str = Field(description="MIME type của file")
+    upload_time: str = Field(description="Thời gian upload")
 
 
 class FileUploadResponse(BaseModel):
@@ -9,8 +20,10 @@ class FileUploadResponse(BaseModel):
 
     success: bool = Field(description="Trạng thái thành công")
     message: str = Field(description="Thông điệp mô tả kết quả")
-    file_info: Dict[str, Any] = Field(description="Thông tin file đã upload")
-    chunks: List[Dict[str, Any]] = Field(description="Danh sách chunks đã được process")
+    file_info: FileInfoModel = Field(description="Thông tin file đã upload")
+    document_ids: List[str] = Field(
+        description="Danh sách document_ids đã được process"
+    )
     statistics: Dict[str, Any] = Field(description="Thống kê processing")
     processing_time: float = Field(description="Thời gian xử lý (giây)")
 
@@ -46,11 +59,30 @@ class ErrorResponse(BaseModel):
     details: Optional[Dict[str, Any]] = Field(default=None, description="Chi tiết lỗi")
 
 
-class FileInfoModel(BaseModel):
-    """Model cho thông tin file."""
+class KnowledgeBaseCreate(BaseModel):
+    """Schema cho request tạo knowledge base."""
 
-    filename: str = Field(description="Tên file")
-    file_size: int = Field(description="Kích thước file (bytes)")
-    file_extension: str = Field(description="Extension của file")
-    content_type: str = Field(description="MIME type của file")
-    upload_time: str = Field(description="Thời gian upload")
+    name: str = Field(
+        ..., description="Tên của knowledge base", min_length=1, max_length=255
+    )
+
+
+class KnowledgeBaseUpdate(BaseModel):
+    """Schema cho request cập nhật knowledge base."""
+
+    name: Optional[str] = Field(
+        None, description="Tên mới của knowledge base", min_length=1, max_length=255
+    )
+    description: Optional[str] = Field(None, description="Mô tả mới về knowledge base")
+
+
+class KnowledgeBaseResponse(BaseModel):
+    """Schema cho response knowledge base."""
+
+    name: str
+    collection_name: str
+    collection_info: dict
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    class Config:
+        from_attributes = True

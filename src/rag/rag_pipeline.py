@@ -4,10 +4,12 @@ RAG Pipeline - Vietnamese Document Processing
 Pipeline để xử lý documents từ raw files đến chunks, 
 được tối ưu hóa đặc biệt cho tiếng Việt.
 
-Current Workflow (Phase 1):
+Current Workflow:
 1. Document Processing: Parse documents → Extract text + metadata
 2. Chunking: Smart chunking với Vietnamese optimization
-3. Ready for next phases: Embedding, Vector Storage, Retrieval, Generation
+3. Embedding: Multilingual E5 embeddings
+4. Vector Storage: Qdrant vector store
+5. Ready for next phases: Retrieval, Generation
 
 Hỗ trợ:
 - Multiple file formats: PDF, DOCX, TXT, HTML, CSV
@@ -15,6 +17,8 @@ Hỗ trợ:
 - Smart chunking strategy selection 
 - Batch processing với progress tracking
 - Rich metadata tracking
+- Multilingual embeddings
+- Vector storage và retrieval
 
 Future phases sẽ có:
 - Embedding models integration
@@ -25,9 +29,10 @@ Future phases sẽ có:
 import os
 import logging
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union, Tuple
 from datetime import datetime
 import json
+from dataclasses import dataclass
 
 try:
     from langchain_core.documents import Document
@@ -36,87 +41,216 @@ except ImportError:
 
 from .document_parser import DocumentParser
 from .chunking import Chunking, ChunkingConfig
+from .embedding import EmbeddingConfig, MultilinguaE5Embeddings
+from .vector_store import VectorStoreConfig, QdrantVectorService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class RAGPipelineConfig:
+    """
+    Cấu hình cho toàn bộ RAG pipeline.
+
+    Attributes:
+        chunking_config: Cấu hình cho chunking phase
+        embedding_config: Cấu hình cho embedding phase
+        vector_store_config: Cấu hình cho vector store phase
+    """
+
+    chunking_config: Optional[ChunkingConfig] = None
+    embedding_config: Optional[EmbeddingConfig] = None
+    vector_store_config: Optional[VectorStoreConfig] = None
+
+    def __post_init__(self):
+        """Set default configs nếu chưa được cung cấp."""
+        if self.chunking_config is None:
+            self.chunking_config = ChunkingConfig()
+        if self.embedding_config is None:
+            self.embedding_config = EmbeddingConfig()
+        if self.vector_store_config is None:
+            self.vector_store_config = VectorStoreConfig()
+
+
 class RAGPipeline:
     """
     RAG Pipeline - Single File Processing
-
-    Hiện tại implement Phase 1: Document Processing + Chunking
-    Future phases: Embedding → Vector Storage → Retrieval → Generation
 
     Features:
     - Single file document parsing (PDF, DOCX, TXT, HTML, CSV)
     - Vietnamese text optimization
     - Smart chunking strategies (Hierarchical, Semantic, Simple)
+    - Multilingual embeddings (E5 model)
+    - Vector storage (Qdrant)
     - Error handling và robust processing
     - Rich metadata tracking
     - Statistics monitoring
     """
 
-    def __init__(self, chunking_config: Optional[ChunkingConfig] = None):
+    def __init__(self, config: Optional[RAGPipelineConfig] = None):
         """
         Khởi tạo RAG Pipeline.
 
         Args:
-            chunking_config: Cấu hình chunking. Nếu None, dùng config mặc định.
+            config: Cấu hình cho pipeline. Nếu None, dùng config mặc định.
         """
+        # Load config
+        self.config = config or RAGPipelineConfig()
+
         # Document processing components
         self.parser = DocumentParser()
-        self.chunking = Chunking(chunking_config)
+        self.chunking = Chunking(self.config.chunking_config)
+
+        # Embedding và vector store components
+        self.embeddings = MultilinguaE5Embeddings(self.config.embedding_config)
+        self.vector_store = QdrantVectorService(
+            embeddings=self.embeddings, config=self.config.vector_store_config
+        )
 
         # Statistics tracking
         self.stats = {
             "total_files_processed": 0,
             "total_documents_created": 0,
             "total_chunks_created": 0,
+            "total_embeddings_created": 0,
+            "total_vectors_stored": 0,
             "processing_errors": 0,
             "last_processing_time": None,
         }
+
+        # Initialize vector store collection
+        self.vector_store.create_collection()
 
         logger.info("RAG Pipeline initialized successfully")
         logger.info(
             f"Supported formats: {', '.join(sorted(self.parser.supported_formats))}"
         )
-        logger.info("Phase 1: Document Processing + Chunking")
+        logger.info(
+            "All phases ready: Document Processing + Chunking + Embedding + Vector Storage"
+        )
 
-    def process_documents(
+    def process_and_store(
         self,
         file_path: str,
         extra_metadata: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+    ) -> List[str]:
         """
-        Xử lý một file thành chunks.
+        Process một file và lưu vào vector store.
 
         Args:
             file_path: Đường dẫn file cần process
             extra_metadata: Metadata bổ sung
 
         Returns:
-            List[Document]: Processed chunks ready for next phase
+            List[str]: Document IDs trong vector store
         """
-        return self._process_single_file(file_path, extra_metadata)
+        # Process file thành chunks
+        chunks = self._process_single_file(file_path, extra_metadata)
+        if not chunks:
+            return []
 
-    def process_single_document(
+        # Add embedding metadata
+        embedding_metadata = self.embeddings.get_metadata()
+        for chunk in chunks:
+            chunk.metadata.update(
+                {
+                    "embedding_model": embedding_metadata["model_name"],
+                    "embedding_dimension": embedding_metadata["dimension"],
+                }
+            )
+
+        # Store trong vector store
+        try:
+            document_ids = self.vector_store.add_documents(chunks)
+            self.stats["total_embeddings_created"] += len(chunks)
+            self.stats["total_vectors_stored"] += len(document_ids)
+            logger.info(
+                f"Stored {len(document_ids)} vectors in {self.vector_store.config.collection_name}"
+            )
+            return document_ids
+        except Exception as e:
+            logger.error(f"Error storing vectors: {str(e)}")
+            raise
+
+    def similarity_search(
         self,
-        file_path: str,
-        extra_metadata: Optional[Dict[str, Any]] = None,
-    ) -> List[Document]:
+        query: str,
+        k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        filter_conditions: Optional[Dict[str, Any]] = None,
+        return_scores: bool = False,
+    ) -> Union[List[Document], List[Tuple[Document, float]]]:
         """
-        Alias cho process_documents - xử lý một file thành chunks.
+        Tìm kiếm similarity trong vector store.
 
         Args:
-            file_path: Đường dẫn file cần process
-            extra_metadata: Metadata bổ sung
+            query: Query text
+            k: Số lượng kết quả tối đa
+            score_threshold: Ngưỡng similarity score
+            filter_conditions: Điều kiện lọc metadata
+            return_scores: Có trả về scores không
 
         Returns:
-            List[Document]: Processed chunks ready for next phase
+            Nếu return_scores=False: List[Document]
+            Nếu return_scores=True: List[Tuple[Document, float]]
         """
-        return self.process_documents(file_path, extra_metadata)
+        try:
+            if return_scores:
+                return self.vector_store.similarity_search_with_score(
+                    query=query,
+                    k=k,
+                    score_threshold=score_threshold,
+                    filter_conditions=filter_conditions,
+                )
+            else:
+                return self.vector_store.similarity_search(
+                    query=query,
+                    k=k,
+                    score_threshold=score_threshold,
+                    filter_conditions=filter_conditions,
+                )
+        except Exception as e:
+            logger.error(f"Search error: {str(e)}")
+            raise
+
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        Lấy thống kê của toàn bộ pipeline.
+
+        Returns:
+            Dict với thông tin thống kê đầy đủ
+        """
+        stats = self.stats.copy()
+
+        # Add derived metrics
+        if stats["total_files_processed"] > 0:
+            stats["avg_documents_per_file"] = (
+                stats["total_documents_created"] / stats["total_files_processed"]
+            )
+            stats["avg_chunks_per_file"] = (
+                stats["total_chunks_created"] / stats["total_files_processed"]
+            )
+            stats["avg_vectors_per_file"] = (
+                stats["total_vectors_stored"] / stats["total_files_processed"]
+            )
+
+        if stats["total_documents_created"] > 0:
+            stats["avg_chunks_per_document"] = (
+                stats["total_chunks_created"] / stats["total_documents_created"]
+            )
+
+        stats["success_rate"] = (
+            (stats["total_files_processed"] - stats["processing_errors"])
+            / max(stats["total_files_processed"], 1)
+        ) * 100
+
+        # Add vector store stats
+        vector_store_stats = self.vector_store.get_stats()
+        stats.update({"vector_store_stats": vector_store_stats})
+
+        return stats
 
     def _process_single_file(
         self, file_path: str, extra_metadata: Optional[Dict[str, Any]] = None
@@ -191,36 +325,6 @@ class RAGPipeline:
             logger.error(f"Error processing {Path(file_path).name}: {str(e)}")
             raise
 
-    def get_processing_stats(self) -> Dict[str, Any]:
-        """
-        Lấy thống kê quá trình xử lý.
-
-        Returns:
-            Dict với thông tin thống kê đầy đủ
-        """
-        stats = self.stats.copy()
-
-        # Add derived metrics
-        if stats["total_files_processed"] > 0:
-            stats["avg_documents_per_file"] = (
-                stats["total_documents_created"] / stats["total_files_processed"]
-            )
-            stats["avg_chunks_per_file"] = (
-                stats["total_chunks_created"] / stats["total_files_processed"]
-            )
-
-        if stats["total_documents_created"] > 0:
-            stats["avg_chunks_per_document"] = (
-                stats["total_chunks_created"] / stats["total_documents_created"]
-            )
-
-        stats["success_rate"] = (
-            (stats["total_files_processed"] - stats["processing_errors"])
-            / max(stats["total_files_processed"], 1)
-        ) * 100
-
-        return stats
-
     def export_chunks_to_json(
         self, chunks: List[Document], output_path: str, include_metadata: bool = True
     ) -> None:
@@ -257,6 +361,8 @@ class RAGPipeline:
             "total_files_processed": 0,
             "total_documents_created": 0,
             "total_chunks_created": 0,
+            "total_embeddings_created": 0,
+            "total_vectors_stored": 0,
             "processing_errors": 0,
             "last_processing_time": None,
         }
@@ -289,7 +395,7 @@ class RAGPipeline:
 # Simple API function cho quick usage
 def process_file(
     file_path: str, chunk_size: int = 512, chunk_overlap: int = 64
-) -> List[Document]:
+) -> List[str]:
     """
     Quick function để process một file với default settings.
 
@@ -299,11 +405,12 @@ def process_file(
         chunk_overlap: Overlap giữa chunks
 
     Returns:
-        List[Document]: Chunks được tạo
+        List[str]: Document IDs trong vector store
     """
-    config = ChunkingConfig(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    chunking_config = ChunkingConfig(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    config = RAGPipelineConfig(chunking_config=chunking_config)
     pipeline = RAGPipeline(config)
-    return pipeline.process_documents(file_path)
+    return pipeline.process_and_store(file_path)
 
 
 # Backward compatibility aliases

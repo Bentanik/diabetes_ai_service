@@ -1,66 +1,78 @@
-"""RAG API routes cho upload và processing files."""
+"""
+RAG API routes cho upload và processing files (Tối ưu)
+"""
 
 import os
 import tempfile
 import time
+import uuid
+import json
 from datetime import datetime
 from typing import Dict, Any
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, status
 from fastapi.responses import JSONResponse
 
-from rag.rag_pipeline import RAGPipeline, ChunkingConfig
+from rag.rag_pipeline import RAGPipeline, RAGPipelineConfig
+from rag.chunking import ChunkingConfig
+from rag.embedding import EmbeddingConfig, MultilinguaE5Embeddings
+from rag.vector_store import QdrantVectorService, VectorStoreConfig
 from core.logging_config import get_logger
-from .models import FileUploadResponse, ErrorResponse, FileInfoModel
+from .models import (
+    FileUploadResponse,
+    FileInfoModel,
+    KnowledgeBaseCreate,
+    KnowledgeBaseResponse,
+)
 
-# Setup
 router = APIRouter(tags=["RAG Document Processing"])
 logger = get_logger(__name__)
 
-# Supported file types
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".html", ".htm", ".csv", ".md"}
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
-# Global RAG pipeline instance
-rag_pipeline = None
+# Singleton pipeline
+rag_pipeline: RAGPipeline | None = None
 
 
 def get_rag_pipeline() -> RAGPipeline:
-    """Get or create RAG pipeline instance."""
     global rag_pipeline
     if rag_pipeline is None:
-        # Default config - có thể customize sau
-        config = ChunkingConfig(chunk_size=1000, chunk_overlap=200, min_chunk_size=50)
+        chunking_config = ChunkingConfig(
+            chunk_size=1000, chunk_overlap=200, min_chunk_size=50
+        )
+        embedding_config = EmbeddingConfig()
+        vector_store_config = VectorStoreConfig(collection_name="vietnamese_documents")
+
+        config = RAGPipelineConfig(
+            chunking_config=chunking_config,
+            embedding_config=embedding_config,
+            vector_store_config=vector_store_config,
+        )
+
         rag_pipeline = RAGPipeline(config)
-        logger.info("RAG Pipeline initialized successfully")
+        logger.info("RAG Pipeline initialized")
     return rag_pipeline
 
 
 def validate_file(file: UploadFile) -> tuple[bool, str]:
-    """Validate uploaded file."""
-    # Check file extension
     if not file.filename:
         return False, "Filename is required"
 
-    file_ext = os.path.splitext(file.filename.lower())[1]
-    if file_ext not in SUPPORTED_EXTENSIONS:
+    ext = os.path.splitext(file.filename.lower())[1]
+    if ext not in SUPPORTED_EXTENSIONS:
         return (
             False,
             f"Unsupported file type. Supported: {', '.join(SUPPORTED_EXTENSIONS)}",
         )
 
-    # Check file size (rough estimate based on content length)
-    if hasattr(file, "size") and file.size is not None and file.size > MAX_FILE_SIZE:
-        return False, f"File too large. Max size: {MAX_FILE_SIZE // (1024*1024)}MB"
-
     return True, "Valid"
 
 
-def format_file_info(file: UploadFile, file_size: int) -> Dict[str, Any]:
-    """Format file information."""
+def format_file_info(file: UploadFile, size: int) -> Dict[str, Any]:
     return {
         "filename": file.filename,
-        "file_size": file_size,
+        "file_size": size,
         "file_extension": (
             os.path.splitext(file.filename.lower())[1] if file.filename else ""
         ),
@@ -69,208 +81,161 @@ def format_file_info(file: UploadFile, file_size: int) -> Dict[str, Any]:
     }
 
 
-def format_chunks_response(chunks) -> list[Dict[str, Any]]:
-    """Format chunks for response."""
-    formatted_chunks = []
-    for chunk in chunks:
-        formatted_chunks.append(
-            {
-                "content": chunk.page_content,
-                "content_length": len(chunk.page_content),
-                "metadata": chunk.metadata,
-            }
+@router.post(
+    "/knowledge-base",
+    response_model=KnowledgeBaseResponse,
+    summary="📚 Tạo knowledge base",
+)
+async def create_knowledge_base(kb_data: KnowledgeBaseCreate):
+    """
+    Tạo knowledge base mới trong vector store.
+
+    Chỉ cần cung cấp tên, hệ thống sẽ tự tạo collection trong vector store.
+    """
+    try:
+        pipeline = get_rag_pipeline()
+        vector_store = pipeline.vector_store
+
+        vector_store.config.collection_name = kb_data.name
+        success = vector_store.create_collection()
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Không thể tạo collection trong vector store",
+            )
+
+        info = vector_store.get_collection_info()
+
+        return KnowledgeBaseResponse(
+            name=kb_data.name,
+            collection_name=kb_data.name,
+            collection_info=info,
         )
-    return formatted_chunks
+
+    except Exception as e:
+        logger.error(f"Error creating KB: {e}")
+        raise HTTPException(500, detail=f"Lỗi khi tạo knowledge base: {str(e)}")
 
 
 @router.post(
     "/upload",
     response_model=FileUploadResponse,
-    summary="📄 Upload và xử lý tài liệu",
-    description="""
-    Upload file và xử lý bằng RAG Pipeline:
-    
-    - **Hỗ trợ formats**: PDF, DOCX, TXT, HTML, CSV, MD
-    - **Max file size**: 50MB
-    - **Output**: Chunks đã được xử lý với metadata
-    - **Vietnamese optimized**: Tối ưu cho tiếng Việt
-    """,
+    summary="📄 Upload & Process Document",
 )
 async def upload_file(
-    file: UploadFile = File(..., description="File để upload và xử lý"),
-    chunk_size: int = Form(1000, description="Kích thước chunk (default: 1000)"),
-    chunk_overlap: int = Form(200, description="Overlap giữa chunks (default: 200)"),
-    metadata: str = Form(None, description="Extra metadata (JSON string, optional)"),
+    file: UploadFile = File(...),
+    chunk_size: int = Form(1000),
+    chunk_overlap: int = Form(200),
+    metadata: str = Form(None),
 ):
-    """
-    Upload và xử lý file bằng RAG Pipeline.
-
-    Returns:
-        FileUploadResponse: Kết quả processing với chunks và statistics
-    """
     start_time = time.time()
-    temp_file_path = None
+    temp_file = None
 
     try:
-        # Validate file
-        is_valid, error_msg = validate_file(file)
-        if not is_valid:
-            raise HTTPException(status_code=400, detail=error_msg)
+        valid, msg = validate_file(file)
+        if not valid:
+            raise HTTPException(400, detail=msg)
 
-        # Read file content
-        file_content = await file.read()
-        file_size = len(file_content)
+        content = await file.read()
+        size = len(content)
+        if size > MAX_FILE_SIZE:
+            raise HTTPException(413, detail="File too large.")
 
-        # Check actual file size
-        if file_size > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File too large: {file_size // (1024*1024)}MB. Max: {MAX_FILE_SIZE // (1024*1024)}MB",
-            )
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=os.path.splitext(file.filename or "")[1]
+        ) as tmp:
+            tmp.write(content)
+            temp_file = tmp.name
 
-        # Create temporary file
-        file_ext = os.path.splitext(file.filename.lower())[1] if file.filename else ""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
-            temp_file.write(file_content)
-            temp_file_path = temp_file.name
-
-        # Get RAG pipeline
         pipeline = get_rag_pipeline()
 
-        # Update config if specified
+        # Nếu chunk config khác thì tạo pipeline mới và update singleton
         if chunk_size != 1000 or chunk_overlap != 200:
-            new_config = ChunkingConfig(
-                chunk_size=chunk_size, chunk_overlap=chunk_overlap, min_chunk_size=50
+            config = RAGPipelineConfig(
+                chunking_config=ChunkingConfig(
+                    chunk_size=chunk_size, chunk_overlap=chunk_overlap
+                ),
+                embedding_config=EmbeddingConfig(),
+                vector_store_config=VectorStoreConfig(
+                    collection_name="vietnamese_documents"
+                ),
             )
-            pipeline = RAGPipeline(new_config)
+            global rag_pipeline
+            rag_pipeline = RAGPipeline(config)
+            pipeline = rag_pipeline
 
-        # Parse extra metadata
         extra_metadata = {}
         if metadata:
             try:
-                import json
-
                 extra_metadata = json.loads(metadata)
             except json.JSONDecodeError:
-                logger.warning(f"Invalid metadata JSON: {metadata}")
+                logger.warning(f"Invalid metadata: {metadata}")
 
-        # Add upload info to metadata
         extra_metadata.update(
             {
                 "uploaded_filename": file.filename,
                 "upload_time": datetime.now().isoformat(),
-                "file_size_bytes": file_size,
+                "file_size_bytes": size,
             }
         )
 
-        # Process document
-        logger.info(f"Processing file: {file.filename} ({file_size} bytes)")
-        chunks = pipeline.process_documents(temp_file_path, extra_metadata)
-
-        # Get statistics
-        stats = pipeline.get_processing_stats()
-        processing_time = time.time() - start_time
-
-        # Format file info
-        file_info = format_file_info(file, file_size)
-
-        # Format chunks
-        formatted_chunks = format_chunks_response(chunks)
+        doc_ids = pipeline.process_and_store(temp_file, extra_metadata)
+        stats = pipeline.get_stats()
+        processing_time = round(time.time() - start_time, 2)
 
         logger.info(
-            f"Successfully processed {file.filename}: {len(chunks)} chunks in {processing_time:.2f}s"
+            f"Uploaded {file.filename}: {len(doc_ids)} vectors in {processing_time}s"
         )
 
         return FileUploadResponse(
             success=True,
-            message=f"Successfully processed {file.filename}. Created {len(chunks)} chunks.",
-            file_info=file_info,
-            chunks=formatted_chunks,
+            message=f"Processed {file.filename} -> {len(doc_ids)} vectors",
+            file_info=FileInfoModel(**format_file_info(file, size)),
+            document_ids=doc_ids,
             statistics=stats,
-            processing_time=round(processing_time, 2),
+            processing_time=processing_time,
         )
 
-    except HTTPException:
-        raise
-    except FileNotFoundError as e:
-        logger.error(f"File not found error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"File processing error: {str(e)}")
-    except ValueError as e:
-        logger.error(f"Validation error: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
-    except Exception as e:
-        logger.error(f"Unexpected error processing {file.filename}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     finally:
-        # Cleanup temporary file
-        if temp_file_path and os.path.exists(temp_file_path):
-            try:
-                os.unlink(temp_file_path)
-            except Exception as e:
-                logger.warning(
-                    f"Failed to cleanup temp file {temp_file_path}: {str(e)}"
-                )
+        if temp_file and os.path.exists(temp_file):
+            os.unlink(temp_file)
 
 
-@router.get(
-    "/stats",
-    summary="📊 Xem thống kê RAG Pipeline",
-    description="Lấy thống kê chi tiết về việc xử lý documents",
-)
-async def get_pipeline_stats():
-    """Lấy thống kê từ RAG Pipeline."""
+@router.get("/stats", summary="📊 RAG Stats")
+async def stats():
+    pipeline = get_rag_pipeline()
+    return {
+        "success": True,
+        "stats": pipeline.get_stats(),
+        "time": datetime.now().isoformat(),
+    }
+
+
+@router.post("/reset-stats", summary="🔄 Reset Stats")
+async def reset_stats():
+    pipeline = get_rag_pipeline()
+    pipeline.reset_stats()
+    return {
+        "success": True,
+        "message": "Stats reset",
+        "time": datetime.now().isoformat(),
+    }
+
+
+@router.get("/health", summary="🏥 Health Check")
+async def health():
     try:
         pipeline = get_rag_pipeline()
-        stats = pipeline.get_processing_stats()
+        info = pipeline.vector_store.get_stats()
         return {
-            "success": True,
-            "statistics": stats,
-            "timestamp": datetime.now().isoformat(),
-        }
-    except Exception as e:
-        logger.error(f"Error getting stats: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error getting statistics: {str(e)}"
-        )
-
-
-@router.post(
-    "/reset-stats",
-    summary="🔄 Reset thống kê",
-    description="Reset tất cả thống kê của RAG Pipeline",
-)
-async def reset_pipeline_stats():
-    """Reset thống kê RAG Pipeline."""
-    try:
-        pipeline = get_rag_pipeline()
-        pipeline.reset_stats()
-        return {
-            "success": True,
-            "message": "Statistics reset successfully",
-            "timestamp": datetime.now().isoformat(),
-        }
-    except Exception as e:
-        logger.error(f"Error resetting stats: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error resetting statistics: {str(e)}"
-        )
-
-
-@router.get(
-    "/health", summary="🏥 Health check", description="Kiểm tra trạng thái RAG Pipeline"
-)
-async def health_check():
-    """Health check cho RAG Pipeline."""
-    try:
-        pipeline = get_rag_pipeline()
-        return {
-            "success": True,
             "status": "healthy",
-            "message": "RAG Pipeline is running",
-            "supported_formats": list(SUPPORTED_EXTENSIONS),
-            "max_file_size_mb": MAX_FILE_SIZE // (1024 * 1024),
-            "timestamp": datetime.now().isoformat(),
+            "vector_store": {
+                "collection": pipeline.vector_store.config.collection_name,
+                "info": info,
+            },
+            "time": datetime.now().isoformat(),
         }
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Service unhealthy: {str(e)}")
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "error": str(e)}

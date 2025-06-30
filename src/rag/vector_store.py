@@ -359,6 +359,8 @@ class QdrantVectorService:
         k = k or self.config.search_limit
         score_threshold = score_threshold or self.config.search_score_threshold
 
+        start_time = datetime.now()
+
         try:
             search_filter = (
                 self._build_filter(filter_conditions) if filter_conditions else None
@@ -368,7 +370,15 @@ class QdrantVectorService:
                 query=query, k=k, filter=search_filter, score_threshold=score_threshold
             )
 
-            logger.debug(f"Search with scores: {len(results)} results")
+            # Update stats
+            search_time = (datetime.now() - start_time).total_seconds()
+            self._stats["total_searches_performed"] += 1
+            self._stats["total_search_time"] += search_time
+            self._stats["last_operation_time"] = datetime.now().isoformat()
+
+            logger.debug(
+                f"Search with scores: {len(results)} results in {search_time:.3f}s"
+            )
             return results
 
         except Exception as e:

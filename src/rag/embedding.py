@@ -237,6 +237,21 @@ class MultilinguaE5Embeddings(Embeddings):
         for key in self._stats:
             self._stats[key] = 0
 
+    def get_metadata(self) -> Dict[str, Any]:
+        """
+        Get metadata about the embedding model.
+
+        Returns:
+            Dict với thông tin về model
+        """
+        return {
+            "model_name": self.config.model_name,
+            "dimension": self.get_embedding_dimension(),
+            "normalize": self.config.normalize_embeddings,
+            "instruction": self.config.query_instruction,
+            "device": self.device,
+        }
+
 
 class EmbeddingService:
     """
