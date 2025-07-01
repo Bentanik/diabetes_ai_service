@@ -35,6 +35,7 @@ try:
         Batch,
         PayloadSchemaType,
         ExtendedPointId,
+        CollectionDescription,
     )
     from qdrant_client.http import models
 except ImportError as e:
@@ -78,7 +79,9 @@ class VectorStore:
     """
 
     def __init__(
-        self, embeddings: Embeddings, config: Optional[VectorStoreConfig] = None
+        self,
+        embeddings: Optional[Embeddings] = None,
+        config: Optional[VectorStoreConfig] = None,
     ):
         self.embeddings = embeddings
         self.config = config or VectorStoreConfig()
@@ -116,12 +119,13 @@ class VectorStore:
                 api_key=self.config.qdrant_api_key,
             )
 
-            # Vector store
-            self.vector_store = LangChainVectorStore(
-                client=self.client,
-                collection_name=self.config.collection_name,
-                embedding=self.embeddings,
-            )
+            # Vector store (chỉ khởi tạo nếu có embeddings)
+            if self.embeddings is not None:
+                self.vector_store = LangChainVectorStore(
+                    client=self.client,
+                    collection_name=self.config.collection_name,
+                    embedding=self.embeddings,
+                )
 
             logger.info(
                 f"Đã khởi tạo kết nối Qdrant: {self.config.qdrant_url}:{self.config.qdrant_port}"
@@ -130,6 +134,14 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Lỗi khởi tạo kết nối Qdrant: {e}")
             raise
+
+    def _check_embeddings_required(self):
+        """Kiểm tra xem embeddings có được yêu cầu không"""
+        if self.embeddings is None:
+            raise ValueError(
+                "Embeddings là bắt buộc cho chức năng này. "
+                "Vui lòng khởi tạo VectorStore với embeddings."
+            )
 
     def create_collection(self, force_recreate: bool = False) -> bool:
         """
@@ -252,6 +264,7 @@ class VectorStore:
         Returns:
             Danh sách ID của các tài liệu đã thêm
         """
+        self._check_embeddings_required()
         if not documents:
             return []
 
@@ -313,6 +326,7 @@ class VectorStore:
         Returns:
             Danh sách tài liệu tương tự
         """
+        self._check_embeddings_required()
         if self.vector_store is None:
             logger.error("Chưa khởi tạo vector store")
             return []
@@ -368,6 +382,7 @@ class VectorStore:
         Returns:
             Danh sách tuple (tài liệu, điểm số)
         """
+        self._check_embeddings_required()
         if self.vector_store is None:
             logger.error("Chưa khởi tạo vector store")
             return []
@@ -566,6 +581,46 @@ class VectorStore:
         for key in self._stats:
             if key != "last_operation_time":
                 self._stats[key] = 0
+
+    def list_collections(self) -> List[CollectionDescription]:
+        """
+        Lấy danh sách tất cả collections
+
+        Returns:
+            List[CollectionDescription]: Danh sách collections
+        """
+        try:
+            if self.client is None:
+                logger.error("Chưa khởi tạo kết nối Qdrant")
+                return []
+
+            collections = self.client.get_collections()
+            return collections.collections
+
+        except Exception as e:
+            logger.error(f"Lỗi khi lấy danh sách collections: {e}")
+            return []
+
+    def delete_collection(self) -> bool:
+        """
+        Xóa collection hiện tại
+
+        Returns:
+            bool: True nếu xóa thành công
+        """
+        try:
+            if self.client is None:
+                logger.error("Chưa khởi tạo kết nối Qdrant")
+                return False
+
+            collection_name = self.config.collection_name
+            self.client.delete_collection(collection_name=collection_name)
+            logger.info(f"Đã xóa collection: {collection_name}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Lỗi khi xóa collection: {e}")
+            return False
 
 
 def create_vector_store(

@@ -1,31 +1,30 @@
 """
-RAG API routes cho upload và processing files (Tối ưu)
+RAG API routes cho knowledge base management và document processing
 """
 
 import os
 import tempfile
 import time
-import uuid
-import json
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional, Union
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form, status
+from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Query, status
 from fastapi.responses import JSONResponse
 
 from features.rag.rag_pipeline import RAGPipeline, RAGPipelineConfig
 from features.rag.chunking import ChunkingConfig
-from features.rag.embedding import EmbeddingConfig, MultilinguaE5Embeddings
-from features.rag.vector_store import QdrantVectorService, VectorStoreConfig
+from features.rag.embedding import EmbeddingConfig
+from features.rag.vector_store import VectorStoreConfig, VectorStore
 from core.logging_config import get_logger
 from .models import (
-    FileUploadResponse,
-    FileInfoModel,
     KnowledgeBaseCreate,
     KnowledgeBaseResponse,
+    KnowledgeBaseList,
+    FileUploadResponse,
+    FileInfoModel,
 )
 
-router = APIRouter(tags=["RAG Document Processing"])
+router = APIRouter(tags=["RAG Knowledge Base"])
 logger = get_logger(__name__)
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt", ".html", ".htm", ".csv", ".md"}
@@ -35,14 +34,21 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 rag_pipeline: RAGPipeline | None = None
 
 
-def get_rag_pipeline() -> RAGPipeline:
+def get_rag_pipeline(collection_name: str = "default") -> RAGPipeline:
+    """
+    Lấy RAG pipeline instance với collection name cụ thể.
+    Nếu collection chưa tồn tại, tự động tạo mới.
+    """
     global rag_pipeline
-    if rag_pipeline is None:
+    if (
+        rag_pipeline is None
+        or rag_pipeline.vector_store.config.collection_name != collection_name
+    ):
         chunking_config = ChunkingConfig(
             chunk_size=1000, chunk_overlap=200, min_chunk_size=50
         )
         embedding_config = EmbeddingConfig()
-        vector_store_config = VectorStoreConfig(collection_name="vietnamese_documents")
+        vector_store_config = VectorStoreConfig(collection_name=collection_name)
 
         config = RAGPipelineConfig(
             chunking_config=chunking_config,
@@ -51,11 +57,12 @@ def get_rag_pipeline() -> RAGPipeline:
         )
 
         rag_pipeline = RAGPipeline(config)
-        logger.info("RAG Pipeline initialized")
+        logger.info(f"RAG Pipeline initialized with collection: {collection_name}")
     return rag_pipeline
 
 
 def validate_file(file: UploadFile) -> tuple[bool, str]:
+    """Validate file type và size"""
     if not file.filename:
         return False, "Filename is required"
 
@@ -70,6 +77,7 @@ def validate_file(file: UploadFile) -> tuple[bool, str]:
 
 
 def format_file_info(file: UploadFile, size: int) -> Dict[str, Any]:
+    """Format file info cho response"""
     return {
         "filename": file.filename,
         "file_size": size,
@@ -82,22 +90,24 @@ def format_file_info(file: UploadFile, size: int) -> Dict[str, Any]:
 
 
 @router.post(
-    "/knowledge-base",
+    "/knowledge-bases",
     response_model=KnowledgeBaseResponse,
-    summary="📚 Tạo knowledge base",
+    summary="📚 Tạo knowledge base mới",
+    description="Tạo knowledge base mới trong vector store. Mỗi knowledge base là một collection riêng biệt.",
 )
 async def create_knowledge_base(kb_data: KnowledgeBaseCreate):
     """
     Tạo knowledge base mới trong vector store.
 
-    Chỉ cần cung cấp tên, hệ thống sẽ tự tạo collection trong vector store.
+    - **name**: Tên của knowledge base, sẽ được dùng làm collection name
+    - **description**: Mô tả về knowledge base (optional)
+    - **metadata**: Metadata bổ sung (optional)
     """
     try:
-        pipeline = get_rag_pipeline()
-        vector_store = pipeline.vector_store
-
-        vector_store.config.collection_name = kb_data.name
-        success = vector_store.create_collection()
+        # Khởi tạo VectorStore với collection name mới
+        config = VectorStoreConfig(collection_name=kb_data.name)
+        vector_store = VectorStore(config=config)
+        success = vector_store.create_collection(force_recreate=True)
 
         if not success:
             raise HTTPException(
@@ -107,10 +117,17 @@ async def create_knowledge_base(kb_data: KnowledgeBaseCreate):
 
         info = vector_store.get_collection_info()
 
+        # Đảm bảo luôn có created_at
+        created_at = info.get("created_at")
+        if not created_at:
+            created_at = datetime.now().isoformat()
+
         return KnowledgeBaseResponse(
             name=kb_data.name,
-            collection_name=kb_data.name,
+            description=kb_data.description,
+            metadata=kb_data.metadata,
             collection_info=info,
+            created_at=created_at,
         )
 
     except Exception as e:
@@ -118,17 +135,111 @@ async def create_knowledge_base(kb_data: KnowledgeBaseCreate):
         raise HTTPException(500, detail=f"Lỗi khi tạo knowledge base: {str(e)}")
 
 
-@router.post(
-    "/upload",
-    response_model=FileUploadResponse,
-    summary="📄 Upload & Process Document",
+@router.get(
+    "/knowledge-bases",
+    response_model=KnowledgeBaseList,
+    summary="📚 Lấy danh sách knowledge bases",
+    description="Lấy danh sách tất cả knowledge bases hiện có.",
 )
-async def upload_file(
+async def list_knowledge_bases():
+    """
+    Lấy danh sách tất cả knowledge bases.
+    """
+    try:
+        # Khởi tạo VectorStore không cần embeddings vì chỉ dùng để quản lý collections
+        vector_store = VectorStore()
+        collections = vector_store.list_collections()
+
+        kbs = []
+        for collection in collections:
+            # Cập nhật collection name và lấy thông tin
+            vector_store.config.collection_name = collection.name
+            info = vector_store.get_collection_info()
+
+            # Đảm bảo luôn có created_at
+            created_at = info.get("created_at")
+            if not created_at:
+                created_at = datetime.now().isoformat()
+
+            kbs.append(
+                KnowledgeBaseResponse(
+                    name=collection.name,
+                    description=None,  # Collection info không có description
+                    metadata=None,  # Collection info không có metadata
+                    collection_info=info,
+                    created_at=created_at,
+                )
+            )
+
+        return KnowledgeBaseList(
+            knowledge_bases=kbs,
+            total=len(kbs),
+        )
+
+    except Exception as e:
+        logger.error(f"Error listing KBs: {e}")
+        raise HTTPException(
+            500, detail=f"Lỗi khi lấy danh sách knowledge bases: {str(e)}"
+        )
+
+
+@router.delete(
+    "/knowledge-bases/{name}",
+    response_model=Dict[str, Any],
+    summary="🗑️ Xóa knowledge base",
+    description="Xóa knowledge base và tất cả documents trong đó.",
+)
+async def delete_knowledge_base(name: str):
+    """
+    Xóa knowledge base.
+
+    - **name**: Tên của knowledge base cần xóa
+    """
+    try:
+        # Khởi tạo VectorStore với collection name cần xóa
+        config = VectorStoreConfig(collection_name=name)
+        vector_store = VectorStore(config=config)
+        success = vector_store.delete_collection()
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Không thể xóa knowledge base {name}",
+            )
+
+        return {
+            "success": True,
+            "message": f"Đã xóa knowledge base {name}",
+            "time": datetime.now().isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error deleting KB: {e}")
+        raise HTTPException(500, detail=f"Lỗi khi xóa knowledge base: {str(e)}")
+
+
+@router.post(
+    "/knowledge-bases/{name}/documents",
+    response_model=FileUploadResponse,
+    summary="📄 Upload document vào knowledge base",
+    description="Upload và process document vào knowledge base cụ thể.",
+)
+async def upload_document(
+    name: str,
     file: UploadFile = File(...),
     chunk_size: int = Form(1000),
     chunk_overlap: int = Form(200),
-    metadata: str = Form(None),
+    metadata: Dict[str, Any] = Form({}),
 ):
+    """
+    Upload và process document vào knowledge base.
+
+    - **name**: Tên của knowledge base
+    - **file**: File cần upload
+    - **chunk_size**: Kích thước mỗi chunk (default: 1000)
+    - **chunk_overlap**: Độ overlap giữa các chunks (default: 200)
+    - **metadata**: Metadata bổ sung cho document
+    """
     start_time = time.time()
     temp_file = None
 
@@ -148,44 +259,38 @@ async def upload_file(
             tmp.write(content)
             temp_file = tmp.name
 
-        pipeline = get_rag_pipeline()
+        # Get pipeline với collection name cụ thể
+        pipeline = get_rag_pipeline(name)
 
-        # Nếu chunk config khác thì tạo pipeline mới và update singleton
+        # Update chunk config nếu khác default
         if chunk_size != 1000 or chunk_overlap != 200:
             config = RAGPipelineConfig(
                 chunking_config=ChunkingConfig(
                     chunk_size=chunk_size, chunk_overlap=chunk_overlap
                 ),
                 embedding_config=EmbeddingConfig(),
-                vector_store_config=VectorStoreConfig(
-                    collection_name="vietnamese_documents"
-                ),
+                vector_store_config=VectorStoreConfig(collection_name=name),
             )
             global rag_pipeline
             rag_pipeline = RAGPipeline(config)
             pipeline = rag_pipeline
 
-        extra_metadata = {}
-        if metadata:
-            try:
-                extra_metadata = json.loads(metadata)
-            except json.JSONDecodeError:
-                logger.warning(f"Invalid metadata: {metadata}")
-
-        extra_metadata.update(
+        # Add file info vào metadata
+        metadata.update(
             {
                 "uploaded_filename": file.filename,
                 "upload_time": datetime.now().isoformat(),
                 "file_size_bytes": size,
+                "knowledge_base": name,
             }
         )
 
-        doc_ids = pipeline.process_and_store(temp_file, extra_metadata)
+        doc_ids = pipeline.process_and_store(temp_file, metadata)
         stats = pipeline.get_stats()
         processing_time = round(time.time() - start_time, 2)
 
         logger.info(
-            f"Uploaded {file.filename}: {len(doc_ids)} vectors in {processing_time}s"
+            f"Uploaded {file.filename} to KB {name}: {len(doc_ids)} vectors in {processing_time}s"
         )
 
         return FileUploadResponse(
@@ -202,40 +307,33 @@ async def upload_file(
             os.unlink(temp_file)
 
 
-@router.get("/stats", summary="📊 RAG Stats")
-async def stats():
-    pipeline = get_rag_pipeline()
-    return {
-        "success": True,
-        "stats": pipeline.get_stats(),
-        "time": datetime.now().isoformat(),
-    }
+@router.get(
+    "/knowledge-bases/{name}/stats",
+    response_model=Dict[str, Any],
+    summary="📊 Knowledge Base Stats",
+    description="Lấy thống kê của knowledge base.",
+)
+async def get_knowledge_base_stats(name: str):
+    """
+    Lấy thống kê của knowledge base.
 
-
-@router.post("/reset-stats", summary="🔄 Reset Stats")
-async def reset_stats():
-    pipeline = get_rag_pipeline()
-    pipeline.reset_stats()
-    return {
-        "success": True,
-        "message": "Stats reset",
-        "time": datetime.now().isoformat(),
-    }
-
-
-@router.get("/health", summary="🏥 Health Check")
-async def health():
+    - **name**: Tên của knowledge base
+    """
     try:
-        pipeline = get_rag_pipeline()
-        info = pipeline.vector_store.get_stats()
+        pipeline = get_rag_pipeline(name)
+        stats = pipeline.get_stats()
+        info = pipeline.vector_store.get_collection_info()
+
         return {
-            "status": "healthy",
-            "vector_store": {
-                "collection": pipeline.vector_store.config.collection_name,
-                "info": info,
-            },
+            "success": True,
+            "name": name,
+            "stats": stats,
+            "collection_info": info,
             "time": datetime.now().isoformat(),
         }
+
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {"status": "unhealthy", "error": str(e)}
+        logger.error(f"Error getting KB stats: {e}")
+        raise HTTPException(
+            500, detail=f"Lỗi khi lấy thống kê knowledge base: {str(e)}"
+        )

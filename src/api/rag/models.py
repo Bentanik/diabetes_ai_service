@@ -65,6 +65,8 @@ class KnowledgeBaseCreate(BaseModel):
     name: str = Field(
         ..., description="Tên của knowledge base", min_length=1, max_length=255
     )
+    description: Optional[str] = Field(None, description="Mô tả về knowledge base")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Metadata bổ sung")
 
 
 class KnowledgeBaseUpdate(BaseModel):
@@ -74,15 +76,28 @@ class KnowledgeBaseUpdate(BaseModel):
         None, description="Tên mới của knowledge base", min_length=1, max_length=255
     )
     description: Optional[str] = Field(None, description="Mô tả mới về knowledge base")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Metadata mới")
 
 
 class KnowledgeBaseResponse(BaseModel):
     """Schema cho response knowledge base."""
 
-    name: str
-    collection_name: str
-    collection_info: dict
-    created_at: datetime = Field(default_factory=datetime.now)
+    name: str = Field(description="Tên của knowledge base")
+    description: Optional[str] = Field(None, description="Mô tả về knowledge base")
+    metadata: Optional[Dict[str, Any]] = Field(
+        None, description="Metadata của knowledge base"
+    )
+    collection_info: Dict[str, Any] = Field(description="Thông tin về collection")
+    created_at: str = Field(description="Thời gian tạo")
 
     class Config:
         from_attributes = True
+
+
+class KnowledgeBaseList(BaseModel):
+    """Schema cho danh sách knowledge bases."""
+
+    knowledge_bases: List[KnowledgeBaseResponse] = Field(
+        description="Danh sách knowledge bases"
+    )
+    total: int = Field(description="Tổng số knowledge bases")

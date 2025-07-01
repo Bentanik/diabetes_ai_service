@@ -104,8 +104,8 @@ class RAGPipeline:
         self.chunking = Chunking(self.config.chunking_config)
 
         # Embedding và vector store components
-        self.embeddings = MultilinguaE5Embeddings(self.config.embedding_config)
-        self.vector_store = QdrantVectorService(
+        self.embeddings = Embedding(self.config.embedding_config)
+        self.vector_store = VectorStore(
             embeddings=self.embeddings, config=self.config.vector_store_config
         )
 
@@ -222,141 +222,114 @@ class RAGPipeline:
         Returns:
             Dict với thông tin thống kê đầy đủ
         """
-        stats = self.stats.copy()
+        stats: Dict[str, Any] = {}
+
+        # Add pipeline stats
+        pipeline_stats = self.stats.copy()
 
         # Add derived metrics
-        if stats["total_files_processed"] > 0:
-            stats["avg_documents_per_file"] = (
-                stats["total_documents_created"] / stats["total_files_processed"]
+        if pipeline_stats["total_files_processed"] > 0:
+            pipeline_stats["avg_documents_per_file"] = (
+                pipeline_stats["total_documents_created"]
+                / pipeline_stats["total_files_processed"]
             )
-            stats["avg_chunks_per_file"] = (
-                stats["total_chunks_created"] / stats["total_files_processed"]
+            pipeline_stats["avg_chunks_per_file"] = (
+                pipeline_stats["total_chunks_created"]
+                / pipeline_stats["total_files_processed"]
             )
-            stats["avg_vectors_per_file"] = (
-                stats["total_vectors_stored"] / stats["total_files_processed"]
-            )
-
-        if stats["total_documents_created"] > 0:
-            stats["avg_chunks_per_document"] = (
-                stats["total_chunks_created"] / stats["total_documents_created"]
+            pipeline_stats["avg_vectors_per_file"] = (
+                pipeline_stats["total_vectors_stored"]
+                / pipeline_stats["total_files_processed"]
             )
 
-        stats["success_rate"] = (
-            (stats["total_files_processed"] - stats["processing_errors"])
-            / max(stats["total_files_processed"], 1)
+        if pipeline_stats["total_documents_created"] > 0:
+            pipeline_stats["avg_chunks_per_document"] = (
+                pipeline_stats["total_chunks_created"]
+                / pipeline_stats["total_documents_created"]
+            )
+
+        pipeline_stats["success_rate"] = (
+            (
+                pipeline_stats["total_files_processed"]
+                - pipeline_stats["processing_errors"]
+            )
+            / max(pipeline_stats["total_files_processed"], 1)
         ) * 100
 
-        # Add vector store stats
-        vector_store_stats = self.vector_store.get_stats()
-        stats.update({"vector_store_stats": vector_store_stats})
+        # Add component stats
+        for k, v in pipeline_stats.items():
+            if isinstance(v, (int, float)):
+                stats[str(k)] = v
+            else:
+                stats[str(k)] = str(v)
+
+        for k, v in self.embeddings.get_stats().items():
+            if isinstance(v, (int, float)):
+                stats[f"embedding_{str(k)}"] = v
+            else:
+                stats[f"embedding_{str(k)}"] = str(v)
+
+        for k, v in self.vector_store.get_stats().items():
+            if isinstance(v, (int, float)):
+                stats[f"vector_store_{str(k)}"] = v
+            else:
+                stats[f"vector_store_{str(k)}"] = str(v)
 
         return stats
 
     def _process_single_file(
         self, file_path: str, extra_metadata: Optional[Dict[str, Any]] = None
     ) -> List[Document]:
-        """Xử lý một file duy nhất từ parsing đến chunking."""
+        """
+        Process một file thành chunks.
+
+        Args:
+            file_path: Đường dẫn file cần process
+            extra_metadata: Metadata bổ sung
+
+        Returns:
+            List[Document]: Chunks đã được process
+        """
         start_time = datetime.now()
 
         try:
-            # Validate file
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
-
-            file_path_obj = Path(file_path)
-            if file_path_obj.suffix.lower() not in self.parser.supported_formats:
-                raise ValueError(f"Unsupported format: {file_path_obj.suffix}")
-
-            logger.info(f"Processing file: {file_path_obj.name}")
-            # Step 1: Parse document
-            documents = self.parser.load_single_document(str(file_path))
-
+            # Parse document
+            documents = self.parser.load_single_document(file_path)
             if not documents:
-                logger.warning(f"No content extracted from {Path(file_path).name}")
+                logger.warning(f"No content extracted from {file_path}")
                 return []
 
-            logger.info(
-                f"Parsed {len(documents)} document(s) from {Path(file_path).name}"
-            )
-
-            # Step 2: Add file-level metadata
-            file_metadata = {
-                "source_file": str(file_path),
-                "file_name": Path(file_path).name,
-                "file_extension": Path(file_path).suffix.lower(),
-                "file_size": Path(file_path).stat().st_size,
-                "processing_timestamp": start_time.isoformat(),
-            }
-
-            if extra_metadata:
-                file_metadata.update(extra_metadata)
-
-            # Add file metadata to all documents
-            for doc in documents:
-                doc.metadata.update(file_metadata)
-
-            # Step 3: Chunk documents
-            chunks = self.chunking.chunk_documents(documents)
-
-            # Step 4: Add chunk-level metadata
-            for i, chunk in enumerate(chunks):
-                chunk.metadata.update(
-                    {
-                        "global_chunk_id": f"{file_path_obj.stem}_chunk_{i}",
-                        "source_document_count": len(documents),
-                        "total_chunks_in_file": len(chunks),
-                    }
-                )
-
-            # Update statistics
-            processing_time = (datetime.now() - start_time).total_seconds()
-            self.stats["total_files_processed"] += 1
             self.stats["total_documents_created"] += len(documents)
+
+            # Add metadata
+            if extra_metadata:
+                for doc in documents:
+                    doc.metadata.update(extra_metadata)
+
+            # Chunk documents
+            chunks = []
+            for doc in documents:
+                doc_chunks = self.chunking.chunk_documents([doc])
+                chunks.extend(doc_chunks)
+
             self.stats["total_chunks_created"] += len(chunks)
-            self.stats["last_processing_time"] = processing_time
+            self.stats["total_files_processed"] += 1
+            self.stats["last_processing_time"] = (
+                datetime.now() - start_time
+            ).total_seconds()
 
             logger.info(
-                f"File {Path(file_path).name} → {len(chunks)} chunks ({processing_time:.2f}s)"
+                f"Processed {file_path}: {len(documents)} documents → {len(chunks)} chunks"
             )
             return chunks
 
         except Exception as e:
             self.stats["processing_errors"] += 1
-            logger.error(f"Error processing {Path(file_path).name}: {str(e)}")
+            logger.error(f"Error processing {file_path}: {str(e)}")
             raise
 
-    def export_chunks_to_json(
-        self, chunks: List[Document], output_path: str, include_metadata: bool = True
-    ) -> None:
-        """
-        Export chunks ra file JSON để debug hoặc analyze.
-
-        Args:
-            chunks: Danh sách chunks cần export
-            output_path: Đường dẫn file JSON output
-            include_metadata: Có include metadata không
-        """
-        export_data = []
-
-        for i, chunk in enumerate(chunks):
-            chunk_data = {
-                "chunk_id": i,
-                "content": chunk.page_content,
-                "content_length": len(chunk.page_content),
-            }
-
-            if include_metadata:
-                chunk_data["metadata"] = chunk.metadata
-
-            export_data.append(chunk_data)
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(export_data, f, ensure_ascii=False, indent=2)
-
-        logger.info(f"Exported {len(chunks)} chunks to {output_path}")
-
     def reset_stats(self) -> None:
-        """Reset tất cả statistics về 0."""
+        """Reset statistics về 0."""
         self.stats = {
             "total_files_processed": 0,
             "total_documents_created": 0,
@@ -366,49 +339,51 @@ class RAGPipeline:
             "processing_errors": 0,
             "last_processing_time": None,
         }
-        logger.info("Statistics reset")
+        self.embeddings.reset_stats()
+        self.vector_store.reset_stats()
+        logger.info("Pipeline statistics reset")
 
-    # Future methods - stub implementation
     def prepare_for_embedding(self, chunks: List[Document]) -> List[Document]:
         """
-        Prepare chunks for embedding phase (Phase 2).
+        Chuẩn bị chunks cho embedding phase.
 
         Args:
-            chunks: Processed chunks
+            chunks: List chunks cần chuẩn bị
 
         Returns:
-            Chunks ready for embedding
+            List[Document]: Chunks đã được chuẩn bị
         """
-        logger.info(f"Prepared {len(chunks)} chunks for embedding phase")
-        return chunks
+        return self.embeddings.embed_documents_from_chunks(chunks)
 
     def get_embedding_info(self) -> Dict[str, str]:
-        """Get information about embedding readiness."""
-        return {
-            "status": "Phase 1 completed",
-            "next_phase": "Embedding implementation",
-            "chunks_ready": "Yes",
-            "note": "Ready for vector embedding integration",
-        }
+        """
+        Lấy thông tin về embedding model.
+
+        Returns:
+            Dict với thông tin về model
+        """
+        return self.embeddings.get_metadata()
 
 
-# Simple API function cho quick usage
 def process_file(
     file_path: str, chunk_size: int = 512, chunk_overlap: int = 64
 ) -> List[str]:
     """
-    Quick function để process một file với default settings.
+    Hàm tiện ích để process một file với config mặc định.
 
     Args:
-        file_path: Đường dẫn file
+        file_path: Đường dẫn file cần process
         chunk_size: Kích thước chunk
-        chunk_overlap: Overlap giữa chunks
+        chunk_overlap: Độ overlap giữa các chunks
 
     Returns:
         List[str]: Document IDs trong vector store
     """
-    chunking_config = ChunkingConfig(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    config = RAGPipelineConfig(chunking_config=chunking_config)
+    config = RAGPipelineConfig(
+        chunking_config=ChunkingConfig(
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap
+        )
+    )
     pipeline = RAGPipeline(config)
     return pipeline.process_and_store(file_path)
 

@@ -14,7 +14,7 @@ def init_vector_store():
     try:
         # Connect to Qdrant
         client = QdrantClient("localhost", port=6333)
-        collection_name = "vietnamese_documents"
+        collection_name = "default"
 
         # Check if collection exists
         collections = client.get_collections().collections
