@@ -190,7 +190,7 @@ async def list_knowledge_bases():
     "/knowledge-bases/{name}",
     response_model=Dict[str, Any],
     summary="🗑️ Xóa knowledge base",
-    description="Xóa knowledge base và tất cả documents trong đó.",
+    description="Xóa knowledge base, tất cả documents và dữ liệu lưu trữ trong MinIO.",
 )
 async def delete_knowledge_base(name: str):
     """
@@ -199,21 +199,30 @@ async def delete_knowledge_base(name: str):
     - **name**: Tên của knowledge base cần xóa
     """
     try:
-        # Khởi tạo VectorStore với collection name cần xóa
+        # Xóa collection trong vector store
         config = VectorStoreConfig(collection_name=name)
         vector_store = VectorStore(config=config)
-        success = vector_store.delete_collection()
+        vector_store_success = vector_store.delete_collection()
 
-        if not success:
+        if not vector_store_success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Không thể xóa knowledge base {name}",
+                detail=f"Không thể xóa knowledge base {name} trong vector store",
             )
+
+        # Xóa folder và tất cả documents trong MinIO
+        minio_success = document_storage.delete_collection_folder(name)
+        if not minio_success:
+            logger.warning(f"Không thể xóa documents của collection {name} trong MinIO")
 
         return {
             "success": True,
-            "message": f"Đã xóa knowledge base {name}",
+            "message": f"Đã xóa knowledge base {name} và tất cả dữ liệu liên quan",
             "time": datetime.now().isoformat(),
+            "details": {
+                "vector_store_deleted": vector_store_success,
+                "minio_documents_deleted": minio_success,
+            },
         }
 
     except Exception as e:
@@ -225,7 +234,7 @@ async def delete_knowledge_base(name: str):
     "/knowledge-bases/{name}/documents",
     response_model=FileUploadResponse,
     summary="📄 Upload document vào knowledge base",
-    description="Upload và process document vào knowledge base cụ thể.",
+    description="""Upload và process document vào knowledge base cụ thể.""",
 )
 async def upload_document(
     name: str,
@@ -256,7 +265,7 @@ async def upload_document(
         if size > MAX_FILE_SIZE:
             raise HTTPException(413, detail="File too large.")
 
-        # Store file in MinIO
+        # Store file in MinIO with folder structure
         storage_info = document_storage.store_document(
             file_data=content,
             filename=file.filename or "unknown",

@@ -32,3 +32,6 @@ underthesea
 
 # Data Processing
 pandas
+
+# Object Storage
+minio
