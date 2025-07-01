@@ -5,18 +5,17 @@ from typing import List
 
 from core.exceptions import ServiceError
 from core.logging_config import get_logger
-from models.request import CarePlanRequest
-from models.response import CarePlanMeasurementOutResponse
-from services.care_plan_service import get_care_plan_service
+from api.careplan.models import CarePlanRequest, CarePlanMeasurementResponse
+from features.feature_manager import get_feature_manager
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["Kế Hoạch Chăm Sóc"])
 
 
 @router.post(
-    "/generate",
-    response_model=List[CarePlanMeasurementOutResponse],
-    summary="🎯 Tạo Kế Hoạch Chăm Sóc Cá Nhân",
+    "/generate-care-plan",
+    response_model=List[CarePlanMeasurementResponse],
+    summary="Tạo Kế Hoạch Chăm Sóc Cá Nhân",
     description="""
     Tạo kế hoạch chăm sóc tiểu đường cá nhân với khuyến nghị đo lường dựa trên dữ liệu bệnh nhân.
     
@@ -77,15 +76,23 @@ router = APIRouter(tags=["Kế Hoạch Chăm Sóc"])
 )
 async def generate_care_plan(
     request: CarePlanRequest,
-) -> List[CarePlanMeasurementOutResponse]:
+) -> List[CarePlanMeasurementResponse]:
     """Tạo kế hoạch chăm sóc cá nhân cho bệnh nhân tiểu đường."""
     try:
         logger.info(
             f"Nhận yêu cầu tạo kế hoạch chăm sóc cho bệnh nhân: {request.patientId}"
         )
 
-        service = get_care_plan_service()
-        result = await service.generate_care_plan(request)
+        # Lấy feature instance
+        feature_manager = get_feature_manager()
+        await feature_manager.initialize()
+        generator = feature_manager.get_careplan()
+
+        if not generator:
+            raise ServiceError("Care plan generator feature not available")
+
+        # Tạo kế hoạch chăm sóc
+        result = await generator.generate_plan(request)
 
         logger.info(
             f"Tạo kế hoạch chăm sóc thành công cho bệnh nhân: {request.patientId}"

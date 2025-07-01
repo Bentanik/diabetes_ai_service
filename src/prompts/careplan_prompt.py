@@ -1,4 +1,4 @@
-from models.request import CarePlanRequest
+from api.careplan.models import CarePlanRequest
 
 
 def build_prompt(request: CarePlanRequest) -> str:

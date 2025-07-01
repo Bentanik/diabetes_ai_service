@@ -4,17 +4,16 @@ from fastapi import APIRouter, HTTPException
 
 from core.exceptions import ServiceError
 from core.logging_config import get_logger
-from models.request import MeasurementNoteRequest
-from models.response import MeasurementNoteResponse
-from services.measurement_service import get_measurement_service
+from api.analyze.models import AnalyzeMeasurementRequest, AnalyzeMeasurementResponse
+from features.feature_manager import get_feature_manager
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["Phân Tích Kết Quả Đo"])
 
 
 @router.post(
-    "/analyze-measurement-note",
-    response_model=MeasurementNoteResponse,
+    "/analyze-measurement",
+    response_model=AnalyzeMeasurementResponse,
     summary="📊 Phân Tích Kết Quả Đo Bệnh Nhân",
     description="""
     Phân tích kết quả đo sức khỏe của bệnh nhân và cung cấp phản hồi cá nhân hóa được hỗ trợ bởi AI.
@@ -70,17 +69,22 @@ router = APIRouter(tags=["Phân Tích Kết Quả Đo"])
         },
     },
 )
-async def analyze_measurement_note(
-    request: MeasurementNoteRequest,
-) -> MeasurementNoteResponse:
+async def analyze_measurement(
+    request: AnalyzeMeasurementRequest,
+) -> AnalyzeMeasurementResponse:
     """Phân tích kết quả đo sức khỏe của bệnh nhân với phản hồi được hỗ trợ bởi AI."""
     try:
         logger.info(
             f"Nhận yêu cầu phân tích kết quả đo cho bệnh nhân: {request.patientId}"
         )
 
-        service = get_measurement_service()
-        result = await service.analyze_measurement(request)
+        # Lấy feature instance
+        feature_manager = get_feature_manager()
+        await feature_manager.initialize()
+        analysis = feature_manager.get_measurement()
+
+        # Phân tích kết quả đo
+        result = await analysis.analyze_measurement(request)
 
         logger.info(
             f"Phân tích kết quả đo thành công cho bệnh nhân: {request.patientId}"

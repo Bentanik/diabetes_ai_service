@@ -13,10 +13,10 @@ from typing import Dict, Any
 from fastapi import APIRouter, File, UploadFile, HTTPException, Form, status
 from fastapi.responses import JSONResponse
 
-from rag.rag_pipeline import RAGPipeline, RAGPipelineConfig
-from rag.chunking import ChunkingConfig
-from rag.embedding import EmbeddingConfig, MultilinguaE5Embeddings
-from rag.vector_store import QdrantVectorService, VectorStoreConfig
+from features.rag.rag_pipeline import RAGPipeline, RAGPipelineConfig
+from features.rag.chunking import ChunkingConfig
+from features.rag.embedding import EmbeddingConfig, MultilinguaE5Embeddings
+from features.rag.vector_store import QdrantVectorService, VectorStoreConfig
 from core.logging_config import get_logger
 from .models import (
     FileUploadResponse,
