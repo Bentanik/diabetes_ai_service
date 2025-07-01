@@ -30,6 +30,28 @@ class FileUploadResponse(BaseModel):
     processing_time: float = Field(description="Thời gian xử lý (giây)")
 
 
+class DocumentInfo(BaseModel):
+    """Model cho thông tin chi tiết của một document."""
+
+    filename: str = Field(description="Tên file")
+    size: int = Field(description="Kích thước file (bytes)")
+    last_modified: Optional[str] = Field(description="Thời gian chỉnh sửa cuối")
+    content_type: str = Field(description="Loại file")
+
+
+class CollectionStats(BaseModel):
+    """Model cho thống kê documents trong một collection."""
+
+    total_documents: int = Field(description="Tổng số documents")
+    total_size_bytes: int = Field(description="Tổng dung lượng (bytes)")
+    file_types: Dict[str, int] = Field(description="Số lượng file theo loại")
+    documents: List[DocumentInfo] = Field(
+        description="Danh sách chi tiết các documents"
+    )
+    collection_name: str = Field(description="Tên collection")
+    last_updated: str = Field(description="Thời gian cập nhật thống kê")
+
+
 class ChunkModel(BaseModel):
     """Model cho một chunk."""
 

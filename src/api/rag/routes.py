@@ -23,6 +23,7 @@ from .models import (
     KnowledgeBaseList,
     FileUploadResponse,
     FileInfoModel,
+    CollectionStats,
 )
 
 router = APIRouter(tags=["RAG Knowledge Base"])
@@ -366,3 +367,43 @@ async def get_knowledge_base_stats(name: str):
         raise HTTPException(
             500, detail=f"Lỗi khi lấy thống kê knowledge base: {str(e)}"
         )
+
+
+@router.get(
+    "/knowledge-bases/{name}/documents/stats",
+    response_model=CollectionStats,
+    summary="📊 Thống kê documents trong knowledge base",
+    description="Lấy thông tin thống kê về các documents trong một knowledge base.",
+)
+async def get_documents_stats(name: str):
+    """
+    Lấy thống kê về documents trong knowledge base.
+
+    - **name**: Tên của knowledge base cần thống kê
+    """
+    try:
+        # Kiểm tra collection có tồn tại không
+        vector_store = VectorStore()
+        collections = vector_store.list_collections()
+        if not any(c.name == name for c in collections):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy knowledge base {name}",
+            )
+
+        # Lấy thống kê từ MinIO
+        stats = document_storage.get_collection_stats(name)
+
+        # Format dung lượng để dễ đọc
+        total_size_mb = round(stats["total_size_bytes"] / (1024 * 1024), 2)
+        logger.info(
+            f"Collection {name} stats: {stats['total_documents']} documents, {total_size_mb} MB"
+        )
+
+        return CollectionStats(**stats)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting documents stats: {e}")
+        raise HTTPException(500, detail=f"Lỗi khi lấy thống kê documents: {str(e)}")

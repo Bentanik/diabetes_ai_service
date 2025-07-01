@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from core.minio_client import minio_client
 from core.logging_config import get_logger
@@ -123,6 +123,69 @@ class DocumentStorage:
         except Exception as e:
             logger.error(f"Error deleting collection {knowledge_name}: {str(e)}")
             return False
+
+    def get_collection_stats(self, knowledge_name: str) -> Dict[str, Any]:
+        """
+        Get statistics about documents in a collection.
+
+        Args:
+            knowledge_name: Knowledge base name (folder name)
+
+        Returns:
+            Dict containing statistics about the documents
+        """
+        try:
+            # List all objects in the collection folder
+            objects = list(
+                self.client.client.list_objects(
+                    self.BUCKET_NAME, prefix=f"{knowledge_name}/"
+                )
+            )
+
+            # Calculate statistics
+            total_size = 0
+            file_types = {}
+            documents = []
+
+            for obj in objects:
+                if obj.object_name and obj.size is not None:
+                    # Extract filename from path
+                    filename = obj.object_name.split("/")[-1]
+                    # Get file extension
+                    ext = os.path.splitext(filename)[1].lower()
+
+                    # Update file type count
+                    file_types[ext] = file_types.get(ext, 0) + 1
+
+                    # Update total size
+                    total_size += obj.size
+
+                    # Add document info
+                    documents.append(
+                        {
+                            "filename": filename,
+                            "size": obj.size,
+                            "last_modified": (
+                                obj.last_modified.isoformat()
+                                if obj.last_modified
+                                else None
+                            ),
+                            "content_type": ext,
+                        }
+                    )
+
+            return {
+                "total_documents": len(objects),
+                "total_size_bytes": total_size,
+                "file_types": file_types,
+                "documents": documents,
+                "collection_name": knowledge_name,
+                "last_updated": datetime.now().isoformat(),
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting collection stats: {str(e)}")
+            raise Exception(f"Failed to get collection stats: {str(e)}")
 
 
 document_storage = DocumentStorage()
