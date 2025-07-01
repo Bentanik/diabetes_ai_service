@@ -13,6 +13,8 @@ class FileInfoModel(BaseModel):
     file_extension: str = Field(description="Extension của file")
     content_type: str = Field(description="MIME type của file")
     upload_time: str = Field(description="Thời gian upload")
+    storage_path: Optional[str] = Field(description="Đường dẫn lưu trữ trong MinIO")
+    storage_time: Optional[str] = Field(description="Thời gian lưu trữ trong MinIO")
 
 
 class FileUploadResponse(BaseModel):

@@ -33,6 +33,11 @@ config = {
     "rag_chunk_overlap": int(os.getenv("RAG_CHUNK_OVERLAP", "200")),
     "rag_retrieval_k": int(os.getenv("RAG_RETRIEVAL_K", "5")),
     "rag_score_threshold": float(os.getenv("RAG_SCORE_THRESHOLD", "0.3")),
+    # MinIO Configuration
+    "minio_endpoint": os.getenv("MINIO_ENDPOINT", "localhost:9000"),
+    "minio_access_key": os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+    "minio_secret_key": os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+    "minio_secure": os.getenv("MINIO_SECURE", "false").lower() == "true",
     # Validation limits
     "max_reason_length": 150,
     "max_feedback_length": 250,
@@ -68,6 +73,16 @@ def get_rag_config():
         "chunk_overlap": config["rag_chunk_overlap"],
         "retrieval_k": config["rag_retrieval_k"],
         "score_threshold": config["rag_score_threshold"],
+    }
+
+
+def get_minio_config():
+    """Lấy cấu hình MinIO."""
+    return {
+        "endpoint": config["minio_endpoint"],
+        "access_key": config["minio_access_key"],
+        "secret_key": config["minio_secret_key"],
+        "secure": config["minio_secure"],
     }
 
 

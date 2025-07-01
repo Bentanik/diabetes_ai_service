@@ -15,6 +15,7 @@ from features.rag.rag_pipeline import RAGPipeline, RAGPipelineConfig
 from features.rag.chunking import ChunkingConfig
 from features.rag.embedding import EmbeddingConfig
 from features.rag.vector_store import VectorStoreConfig, VectorStore
+from features.rag.storage import document_storage
 from core.logging_config import get_logger
 from .models import (
     KnowledgeBaseCreate,
@@ -34,30 +35,20 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 rag_pipeline: RAGPipeline | None = None
 
 
-def get_rag_pipeline(collection_name: str = "default") -> RAGPipeline:
-    """
-    Lấy RAG pipeline instance với collection name cụ thể.
-    Nếu collection chưa tồn tại, tự động tạo mới.
-    """
+def get_rag_pipeline(collection_name: str) -> RAGPipeline:
+    """Get RAG pipeline instance với collection name cụ thể."""
     global rag_pipeline
-    if (
-        rag_pipeline is None
-        or rag_pipeline.vector_store.config.collection_name != collection_name
-    ):
-        chunking_config = ChunkingConfig(
-            chunk_size=1000, chunk_overlap=200, min_chunk_size=50
-        )
-        embedding_config = EmbeddingConfig()
-        vector_store_config = VectorStoreConfig(collection_name=collection_name)
-
+    if not rag_pipeline:
         config = RAGPipelineConfig(
-            chunking_config=chunking_config,
-            embedding_config=embedding_config,
-            vector_store_config=vector_store_config,
+            chunking_config=ChunkingConfig(),
+            embedding_config=EmbeddingConfig(),
+            vector_store_config=VectorStoreConfig(collection_name=collection_name),
         )
-
         rag_pipeline = RAGPipeline(config)
-        logger.info(f"RAG Pipeline initialized with collection: {collection_name}")
+    else:
+        # Update collection name nếu khác
+        if rag_pipeline.vector_store.config.collection_name != collection_name:
+            rag_pipeline.vector_store.config.collection_name = collection_name
     return rag_pipeline
 
 
@@ -76,9 +67,11 @@ def validate_file(file: UploadFile) -> tuple[bool, str]:
     return True, "Valid"
 
 
-def format_file_info(file: UploadFile, size: int) -> Dict[str, Any]:
+def format_file_info(
+    file: UploadFile, size: int, storage_info: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """Format file info cho response"""
-    return {
+    info = {
         "filename": file.filename,
         "file_size": size,
         "file_extension": (
@@ -87,6 +80,16 @@ def format_file_info(file: UploadFile, size: int) -> Dict[str, Any]:
         "content_type": file.content_type or "application/octet-stream",
         "upload_time": datetime.now().isoformat(),
     }
+
+    if storage_info:
+        info.update(
+            {
+                "storage_path": storage_info["storage_path"],
+                "storage_time": storage_info["storage_time"],
+            }
+        )
+
+    return info
 
 
 @router.post(
@@ -253,6 +256,23 @@ async def upload_document(
         if size > MAX_FILE_SIZE:
             raise HTTPException(413, detail="File too large.")
 
+        # Store file in MinIO
+        storage_info = document_storage.store_document(
+            file_data=content,
+            filename=file.filename or "unknown",
+            knowledge_name=name,
+            content_type=file.content_type or "application/octet-stream",
+            metadata=metadata,
+        )
+
+        # Add storage info to metadata
+        metadata.update(
+            {
+                "storage_path": storage_info["storage_path"],
+                "storage_time": storage_info["storage_time"],
+            }
+        )
+
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=os.path.splitext(file.filename or "")[1]
         ) as tmp:
@@ -296,7 +316,7 @@ async def upload_document(
         return FileUploadResponse(
             success=True,
             message=f"Processed {file.filename} -> {len(doc_ids)} vectors",
-            file_info=FileInfoModel(**format_file_info(file, size)),
+            file_info=FileInfoModel(**format_file_info(file, size, storage_info)),
             document_ids=doc_ids,
             statistics=stats,
             processing_time=processing_time,
