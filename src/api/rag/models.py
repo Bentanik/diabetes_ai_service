@@ -125,3 +125,36 @@ class KnowledgeBaseList(BaseModel):
         description="Danh sách knowledge bases"
     )
     total: int = Field(description="Tổng số knowledge bases")
+
+
+class MultiCollectionSearchRequest(BaseModel):
+    """Model cho yêu cầu tìm kiếm trên nhiều knowledge bases."""
+
+    query: str = Field(description="Câu hỏi/query cần tìm kiếm")
+    collection_names: List[str] = Field(
+        description="Danh sách các knowledge bases cần tìm kiếm"
+    )
+    top_k: Optional[int] = Field(default=5, description="Số lượng kết quả trả về")
+    score_threshold: Optional[float] = Field(
+        default=0.3, description="Ngưỡng điểm tối thiểu (0-1)", ge=0.0, le=1.0
+    )
+
+
+class SearchResult(BaseModel):
+    """Model cho một kết quả tìm kiếm."""
+
+    content: str = Field(description="Nội dung đoạn văn bản")
+    metadata: Dict[str, Any] = Field(description="Metadata của đoạn văn bản")
+    score: float = Field(description="Điểm tương đồng")
+    collection_name: str = Field(description="Knowledge base chứa kết quả này")
+
+
+class MultiCollectionSearchResponse(BaseModel):
+    """Model cho kết quả tìm kiếm từ nhiều knowledge bases."""
+
+    results: List[SearchResult] = Field(description="Danh sách kết quả tìm kiếm")
+    total_results: int = Field(description="Tổng số kết quả tìm được")
+    processing_time: float = Field(description="Thời gian xử lý (giây)")
+    collection_stats: Dict[str, Any] = Field(
+        description="Thống kê theo từng collection"
+    )

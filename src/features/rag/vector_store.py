@@ -6,6 +6,7 @@ Tích hợp Qdrant để lưu trữ và tìm kiếm vector.
 Tính năng:
 - Lưu trữ và quản lý vector trong Qdrant
 - Tìm kiếm theo độ tương đồng
+- Tìm kiếm BM25
 - Quản lý bộ sưu tập (collection)
 - Lọc theo metadata
 """
@@ -16,6 +17,11 @@ from typing import List, Dict, Any, Optional, Tuple, Union
 from dataclasses import dataclass
 import uuid
 from datetime import datetime
+import numpy as np
+from rank_bm25 import BM25Okapi
+from underthesea import word_tokenize as vi_tokenize
+import nltk
+from nltk.tokenize import word_tokenize as en_tokenize
 
 from qdrant_client.models import FilterSelector, PointIdsList
 
@@ -41,6 +47,12 @@ try:
 except ImportError as e:
     logging.error(f"Thiếu thư viện Qdrant: {e}")
     raise
+
+# Download NLTK data
+try:
+    nltk.data.find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt")
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +87,7 @@ class VectorStore:
     Cung cấp các chức năng:
     - Lưu trữ và quản lý vector
     - Tìm kiếm theo độ tương đồng
+    - Tìm kiếm BM25
     - Theo dõi hiệu suất
     """
 
@@ -90,6 +103,12 @@ class VectorStore:
         self.client: Optional[QdrantClient] = None
         self.async_client: Optional[AsyncQdrantClient] = None
         self.vector_store: Optional[LangChainVectorStore] = None
+
+        # BM25 components
+        self._bm25: Optional[BM25Okapi] = None
+        self._documents: List[Document] = []
+        self._doc_tokens: List[List[str]] = []
+        self._last_update_time: Optional[float] = None
 
         # Theo dõi thống kê
         self._stats = {
@@ -252,60 +271,78 @@ class VectorStore:
             logger.warning(f"Lỗi khi tạo các chỉ mục metadata: {e}")
 
     def add_documents(
-        self, documents: List[Document], batch_size: Optional[int] = None
+        self,
+        documents: List[Document],
+        batch_size: Optional[int] = None,
+        bm25_retriever: Optional[Any] = None,  # BM25Retriever instance
     ) -> List[str]:
         """
-        Thêm tài liệu vào vector store
+        Thêm documents vào vector store.
 
         Args:
-            documents: Danh sách tài liệu cần thêm
-            batch_size: Kích thước batch, mặc định lấy từ config
+            documents: Danh sách documents cần thêm
+            batch_size: Kích thước batch, nếu None sẽ dùng giá trị từ config
+            bm25_retriever: BM25Retriever instance để preprocess tokens
 
         Returns:
-            Danh sách ID của các tài liệu đã thêm
+            List[str]: IDs của documents đã thêm
         """
         self._check_embeddings_required()
         if not documents:
             return []
 
         if self.vector_store is None:
-            logger.error("Chưa khởi tạo vector store")
+            logger.error("Vector store chưa được khởi tạo")
             return []
+
+        batch_size = batch_size or self.config.batch_size
+        document_ids = []
 
         try:
             start_time = datetime.now()
-            batch_size = batch_size or self.config.batch_size
 
-            # Thêm tài liệu vào vector store
-            ids = self.vector_store.add_documents(documents)
+            # Process documents in batches
+            for i in range(0, len(documents), batch_size):
+                batch = documents[i : i + batch_size]
 
-            # Cập nhật thống kê
-            indexing_time = (datetime.now() - start_time).total_seconds()
+                # Preprocess documents for BM25 if retriever provided
+                if bm25_retriever is not None:
+                    for doc in batch:
+                        # Add BM25 tokens to metadata if not already present
+                        if bm25_retriever.METADATA_TOKENS_KEY not in doc.metadata:
+                            doc.metadata = bm25_retriever.preprocess_document(
+                                doc.page_content, doc.metadata
+                            )
+
+                # Add to vector store
+                ids = self.vector_store.add_documents(batch)
+                document_ids.extend(ids)
+
+            # Update stats
+            end_time = datetime.now()
             self._stats["total_documents_indexed"] += len(documents)
-            self._stats["total_indexing_time"] += indexing_time
-            self._stats["last_operation_time"] = datetime.now().isoformat()
+            self._stats["total_indexing_time"] += (
+                end_time - start_time
+            ).total_seconds()
+            self._stats["last_operation_time"] = end_time
 
-            logger.info(f"Đã lưu {len(documents)} tài liệu trong {indexing_time:.2f}s")
-            return ids
+            logger.info(
+                f"Đã thêm {len(documents)} documents vào {self.config.collection_name}"
+            )
+            return document_ids
 
         except Exception as e:
-            logger.error(f"Lỗi khi thêm tài liệu: {e}")
-            return []
+            logger.error(f"Lỗi thêm documents: {e}")
+            raise
 
     async def aadd_documents(
-        self, documents: List[Document], batch_size: Optional[int] = None
+        self,
+        documents: List[Document],
+        batch_size: Optional[int] = None,
+        bm25_retriever: Optional[Any] = None,  # BM25Retriever instance
     ) -> List[str]:
-        """
-        Thêm tài liệu vào vector store (bất đồng bộ)
-
-        Args:
-            documents: Danh sách tài liệu cần thêm
-            batch_size: Kích thước batch, mặc định lấy từ config
-
-        Returns:
-            Danh sách ID của các tài liệu đã thêm
-        """
-        return await asyncio.to_thread(self.add_documents, documents, batch_size)
+        """Async version of add_documents"""
+        return self.add_documents(documents, batch_size, bm25_retriever)
 
     def similarity_search(
         self,
@@ -621,6 +658,181 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Lỗi khi xóa collection: {e}")
             return False
+
+    def get_tokens_for_text(self, text: str) -> List[str]:
+        """
+        Get tokens for text using Vietnamese/English tokenization.
+
+        Args:
+            text: Text to tokenize
+
+        Returns:
+            List of tokens
+        """
+        # Detect language (simple heuristic)
+        has_vietnamese = any(ord(c) > 128 for c in text)
+
+        # Tokenize based on language
+        if has_vietnamese:
+            tokens = vi_tokenize(text)
+        else:
+            tokens = en_tokenize(text)
+
+        # Convert to lowercase and remove punctuation
+        tokens = [
+            token.lower()
+            for token in tokens
+            if token.strip() and not all(c in ".,!?;:()[]{}\"'" for c in token)
+        ]
+
+        return tokens
+
+    def _check_for_updates(self):
+        """Check if we need to update BM25 index."""
+        if self.vector_store is None:
+            return
+
+        # Get all documents from vector store
+        try:
+            # Get documents from collection
+            if self.client is None:
+                logger.error("Chưa khởi tạo kết nối Qdrant")
+                return
+
+            # Get all points from collection
+            collection_info = self.client.get_collection(
+                collection_name=self.config.collection_name
+            )
+            if not collection_info:
+                return
+
+            points = self.client.scroll(
+                collection_name=self.config.collection_name,
+                limit=collection_info.points_count or 0,
+                with_payload=True,
+                with_vectors=False,
+            )[0]
+
+            if not points:
+                return
+
+            # Convert points to documents
+            all_docs = []
+            for point in points:
+                if not point.payload:
+                    continue
+                doc = Document(
+                    page_content=point.payload.get("page_content", ""),
+                    metadata=point.payload.get("metadata", {}),
+                )
+                all_docs.append(doc)
+
+            # Check if we need to update
+            if (
+                self._last_update_time is None
+                or len(all_docs) != len(self._documents)
+                or any(
+                    doc.metadata.get("processing_timestamp", "")
+                    > self._last_update_time
+                    for doc in all_docs
+                )
+            ):
+                # Update documents and tokens
+                self._documents = all_docs
+                self._doc_tokens = [
+                    self.get_tokens_for_text(doc.page_content)
+                    for doc in self._documents
+                ]
+
+                # Create new BM25 instance
+                if self._doc_tokens:
+                    self._bm25 = BM25Okapi(self._doc_tokens)
+                    self._last_update_time = datetime.now().timestamp()
+                    logger.debug(
+                        f"Updated BM25 index with {len(self._documents)} documents"
+                    )
+
+        except Exception as e:
+            logger.error(f"Error checking for BM25 updates: {e}")
+
+    def bm25_search(
+        self,
+        query: str,
+        k: Optional[int] = None,
+        score_threshold: Optional[float] = None,
+        filter_conditions: Optional[Dict[str, Any]] = None,
+    ) -> List[Tuple[Document, float]]:
+        """
+        Tìm kiếm BM25 trong vector store.
+
+        Args:
+            query: Query text
+            k: Số lượng kết quả tối đa
+            score_threshold: Ngưỡng similarity score
+            filter_conditions: Điều kiện lọc metadata
+
+        Returns:
+            List[Tuple[Document, float]]: Danh sách (document, score)
+        """
+        try:
+            start_time = datetime.now()
+
+            # Update BM25 index if needed
+            self._check_for_updates()
+
+            if not self._bm25 or not self._documents:
+                return []
+
+            # Get tokens from query
+            query_tokens = self.get_tokens_for_text(query)
+
+            # Get BM25 scores
+            scores = self._bm25.get_scores(query_tokens)
+
+            # Normalize scores to [0,1]
+            if len(scores) > 0:
+                min_score = min(scores)
+                max_score = max(scores)
+                if max_score > min_score:
+                    scores = (scores - min_score) / (max_score - min_score)
+
+            # Sort by score
+            doc_scores = list(zip(self._documents, scores))
+            doc_scores.sort(key=lambda x: float(x[1]), reverse=True)
+
+            # Apply score threshold
+            if score_threshold is not None:
+                doc_scores = [
+                    (doc, score)
+                    for doc, score in doc_scores
+                    if score >= score_threshold
+                ]
+
+            # Apply filter conditions
+            if filter_conditions:
+                doc_scores = [
+                    (doc, score)
+                    for doc, score in doc_scores
+                    if all(
+                        doc.metadata.get(k) == v for k, v in filter_conditions.items()
+                    )
+                ]
+
+            # Get top k results
+            k = k or self.config.search_limit
+            results = doc_scores[:k]
+
+            # Update stats
+            search_time = (datetime.now() - start_time).total_seconds()
+            self._stats["total_searches_performed"] += 1
+            self._stats["total_search_time"] += search_time
+            self._stats["last_operation_time"] = datetime.now().isoformat()
+            logger.debug(f"Found {len(results)} BM25 results in {search_time:.2f}s")
+            return [(doc, float(score)) for doc, score in results]
+
+        except Exception as e:
+            logger.error(f"Error during BM25 search: {e}")
+            return []
 
 
 def create_vector_store(

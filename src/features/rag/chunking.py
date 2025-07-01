@@ -17,6 +17,9 @@ from dataclasses import dataclass
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+import nltk
+from nltk.corpus import stopwords
+from underthesea import word_tokenize as vi_tokenize
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +236,90 @@ class MultilingualTextProcessor:
 
         return hierarchy
 
+    @staticmethod
+    def tokenize_text(text: str, lang_info: Dict[str, Any]) -> List[str]:
+        """Tokenize text dựa trên ngôn ngữ đã detect.
+
+        Args:
+            text: Text cần tokenize
+            lang_info: Thông tin ngôn ngữ từ detect_language()
+
+        Returns:
+            List các tokens đã được xử lý
+        """
+        # Stopwords tiếng Việt
+        VIETNAMESE_STOPWORDS = {
+            "và",
+            "của",
+            "cho",
+            "được",
+            "với",
+            "các",
+            "có",
+            "trong",
+            "đã",
+            "những",
+            "này",
+            "về",
+            "như",
+            "là",
+            "để",
+            "theo",
+            "tại",
+            "từ",
+            "không",
+            "còn",
+            "bị",
+            "khi",
+            "sẽ",
+            "nhiều",
+            "phải",
+            "vì",
+            "trên",
+            "dưới",
+            "nếu",
+            "cần",
+            "bởi",
+            "lúc",
+            "họ",
+            "tôi",
+            "anh",
+            "chị",
+            "nó",
+            "một",
+            "hai",
+            "ba",
+            "bốn",
+            "năm",
+            "sáu",
+            "bảy",
+            "tám",
+            "chín",
+            "mười",
+        }
+
+        # Download NLTK data if needed
+        try:
+            nltk.data.find("corpora/stopwords")
+        except LookupError:
+            nltk.download("stopwords")
+
+        ENGLISH_STOPWORDS = set(stopwords.words("english"))
+
+        # Tokenize based on language
+        if lang_info["language"] == "vietnamese":
+            # Vietnamese tokenization
+            tokens = vi_tokenize(text)
+            # Remove Vietnamese stopwords
+            tokens = [t for t in tokens if t.lower() not in VIETNAMESE_STOPWORDS]
+        else:
+            # Default to English tokenization
+            tokens = re.findall(r"\b\w+\b", text.lower())
+            # Remove English stopwords
+            tokens = [t for t in tokens if t not in ENGLISH_STOPWORDS]
+
+        return tokens
+
 
 class Chunking:
     """
@@ -318,6 +405,40 @@ class Chunking:
         else:  # mixed
             return int(len(text) / 3.5)  # Hỗn hợp: chia 3.5
 
+    def _prepare_chunk_metadata(
+        self, chunk_text: str, base_metadata: Dict[str, Any], strategy: str, **kwargs
+    ) -> Dict[str, Any]:
+        """Chuẩn bị metadata cho chunk.
+
+        Args:
+            chunk_text: Nội dung chunk
+            base_metadata: Metadata cơ bản
+            strategy: Strategy đang sử dụng
+            **kwargs: Metadata bổ sung
+
+        Returns:
+            Dict metadata đã được cập nhật
+        """
+        # Get language info
+        lang_info = self.text_processor.detect_language(chunk_text)
+
+        # Generate BM25 tokens
+        tokens = self.text_processor.tokenize_text(chunk_text, lang_info)
+
+        # Build metadata
+        chunk_metadata = base_metadata.copy()
+        chunk_metadata.update(
+            {
+                "strategy": strategy,
+                "token_count": self._count_tokens(chunk_text),
+                "language_info": lang_info,
+                "bm25_tokens": tokens,
+                **kwargs,
+            }
+        )
+
+        return chunk_metadata
+
     def _chunk_simple(self, text: str, metadata: Dict[str, Any]) -> List[Document]:
         """
         Chunking đơn giản cho nội dung không có cấu trúc đặc biệt.
@@ -338,7 +459,6 @@ class Chunking:
         if not text:
             return []
 
-        # Khởi tạo splitter với các separators phù hợp
         splitter = self.splitter
         chunks = splitter.split_text(text)
         documents = []
@@ -358,27 +478,23 @@ class Chunking:
             ):
                 # Merge with previous chunk
                 documents[-1].page_content += "\n" + chunk_stripped
-                documents[-1].metadata["token_count"] = self._count_tokens(
-                    documents[-1].page_content
+                # Update metadata for merged chunk
+                documents[-1].metadata = self._prepare_chunk_metadata(
+                    documents[-1].page_content,
+                    metadata,
+                    "simple",
+                    chunk_index=doc_index - 1,
                 )
                 continue
             elif (
                 len(chunk_stripped) < self.config.min_chunk_size
                 and not self.config.keep_small_chunks
             ):
-                # Skip very small chunks if can't merge and keep_small_chunks is False
                 continue
 
-            chunk_metadata = metadata.copy()
-            chunk_metadata.update(
-                {
-                    "chunk_index": doc_index,
-                    "strategy": "simple",
-                    "token_count": self._count_tokens(chunk_stripped),
-                    "language_info": self.text_processor.detect_language(
-                        chunk_stripped
-                    ),
-                }
+            # Prepare metadata for new chunk
+            chunk_metadata = self._prepare_chunk_metadata(
+                chunk_stripped, metadata, "simple", chunk_index=doc_index
             )
 
             documents.append(
@@ -393,22 +509,6 @@ class Chunking:
     ) -> List[Document]:
         """
         Chunking phân cấp cho nội dung có cấu trúc rõ ràng (headings, sections).
-
-        Tự động phát hiện cấu trúc phân cấp dựa trên các patterns heading (CHƯƠNG, PHẦN, etc.)
-        và chia text theo các sections tự nhiên. Giữ nguyên ngữ cảnh trong mỗi section.
-
-        Quy trình:
-        - Trích xuất cấu trúc phân cấp từ text
-        - Chia text thành các sections dựa trên headings
-        - Xử lý các sections quá lớn bằng cách chia nhỏ
-        - Tạo Document chunks với metadata section_level
-
-        Args:
-            text: Văn bản có cấu trúc phân cấp
-            metadata: Metadata gốc để gắn vào các chunks
-
-        Returns:
-            List Document chunks với strategy = "hierarchical" hoặc "hierarchical_split"
         """
         structure = self.text_processor.extract_hierarchical_structure(text)
 
@@ -427,20 +527,14 @@ class Chunking:
                     current_section.append(line)
                 continue
 
-            # Kiểm tra xem dòng hiện tại có phải là heading hay không
             line_level = None
-
-            # Duyệt qua danh sách các heading đã được trích xuất (structure)
             for heading in structure:
                 if heading["line_number"] == i:
                     line_level = heading["level"]
                     break
 
             if line_level is not None and line_level <= current_level:
-                # Nếu dòng hiện tại là heading và cấp độ của nó <= cấp hiện tại,
-                # nghĩa là bắt đầu một mục (section) mới
                 if current_section:
-                    # Nếu đang có nội dung của mục trước đó, gom thành chuỗi
                     section_content = "\n".join(current_section)
                     sections.append(
                         {
@@ -454,7 +548,6 @@ class Chunking:
             else:
                 current_section.append(line)
 
-        # Thêm phần section cuối cùng còn tồn tại vào danh sách sections
         if current_section:
             section_content = "\n".join(current_section)
             sections.append(
@@ -465,29 +558,26 @@ class Chunking:
                 }
             )
 
-        # Xử lý các section thành các chunk để phục vụ việc embedding hoặc xử lý tiếp
         documents = []
-        for section in sections:
+        for i, section in enumerate(sections):
             if section["token_count"] > self.config.max_chunk_size:
-                # Nếu số token trong section vượt quá kích thước chunk tối đa,
-                # ta chia nhỏ section này ra thành nhiều chunk con bằng hàm _chunk_simple
                 sub_chunks = self._chunk_simple(section["content"], metadata)
                 for chunk in sub_chunks:
-                    chunk.metadata["strategy"] = "hierarchical_split"
-                    chunk.metadata["section_level"] = section["level"]
+                    chunk.metadata = self._prepare_chunk_metadata(
+                        chunk.page_content,
+                        metadata,
+                        "hierarchical_split",
+                        section_level=section["level"],
+                        chunk_index=i,
+                    )
                 documents.extend(sub_chunks)
             else:
-                # Nếu section đủ nhỏ, giữ nguyên như một chunk duy nhất
-                chunk_metadata = metadata.copy()
-                chunk_metadata.update(
-                    {
-                        "strategy": "hierarchical",
-                        "section_level": section["level"],
-                        "token_count": section["token_count"],
-                        "language_info": self.text_processor.detect_language(
-                            section["content"]
-                        ),
-                    }
+                chunk_metadata = self._prepare_chunk_metadata(
+                    section["content"],
+                    metadata,
+                    "hierarchical",
+                    section_level=section["level"],
+                    chunk_index=i,
                 )
 
                 documents.append(
@@ -501,23 +591,6 @@ class Chunking:
     def _chunk_semantic(self, text: str, metadata: Dict[str, Any]) -> List[Document]:
         """
         Chunking ngữ nghĩa cho nội dung phức tạp dựa trên đoạn văn.
-
-        Chia text dựa trên các đoạn văn tự nhiên (ngăn cách bởi \\n\\s*\\n),
-        nhóm các đoạn liền kề để tạo chunks có ý nghĩa hoàn chỉnh.
-        Tránh cắt giữa các đoạn văn liên quan.
-
-        Quy trình:
-        - Tách text thành các đoạn văn
-        - Nhóm các đoạn liên tiếp vào chunks
-        - Đảm bảo không vượt quá max_chunk_size
-        - Tạo chunks có ngữ nghĩa hoàn chỉnh
-
-        Args:
-            text: Văn bản phức tạp cần chia theo ngữ nghĩa
-            metadata: Metadata gốc để gắn vào các chunks
-
-        Returns:
-            List Document chunks với strategy = "semantic"
         """
         paragraphs = re.split(r"\n\s*\n", text)
         chunks = []
@@ -549,14 +622,8 @@ class Chunking:
 
         documents = []
         for i, chunk in enumerate(chunks):
-            chunk_metadata = metadata.copy()
-            chunk_metadata.update(
-                {
-                    "chunk_index": i,
-                    "strategy": "semantic",
-                    "token_count": self._count_tokens(chunk),
-                    "language_info": self.text_processor.detect_language(chunk),
-                }
+            chunk_metadata = self._prepare_chunk_metadata(
+                chunk, metadata, "semantic", chunk_index=i
             )
 
             documents.append(Document(page_content=chunk, metadata=chunk_metadata))

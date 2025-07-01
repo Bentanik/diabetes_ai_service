@@ -13,9 +13,16 @@ from fastapi.responses import JSONResponse
 
 from features.rag.rag_pipeline import RAGPipeline, RAGPipelineConfig
 from features.rag.chunking import ChunkingConfig
-from features.rag.embedding import EmbeddingConfig
+from features.rag.embedding import EmbeddingConfig, Embedding
 from features.rag.vector_store import VectorStoreConfig, VectorStore
 from features.rag.storage import document_storage
+from features.rag.retrieval import (
+    HybridRetriever,
+    MultiCollectionConfig,
+    create_multi_collection_retriever,
+    HybridSearchConfig,
+    MultiCollectionHybridRetriever,
+)
 from core.logging_config import get_logger
 from .models import (
     KnowledgeBaseCreate,
@@ -24,7 +31,12 @@ from .models import (
     FileUploadResponse,
     FileInfoModel,
     CollectionStats,
+    MultiCollectionSearchRequest,
+    MultiCollectionSearchResponse,
+    SearchResult,
 )
+from utils.utils import validate_retriever_initialization, check_retriever_type
+from features.rag.document_parser import DocumentParser
 
 router = APIRouter(tags=["RAG Knowledge Base"])
 logger = get_logger(__name__)
@@ -47,9 +59,16 @@ def get_rag_pipeline(collection_name: str) -> RAGPipeline:
         )
         rag_pipeline = RAGPipeline(config)
     else:
-        # Update collection name nếu khác
-        if rag_pipeline.vector_store.config.collection_name != collection_name:
-            rag_pipeline.vector_store.config.collection_name = collection_name
+        # Kiểm tra xem collection đã tồn tại chưa
+        if collection_name not in rag_pipeline.vector_stores:
+            # Tạo vector store mới cho collection
+            config = VectorStoreConfig(collection_name=collection_name)
+            vector_store = VectorStore(
+                embeddings=rag_pipeline.embeddings, config=config
+            )
+            vector_store.create_collection()
+            rag_pipeline.vector_stores[collection_name] = vector_store
+
     return rag_pipeline
 
 
@@ -315,7 +334,9 @@ async def upload_document(
             }
         )
 
-        doc_ids = pipeline.process_and_store(temp_file, metadata)
+        doc_ids = pipeline.process_and_store(
+            temp_file, collection_name=name, extra_metadata=metadata
+        )
         stats = pipeline.get_stats()
         processing_time = round(time.time() - start_time, 2)
 
@@ -352,7 +373,7 @@ async def get_knowledge_base_stats(name: str):
     try:
         pipeline = get_rag_pipeline(name)
         stats = pipeline.get_stats()
-        info = pipeline.vector_store.get_collection_info()
+        info = pipeline.vector_stores[name].get_collection_info()
 
         return {
             "success": True,
@@ -407,3 +428,170 @@ async def get_documents_stats(name: str):
     except Exception as e:
         logger.error(f"Error getting documents stats: {e}")
         raise HTTPException(500, detail=f"Lỗi khi lấy thống kê documents: {str(e)}")
+
+
+@router.post(
+    "/search",
+    response_model=MultiCollectionSearchResponse,
+    summary="🔍 Tìm kiếm trên nhiều knowledge bases",
+    description="Thực hiện tìm kiếm hybrid (BM25 + Vector) trên nhiều knowledge bases.",
+)
+async def multi_collection_search(request: MultiCollectionSearchRequest):
+    """
+    Tìm kiếm trên nhiều knowledge bases.
+
+    - **query**: Câu hỏi/query cần tìm kiếm
+    - **collection_names**: Danh sách các knowledge bases cần tìm kiếm
+    - **top_k**: Số lượng kết quả trả về (default: 5)
+    - **score_threshold**: Ngưỡng điểm tối thiểu (default: 0.3)
+    """
+    try:
+        start_time = time.time()
+
+        # Kiểm tra các collections có tồn tại không
+        vector_store = VectorStore()
+        collections = vector_store.list_collections()
+        existing_collections = {c.name for c in collections}
+
+        invalid_collections = set(request.collection_names) - existing_collections
+        if invalid_collections:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy knowledge bases: {', '.join(invalid_collections)}",
+            )
+
+        # Khởi tạo embedding model
+        try:
+            embeddings = Embedding()
+            logger.info("Successfully initialized embedding model")
+        except Exception as e:
+            logger.error(f"Failed to initialize embedding model: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Lỗi khởi tạo embedding model: {str(e)}",
+            )
+
+        # Tạo vector stores cho từng collection
+        vector_stores = {}
+        for name in request.collection_names:
+            try:
+                config = VectorStoreConfig(collection_name=name)
+                store = VectorStore(embeddings=embeddings, config=config)
+                store.create_collection()  # Kết nối tới collection đã tồn tại
+                vector_stores[name] = store
+                logger.info(f"Successfully created vector store for collection: {name}")
+            except Exception as e:
+                logger.error(
+                    f"Failed to create vector store for collection {name}: {e}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Lỗi tạo vector store cho collection {name}: {str(e)}",
+                )
+
+        # Validate vector stores were created properly
+        if not vector_stores:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Không thể tạo được vector stores nào",
+            )
+
+        # Tạo retriever cho multi-collection search
+        try:
+            hybrid_config = HybridSearchConfig(
+                bm25_weight=0.3,
+                vector_weight=0.7,
+                top_k=request.top_k or 5,
+                score_threshold=(
+                    request.score_threshold
+                    if request.score_threshold is not None
+                    else 0.3
+                ),
+            )
+
+            multi_config = MultiCollectionConfig(
+                normalize_scores=True,
+                top_k=request.top_k or 5,
+                score_threshold=(
+                    request.score_threshold
+                    if request.score_threshold is not None
+                    else 0.3
+                ),
+            )
+
+            logger.info(
+                f"Creating MultiCollectionHybridRetriever with {len(vector_stores)} collections"
+            )
+            retriever = MultiCollectionHybridRetriever(
+                vector_stores=vector_stores,
+                hybrid_config=hybrid_config,
+                multi_collection_config=multi_config,
+            )
+
+            # Validate retriever was created properly using utility function
+            is_valid, error_msg = validate_retriever_initialization(retriever)
+            if not is_valid:
+                raise ValueError(f"Retriever validation failed: {error_msg}")
+
+            # Log retriever type information for debugging
+            retriever_info = check_retriever_type(retriever)
+            logger.info(f"Successfully created retriever: {retriever_info}")
+
+        except Exception as e:
+            logger.error(f"Failed to create retriever: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Lỗi tạo retriever: {str(e)}",
+            )
+
+        # Thực hiện tìm kiếm
+        try:
+            logger.info(f"Starting search with query: {request.query[:50]}...")
+            results = retriever.get_relevant_documents(request.query)
+            logger.info(f"Search completed, found {len(results)} results")
+        except Exception as e:
+            logger.error(f"Search failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Lỗi thực hiện tìm kiếm: {str(e)}",
+            )
+
+        # Format kết quả
+        search_results = []
+        for doc in results:
+            search_results.append(
+                SearchResult(
+                    content=doc.page_content,
+                    metadata=doc.metadata,
+                    score=float(doc.metadata.get("hybrid_score", 0.0)),
+                    collection_name=doc.metadata.get("collection_name", "unknown"),
+                )
+            )
+
+        # Lấy thống kê theo collection
+        collection_stats = {}
+        for name in request.collection_names:
+            try:
+                stats = document_storage.get_collection_stats(name)
+                collection_stats[name] = stats
+            except Exception as e:
+                logger.warning(f"Không lấy được thống kê cho {name}: {e}")
+                collection_stats[name] = {"error": str(e)}
+
+        processing_time = time.time() - start_time
+
+        return MultiCollectionSearchResponse(
+            results=search_results,
+            total_results=len(search_results),
+            processing_time=processing_time,
+            collection_stats=collection_stats,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during multi-collection search: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Lỗi khi thực hiện tìm kiếm: {str(e)}",
+        )

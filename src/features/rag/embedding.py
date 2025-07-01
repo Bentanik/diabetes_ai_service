@@ -257,6 +257,7 @@ class Embedding(Embeddings):
             doc.metadata[f"q_{vector_dim}_vec"] = embedding
             doc.metadata["embedding_model"] = self.config.model_name
             doc.metadata["embedding_dim"] = vector_dim
+            doc.metadata["bm25_tokens"] = doc.metadata["bm25_tokens"]
 
         logger.info(
             f"Đã thêm embeddings cho {len(documents)} documents (dim={vector_dim})"
