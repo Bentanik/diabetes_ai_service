@@ -14,11 +14,11 @@ sys.path.insert(0, str(src_dir))
 sys.path.insert(0, str(src_dir / "rag"))
 
 try:
-    from src.rag.document_parser import DocumentParser
+    from src.features.rag.document_parser import DocumentParser
 except ImportError:
     # Fallback import
     sys.path.insert(0, str(aiservice_dir))
-    from src.rag.document_parser import DocumentParser
+    from src.features.rag.document_parser import DocumentParser
 
 
 def test_document_parser():

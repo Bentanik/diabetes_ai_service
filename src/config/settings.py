@@ -27,7 +27,7 @@ config = {
     "rag_embedding_model": os.getenv("RAG_EMBEDDING_MODEL"),  # auto-select if not set
     "rag_embedding_api_key": os.getenv("RAG_EMBEDDING_API_KEY")
     or os.getenv("OPENAI_API_KEY"),
-    "rag_collection_name": os.getenv("RAG_COLLECTION_NAME", "knowledge_base"),
+    "rag_collection_name": os.getenv("RAG_COLLECTION_NAME", "default"),
     "rag_vectorstore_dir": os.getenv("RAG_VECTORSTORE_DIR", "./data/vectorstore"),
     "rag_chunk_size": int(os.getenv("RAG_CHUNK_SIZE", "1000")),
     "rag_chunk_overlap": int(os.getenv("RAG_CHUNK_OVERLAP", "200")),

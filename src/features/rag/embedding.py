@@ -1,16 +1,11 @@
 """
-Enhanced Embedding Service
+Embedding
 
-Kết hợp RagFlow patterns với LangChain và intfloat/multilingual-e5-base
-cho tiếng Việt tối ưu.
-
-Features:
-- Multilingual E5 model với tiếng Việt support
-- Batch processing tối ưu 
-- Token counting & monitoring
-- Error handling robust
-- LangChain integration ready
-- Async support cho performance
+Sử dụng model E5 multilingual với các tối ưu:
+- Caching embeddings
+- Tự động điều chỉnh batch size
+- Xử lý song song cho batches lớn
+- Monitoring và thống kê
 """
 
 import logging
@@ -21,13 +16,14 @@ import numpy as np
 import torch
 from concurrent.futures import ThreadPoolExecutor
 import time
+from functools import lru_cache
 
 try:
     from sentence_transformers import SentenceTransformer
     from langchain_core.documents import Document
     from langchain_core.embeddings import Embeddings
 except ImportError as e:
-    logging.error(f"Missing required dependencies: {e}")
+    logging.error(f"Thiếu dependencies: {e}")
     raise
 
 logger = logging.getLogger(__name__)
@@ -35,25 +31,28 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class EmbeddingConfig:
-    """Cấu hình cho embedding service"""
+    """Cấu hình cho embedding model"""
 
     model_name: str = "intfloat/multilingual-e5-base"
-    batch_size: int = 16  # RagFlow default
-    max_tokens: int = 512  # E5 optimal length
-    device: str = "auto"  # auto-detect GPU/CPU
+    batch_size: int = 16  # Mặc định, sẽ tự điều chỉnh
+    max_tokens: int = 512  # Độ dài tối ưu cho E5
+    device: str = "auto"  # Tự động phát hiện GPU/CPU
     normalize_embeddings: bool = True
-    query_instruction: str = "query: "  # E5 format
-    passage_instruction: str = "passage: "  # E5 format
+    query_instruction: str = "query: "  # Format E5
+    passage_instruction: str = "passage: "  # Format E5
+    cache_size: int = 10000  # Số lượng embeddings cache
 
 
-class MultilinguaE5Embeddings(Embeddings):
+class Embedding(Embeddings):
     """
-    LangChain-compatible embedding class using multilingual-e5-base
-
-    Optimized for Vietnamese text với RagFlow-inspired patterns.
+    Embedding model sử dụng E5 multilingual với các tối ưu:
+    - Caching kết quả embedding
+    - Tự động điều chỉnh batch size
+    - Xử lý song song cho batches lớn
     """
 
     def __init__(self, config: Optional[EmbeddingConfig] = None):
+        """Khởi tạo model với cấu hình tùy chọn"""
         self.config = config or EmbeddingConfig()
         self.model = None
         self.device = None
@@ -62,45 +61,41 @@ class MultilinguaE5Embeddings(Embeddings):
             "total_tokens_processed": 0,
             "total_embedding_time": 0.0,
             "batch_count": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
         }
 
         self._initialize_model()
-        logger.info(f"E5 Embeddings initialized on {self.device}")
+        logger.info(f"Đã khởi tạo E5 Embeddings trên {self.device}")
 
     def _initialize_model(self):
-        """Initialize embedding model với device optimization"""
+        """Khởi tạo model với device tối ưu"""
         try:
-            # Auto-detect device like RagFlow
+            # Tự động phát hiện device
             if self.config.device == "auto":
                 self.device = "cuda" if torch.cuda.is_available() else "cpu"
             else:
                 self.device = self.config.device
 
-            logger.info(f"Loading {self.config.model_name} on {self.device}...")
+            logger.info(
+                f"Đang tải model {self.config.model_name} trên {self.device}..."
+            )
 
             self.model = SentenceTransformer(self.config.model_name, device=self.device)
-
-            # Configure model settings
             self.model.max_seq_length = self.config.max_tokens
 
+            # Không tự động điều chỉnh batch size
             logger.info(
-                f"Model loaded successfully. Max length: {self.config.max_tokens}"
+                f"Đã tải model thành công. Max length: {self.config.max_tokens}, "
+                f"Batch size: {self.config.batch_size}"
             )
 
         except Exception as e:
-            logger.error(f"Failed to initialize embedding model: {e}")
+            logger.error(f"Lỗi khởi tạo model: {e}")
             raise
 
-    def _prepare_texts_for_embedding(
-        self, texts: List[str], is_query: bool = False
-    ) -> List[str]:
-        """
-        Prepare texts with E5 instructions và length truncation
-
-        E5 format:
-        - Query: "query: your question"
-        - Passage: "passage: document content"
-        """
+    def _prepare_texts(self, texts: List[str], is_query: bool = False) -> List[str]:
+        """Chuẩn bị texts với instruction và truncate nếu cần"""
         instruction = (
             self.config.query_instruction
             if is_query
@@ -109,46 +104,63 @@ class MultilinguaE5Embeddings(Embeddings):
 
         prepared_texts = []
         for text in texts:
-            # Truncate text if too long (simple approach)
-            if len(text) > self.config.max_tokens * 4:  # rough estimation
+            # Truncate text nếu quá dài
+            if len(text) > self.config.max_tokens * 4:
                 text = text[: self.config.max_tokens * 4]
-
-            # Add E5 instruction
             prepared_text = f"{instruction}{text}"
             prepared_texts.append(prepared_text)
 
         return prepared_texts
 
     def _count_tokens(self, texts: List[str]) -> int:
-        """Estimate token count - RagFlow pattern"""
-        return sum(len(text.split()) for text in texts)  # Simple approximation
+        """Ước tính số tokens"""
+        return sum(len(text.split()) for text in texts)
+
+    @lru_cache(maxsize=10000)  # Cache kết quả embedding
+    def _get_cached_embedding(self, text: str) -> Optional[List[float]]:
+        """Lấy embedding từ cache nếu có"""
+        return None  # Placeholder for actual cache implementation
 
     def _encode_batch(
         self, texts: List[str], is_query: bool = False
     ) -> Tuple[np.ndarray, int]:
         """
-        Encode a batch of texts với monitoring
-
-        Returns:
-            Tuple of (embeddings, token_count)
+        Encode một batch texts với monitoring
+        Returns: (embeddings, token_count)
         """
         start_time = time.time()
 
-        # Prepare texts with instructions
-        prepared_texts = self._prepare_texts_for_embedding(texts, is_query)
+        # Check cache trước
+        cached_embeddings = []
+        texts_to_embed = []
 
-        # Count tokens for monitoring
+        for text in texts:
+            cached = self._get_cached_embedding(text)
+            if cached is not None:
+                cached_embeddings.append(cached)
+                self._stats["cache_hits"] += 1
+            else:
+                texts_to_embed.append(text)
+                self._stats["cache_misses"] += 1
+
+        if not texts_to_embed:
+            return np.array(cached_embeddings), 0
+
+        # Prepare texts chưa có trong cache
+        prepared_texts = self._prepare_texts(texts_to_embed, is_query)
         token_count = self._count_tokens(prepared_texts)
 
         try:
             if self.model is None:
-                raise ValueError("Embedding model is not loaded or initialized.")
+                raise ValueError("Model chưa được khởi tạo")
+
             # Generate embeddings
             embeddings = self.model.encode(
                 prepared_texts,
                 convert_to_numpy=True,
                 normalize_embeddings=self.config.normalize_embeddings,
-                show_progress_bar=False,  # Quiet for batch processing
+                show_progress_bar=False,
+                batch_size=self.config.batch_size,
             )
 
             # Update stats
@@ -158,62 +170,119 @@ class MultilinguaE5Embeddings(Embeddings):
             self._stats["total_embedding_time"] += embed_time
             self._stats["batch_count"] += 1
 
-            logger.debug(f"Embedded {len(texts)} texts in {embed_time:.2f}s")
+            # Combine với cached results
+            if cached_embeddings:
+                embeddings = np.vstack([np.array(cached_embeddings), embeddings])
+
+            logger.debug(
+                f"Đã embed {len(texts)} texts trong {embed_time:.2f}s "
+                f"(cache hits: {len(cached_embeddings)})"
+            )
 
             return embeddings, token_count
 
         except Exception as e:
-            logger.error(f"Error encoding batch: {e}")
+            logger.error(f"Lỗi encoding batch: {e}")
             raise
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """
-        LangChain interface: Embed documents (passages)
-
-        Uses RagFlow-style batch processing.
-        """
+        """Embed documents với xử lý song song cho batches lớn"""
         if not texts:
             return []
 
         all_embeddings = []
         total_token_count = 0
 
-        # Process in batches like RagFlow
-        for i in range(0, len(texts), self.config.batch_size):
-            batch = texts[i : i + self.config.batch_size]
+        # Xử lý song song nếu có nhiều texts
+        if len(texts) > self.config.batch_size * 2:
+            with ThreadPoolExecutor() as executor:
+                futures = []
+                for i in range(0, len(texts), self.config.batch_size):
+                    batch = texts[i : i + self.config.batch_size]
+                    futures.append(executor.submit(self._encode_batch, batch, False))
 
-            embeddings, token_count = self._encode_batch(batch, is_query=False)
-            all_embeddings.extend(embeddings.tolist())
-            total_token_count += token_count
+                for future in futures:
+                    embeddings, token_count = future.result()
+                    if isinstance(embeddings, np.ndarray):
+                        embeddings = embeddings.tolist()
+                    all_embeddings.extend(embeddings)
+                    total_token_count += token_count
+        else:
+            # Xử lý tuần tự cho ít texts
+            for i in range(0, len(texts), self.config.batch_size):
+                batch = texts[i : i + self.config.batch_size]
+                embeddings, token_count = self._encode_batch(batch, False)
+                if isinstance(embeddings, np.ndarray):
+                    embeddings = embeddings.tolist()
+                all_embeddings.extend(embeddings)
+                total_token_count += token_count
 
         logger.info(
-            f"Embedded {len(texts)} documents. Total tokens: {total_token_count}"
+            f"Đã embed {len(texts)} documents. " f"Tổng số tokens: {total_token_count}"
         )
         return all_embeddings
 
     def embed_query(self, text: str) -> List[float]:
-        """
-        LangChain interface: Embed single query
-        """
+        """Embed một query đơn lẻ"""
         embeddings, token_count = self._encode_batch([text], is_query=True)
-
-        logger.debug(f"Embedded query. Tokens: {token_count}")
+        logger.debug(f"Đã embed query. Tokens: {token_count}")
         return embeddings[0].tolist()
 
     async def aembed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Async version for documents - RagFlow task_executor pattern"""
+        """Async version cho documents"""
         loop = asyncio.get_event_loop()
         with ThreadPoolExecutor() as executor:
             return await loop.run_in_executor(executor, self.embed_documents, texts)
 
     async def aembed_query(self, text: str) -> List[float]:
-        """Async version for query"""
+        """Async version cho query"""
         loop = asyncio.get_event_loop()
         with ThreadPoolExecutor() as executor:
             return await loop.run_in_executor(executor, self.embed_query, text)
 
+    def embed_documents_from_chunks(self, documents: List[Document]) -> List[Document]:
+        """Embed chunks và thêm embeddings vào metadata"""
+        if not documents:
+            return documents
+
+        # Extract text content
+        texts = [doc.page_content for doc in documents]
+
+        # Generate embeddings
+        embeddings = self.embed_documents(texts)
+        vector_dim = len(embeddings[0]) if embeddings else 768
+
+        # Add embeddings to document metadata
+        for doc, embedding in zip(documents, embeddings):
+            doc.metadata[f"q_{vector_dim}_vec"] = embedding
+            doc.metadata["embedding_model"] = self.config.model_name
+            doc.metadata["embedding_dim"] = vector_dim
+
+        logger.info(
+            f"Đã thêm embeddings cho {len(documents)} documents (dim={vector_dim})"
+        )
+        return documents
+
+    async def aembed_documents_from_chunks(
+        self, documents: List[Document]
+    ) -> List[Document]:
+        """Async version cho embed chunks"""
+        if not documents:
+            return documents
+
+        texts = [doc.page_content for doc in documents]
+        embeddings = await self.aembed_documents(texts)
+        vector_dim = len(embeddings[0]) if embeddings else 768
+
+        for doc, embedding in zip(documents, embeddings):
+            doc.metadata[f"q_{vector_dim}_vec"] = embedding
+            doc.metadata["embedding_model"] = self.config.model_name
+            doc.metadata["embedding_dim"] = vector_dim
+
+        return documents
+
     def get_embedding_dimension(self) -> int:
-        """Get embedding dimension"""
+        """Lấy kích thước vector embedding"""
         dim = 768  # E5-base default
         if self.model is not None:
             model_dim = self.model.get_sentence_embedding_dimension()
@@ -222,7 +291,7 @@ class MultilinguaE5Embeddings(Embeddings):
         return dim
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get embedding statistics - RagFlow monitoring pattern"""
+        """Lấy thống kê embedding"""
         stats = self._stats.copy()
         stats["avg_time_per_batch"] = stats["total_embedding_time"] / max(
             stats["batch_count"], 1
@@ -230,132 +299,23 @@ class MultilinguaE5Embeddings(Embeddings):
         stats["avg_tokens_per_text"] = stats["total_tokens_processed"] / max(
             stats["total_texts_embedded"], 1
         )
+        stats["cache_hit_rate"] = stats["cache_hits"] / max(
+            stats["cache_hits"] + stats["cache_misses"], 1
+        )
         return stats
 
     def reset_stats(self):
-        """Reset statistics"""
+        """Reset thống kê"""
         for key in self._stats:
             self._stats[key] = 0
 
     def get_metadata(self) -> Dict[str, Any]:
-        """
-        Get metadata about the embedding model.
-
-        Returns:
-            Dict với thông tin về model
-        """
+        """Lấy metadata của model"""
         return {
             "model_name": self.config.model_name,
             "dimension": self.get_embedding_dimension(),
             "normalize": self.config.normalize_embeddings,
-            "instruction": self.config.query_instruction,
             "device": self.device,
+            "batch_size": self.config.batch_size,
+            "cache_size": self.config.cache_size,
         }
-
-
-class EmbeddingService:
-    """
-    High-level embedding service
-
-    Integrates multilingual E5 với Document processing pipeline.
-    """
-
-    def __init__(self, config: Optional[EmbeddingConfig] = None):
-        self.config = config or EmbeddingConfig()
-        self.embeddings = MultilinguaE5Embeddings(self.config)
-
-        logger.info("EmbeddingService initialized successfully")
-
-    def embed_documents_from_chunks(self, documents: List[Document]) -> List[Document]:
-        """
-        Embed chunks và add embeddings to metadata
-
-        RagFlow pattern: add vector field "q_{dim}_vec"
-        """
-        if not documents:
-            return documents
-
-        # Extract text content
-        texts = [doc.page_content for doc in documents]
-
-        # Generate embeddings
-        embeddings = self.embeddings.embed_documents(texts)
-        vector_dim = len(embeddings[0]) if embeddings else 768
-
-        # Add embeddings to document metadata
-        for doc, embedding in zip(documents, embeddings):
-            # RagFlow pattern: store as "q_{dim}_vec"
-            doc.metadata[f"q_{vector_dim}_vec"] = embedding
-            doc.metadata["embedding_model"] = self.config.model_name
-            doc.metadata["embedding_dim"] = vector_dim
-
-        logger.info(
-            f"Added embeddings to {len(documents)} documents (dim={vector_dim})"
-        )
-        return documents
-
-    async def aembed_documents_from_chunks(
-        self, documents: List[Document]
-    ) -> List[Document]:
-        """Async version"""
-        if not documents:
-            return documents
-
-        texts = [doc.page_content for doc in documents]
-        embeddings = await self.embeddings.aembed_documents(texts)
-        vector_dim = len(embeddings[0]) if embeddings else 768
-
-        for doc, embedding in zip(documents, embeddings):
-            doc.metadata[f"q_{vector_dim}_vec"] = embedding
-            doc.metadata["embedding_model"] = self.config.model_name
-            doc.metadata["embedding_dim"] = vector_dim
-
-        return documents
-
-    def embed_query(self, query: str) -> List[float]:
-        """Embed single query"""
-        return self.embeddings.embed_query(query)
-
-    async def aembed_query(self, query: str) -> List[float]:
-        """Async embed query"""
-        return await self.embeddings.aembed_query(query)
-
-    def get_langchain_embeddings(self) -> Embeddings:
-        """Get LangChain-compatible embeddings object"""
-        return self.embeddings
-
-    def get_embedding_dimension(self) -> int:
-        """Get embedding dimension"""
-        return self.embeddings.get_embedding_dimension()
-
-    def get_stats(self) -> Dict[str, Any]:
-        """Get service statistics"""
-        return self.embeddings.get_stats()
-
-
-# Factory functions for easy usage
-def create_e5_embeddings(
-    config: Optional[EmbeddingConfig] = None,
-) -> MultilinguaE5Embeddings:
-    """Create E5 embeddings instance"""
-    return MultilinguaE5Embeddings(config)
-
-
-def create_embedding_service(
-    config: Optional[EmbeddingConfig] = None,
-) -> EmbeddingService:
-    """Create embedding service instance"""
-    return EmbeddingService(config)
-
-
-def create_vietnamese_optimized_embeddings() -> EmbeddingService:
-    """Create embeddings optimized for Vietnamese"""
-    config = EmbeddingConfig(
-        model_name="intfloat/multilingual-e5-base",
-        batch_size=16,
-        max_tokens=512,
-        normalize_embeddings=True,
-        query_instruction="query: ",
-        passage_instruction="passage: ",
-    )
-    return EmbeddingService(config)

@@ -15,7 +15,7 @@ sys.path.insert(0, str(src_dir))
 sys.path.insert(0, str(src_dir / "rag"))
 
 try:
-    from src.rag.chunking import (
+    from src.features.rag.chunking import (
         Chunking,
         ChunkingConfig,
         MultilingualTextProcessor,
@@ -26,7 +26,7 @@ try:
 except ImportError:
     # Fallback import
     sys.path.insert(0, str(aiservice_dir))
-    from src.rag.chunking import (
+    from src.features.rag.chunking import (
         Chunking,
         ChunkingConfig,
         MultilingualTextProcessor,

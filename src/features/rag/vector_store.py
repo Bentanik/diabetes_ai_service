@@ -1,13 +1,12 @@
 """
-Dịch vụ Vector Store
+Vector Store
 
-Tích hợp Qdrant + LangChain
-cho pipeline RAG tiếng Việt.
+Tích hợp Qdrant để lưu trữ và tìm kiếm vector.
 
 Tính năng:
-- Cơ sở dữ liệu vector Qdrant tích hợp LangChain
-- Tìm kiếm kết hợp (vector + BM25)
-- Quản lý collection
+- Lưu trữ và quản lý vector trong Qdrant
+- Tìm kiếm theo độ tương đồng
+- Quản lý bộ sưu tập (collection)
 - Lọc theo metadata
 """
 
@@ -21,7 +20,7 @@ from datetime import datetime
 from qdrant_client.models import FilterSelector, PointIdsList
 
 try:
-    from langchain_qdrant import QdrantVectorStore
+    from langchain_qdrant import QdrantVectorStore as LangChainVectorStore
     from langchain_core.documents import Document
     from langchain_core.embeddings import Embeddings
     from qdrant_client import QdrantClient, AsyncQdrantClient
@@ -39,7 +38,7 @@ try:
     )
     from qdrant_client.http import models
 except ImportError as e:
-    logging.error(f"Missing Qdrant dependencies: {e}")
+    logging.error(f"Thiếu thư viện Qdrant: {e}")
     raise
 
 logger = logging.getLogger(__name__)
@@ -49,30 +48,33 @@ logger = logging.getLogger(__name__)
 class VectorStoreConfig:
     """Cấu hình cho vector store"""
 
-    # Qdrant connection
+    # Kết nối Qdrant
     qdrant_url: str = "localhost"
     qdrant_port: int = 6333
     qdrant_api_key: Optional[str] = None
 
-    # Collection settings
-    collection_name: str = "vietnamese_documents"
-    vector_size: int = 768  # E5-base dimension
+    # Cài đặt collection
+    collection_name: str = "default"
+    vector_size: int = 768  # Kích thước vector của E5-base
     distance_metric: Distance = Distance.COSINE
 
-    # Search settings
+    # Cài đặt tìm kiếm
     search_limit: int = 10
     search_score_threshold: float = 0.7
 
-    # Indexing settings
-    batch_size: int = 100  # RagFlow-style batching
+    # Cài đặt indexing
+    batch_size: int = 100
     enable_payload_indexing: bool = True
 
 
-class QdrantVectorService:
+class VectorStore:
     """
-    Enhanced Qdrant vector service
+    Dịch vụ quản lý vector
 
-    Kết hợp LangChain với RagFlow patterns cho performance tối ưu.
+    Cung cấp các chức năng:
+    - Lưu trữ và quản lý vector
+    - Tìm kiếm theo độ tương đồng
+    - Theo dõi hiệu suất
     """
 
     def __init__(
@@ -81,12 +83,12 @@ class QdrantVectorService:
         self.embeddings = embeddings
         self.config = config or VectorStoreConfig()
 
-        # Initialize clients with proper typing
+        # Khởi tạo clients
         self.client: Optional[QdrantClient] = None
         self.async_client: Optional[AsyncQdrantClient] = None
-        self.vector_store: Optional[QdrantVectorStore] = None
+        self.vector_store: Optional[LangChainVectorStore] = None
 
-        # Stats tracking như RagFlow
+        # Theo dõi thống kê
         self._stats = {
             "total_documents_indexed": 0,
             "total_searches_performed": 0,
@@ -98,51 +100,52 @@ class QdrantVectorService:
         self._initialize_clients()
 
     def _initialize_clients(self):
-        """Initialize Qdrant clients"""
+        """Khởi tạo kết nối Qdrant"""
         try:
-            # Sync client
+            # Client đồng bộ
             self.client = QdrantClient(
                 host=self.config.qdrant_url,
                 port=self.config.qdrant_port,
                 api_key=self.config.qdrant_api_key,
             )
 
-            # Async client
+            # Client bất đồng bộ
             self.async_client = AsyncQdrantClient(
                 host=self.config.qdrant_url,
                 port=self.config.qdrant_port,
                 api_key=self.config.qdrant_api_key,
             )
 
-            # LangChain vector store - fixed parameter name
-            self.vector_store = QdrantVectorStore(
+            # Vector store
+            self.vector_store = LangChainVectorStore(
                 client=self.client,
                 collection_name=self.config.collection_name,
-                embedding=self.embeddings,  # Fixed: 'embedding' not 'embeddings'
+                embedding=self.embeddings,
             )
 
             logger.info(
-                f"Qdrant clients initialized: {self.config.qdrant_url}:{self.config.qdrant_port}"
+                f"Đã khởi tạo kết nối Qdrant: {self.config.qdrant_url}:{self.config.qdrant_port}"
             )
 
         except Exception as e:
-            logger.error(f"Failed to initialize Qdrant clients: {e}")
+            logger.error(f"Lỗi khởi tạo kết nối Qdrant: {e}")
             raise
 
     def create_collection(self, force_recreate: bool = False) -> bool:
         """
-        Create Qdrant collection với optimization
+        Tạo collection trong Qdrant
 
-        RagFlow pattern: auto-detect vector size và create optimized index
+        Args:
+            force_recreate: Xóa collection cũ nếu đã tồn tại
         """
         try:
             if self.client is None:
-                logger.error("Qdrant client is not initialized.")
+                logger.error("Chưa khởi tạo kết nối Qdrant")
                 return False
 
             collection_name = self.config.collection_name
 
-            # Check if collection exists
+            # Kiểm tra collection đã tồn tại
             collections = self.client.get_collections().collections
             collection_exists = any(
                 getattr(col, "name", None) == collection_name for col in collections
@@ -150,18 +153,17 @@ class QdrantVectorService:
 
             if collection_exists:
                 if force_recreate:
-                    logger.info(f"Deleting existing collection: {collection_name}")
+                    logger.info(f"Xóa collection cũ: {collection_name}")
                     self.client.delete_collection(collection_name=collection_name)
                 else:
-                    logger.info(f"Collection {collection_name} already exists")
+                    logger.info(f"Collection {collection_name} đã tồn tại")
                     return True
 
-            # Get embedding dimension safely
+            # Lấy kích thước vector
             vector_size = self.config.vector_size
 
-            # Try to get actual embedding dimension if available
+            # Thử lấy kích thước thực tế từ model embedding
             if hasattr(self.embeddings, "__dict__"):
-                # Check common attribute names used by embedding models
                 for attr_name in [
                     "embedding_dimension",
                     "model_output_dim",
@@ -181,12 +183,12 @@ class QdrantVectorService:
                             vector_size = int(attr_value)
                             break
 
-            logger.info(f"Creating collection: {collection_name} (dim={vector_size})")
+            logger.info(f"Tạo collection: {collection_name} (kích thước={vector_size})")
 
-            # Ensure vector_size is int
+            # Đảm bảo vector_size là số nguyên
             vector_size = int(vector_size)
 
-            # Create collection with optimized settings
+            # Tạo collection
             self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(
@@ -195,25 +197,25 @@ class QdrantVectorService:
                 ),
             )
 
-            # Create payload indices for filtering như RagFlow
+            # Tạo các chỉ mục cho metadata
             if self.config.enable_payload_indexing:
                 self._create_payload_indices(collection_name)
 
-            logger.info(f"Collection {collection_name} created successfully")
+            logger.info(f"Đã tạo thành công collection {collection_name}")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to create collection: {e}")
+            logger.error(f"Lỗi khi tạo collection: {e}")
             return False
 
     def _create_payload_indices(self, collection_name: str):
-        """Create payload indices for efficient filtering"""
+        """Tạo các chỉ mục cho metadata để tìm kiếm hiệu quả"""
         try:
             if self.client is None:
-                logger.error("Qdrant client is not initialized.")
+                logger.error("Chưa khởi tạo kết nối Qdrant")
                 return
 
-            # Index common metadata fields
+            # Các trường metadata cần đánh index
             index_fields = [
                 "source_file",
                 "doc_id",
@@ -225,78 +227,72 @@ class QdrantVectorService:
 
             for field in index_fields:
                 try:
-                    # Use proper PayloadSchemaType enum
                     self.client.create_payload_index(
                         collection_name=collection_name,
                         field_name=field,
                         field_schema=PayloadSchemaType.KEYWORD,
                     )
-                    logger.debug(f"Created index for field: {field}")
+                    logger.debug(f"Đã tạo index cho trường: {field}")
                 except Exception as e:
-                    logger.debug(f"Failed to create index for {field}: {e}")
+                    logger.debug(f"Lỗi khi tạo index cho {field}: {e}")
 
         except Exception as e:
-            logger.warning(f"Failed to create payload indices: {e}")
+            logger.warning(f"Lỗi khi tạo các chỉ mục metadata: {e}")
 
     def add_documents(
         self, documents: List[Document], batch_size: Optional[int] = None
     ) -> List[str]:
         """
-        Add documents to vector store với RagFlow batch processing
+        Thêm tài liệu vào vector store
+
+        Args:
+            documents: Danh sách tài liệu cần thêm
+            batch_size: Kích thước batch, mặc định lấy từ config
+
+        Returns:
+            Danh sách ID của các tài liệu đã thêm
         """
         if not documents:
             return []
 
         if self.vector_store is None:
-            logger.error("Vector store is not initialized.")
+            logger.error("Chưa khởi tạo vector store")
             return []
 
-        start_time = datetime.now()
-        batch_size = batch_size or self.config.batch_size
-
         try:
-            # Ensure collection exists
-            self.create_collection()
+            start_time = datetime.now()
+            batch_size = batch_size or self.config.batch_size
 
-            # Process in batches
-            all_ids = []
-            for i in range(0, len(documents), batch_size):
-                batch = documents[i : i + batch_size]
+            # Thêm tài liệu vào vector store
+            ids = self.vector_store.add_documents(documents)
 
-                # Generate IDs for batch
-                batch_ids = [str(uuid.uuid4()) for _ in batch]
-
-                # Add batch to vector store
-                self.vector_store.add_documents(documents=batch, ids=batch_ids)
-
-                all_ids.extend(batch_ids)
-                logger.debug(
-                    f"Indexed batch {i//batch_size + 1}: {len(batch)} documents"
-                )
-
-            # Update stats
+            # Cập nhật thống kê
             indexing_time = (datetime.now() - start_time).total_seconds()
             self._stats["total_documents_indexed"] += len(documents)
             self._stats["total_indexing_time"] += indexing_time
             self._stats["last_operation_time"] = datetime.now().isoformat()
 
-            logger.info(f"Indexed {len(documents)} documents in {indexing_time:.2f}s")
-            return all_ids
+            logger.info(f"Đã lưu {len(documents)} tài liệu trong {indexing_time:.2f}s")
+            return ids
 
         except Exception as e:
-            logger.error(f"Failed to add documents: {e}")
-            raise
+            logger.error(f"Lỗi khi thêm tài liệu: {e}")
+            return []
 
     async def aadd_documents(
         self, documents: List[Document], batch_size: Optional[int] = None
     ) -> List[str]:
-        """Async version of add_documents"""
-        # For now, run sync version in executor
-        # Todo: Implement true async batch processing
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self.add_documents, documents, batch_size
-        )
+        """
+        Thêm tài liệu vào vector store (bất đồng bộ)
+
+        Args:
+            documents: Danh sách tài liệu cần thêm
+            batch_size: Kích thước batch, mặc định lấy từ config
+
+        Returns:
+            Danh sách ID của các tài liệu đã thêm
+        """
+        return await asyncio.to_thread(self.add_documents, documents, batch_size)
 
     def similarity_search(
         self,
@@ -306,40 +302,51 @@ class QdrantVectorService:
         filter_conditions: Optional[Dict[str, Any]] = None,
     ) -> List[Document]:
         """
-        Similarity search với filtering support
+        Tìm kiếm tài liệu tương tự
+
+        Args:
+            query: Câu truy vấn
+            k: Số lượng kết quả tối đa
+            score_threshold: Ngưỡng điểm tối thiểu
+            filter_conditions: Điều kiện lọc metadata
+
+        Returns:
+            Danh sách tài liệu tương tự
         """
         if self.vector_store is None:
-            logger.error("Vector store is not initialized.")
+            logger.error("Chưa khởi tạo vector store")
             return []
 
-        k = k or self.config.search_limit
-        score_threshold = score_threshold or self.config.search_score_threshold
-
-        start_time = datetime.now()
-
         try:
-            # Build filter từ conditions
-            search_filter = (
+            start_time = datetime.now()
+
+            # Thiết lập tham số tìm kiếm
+            k = k or self.config.search_limit
+            score_threshold = score_threshold or self.config.search_score_threshold
+
+            # Tạo bộ lọc nếu có
+            filter_obj = (
                 self._build_filter(filter_conditions) if filter_conditions else None
             )
 
-            # Perform search
+            # Thực hiện tìm kiếm
             results = self.vector_store.similarity_search(
-                query=query, k=k, filter=search_filter
+                query,
+                k=k,
+                score_threshold=score_threshold,
+                filter=filter_obj,
             )
 
-            # Update stats
+            # Cập nhật thống kê
             search_time = (datetime.now() - start_time).total_seconds()
             self._stats["total_searches_performed"] += 1
             self._stats["total_search_time"] += search_time
 
-            logger.debug(
-                f"Search completed: {len(results)} results in {search_time:.3f}s"
-            )
+            logger.debug(f"Tìm thấy {len(results)} kết quả trong {search_time:.2f}s")
             return results
 
         except Exception as e:
-            logger.error(f"Search failed: {e}")
+            logger.error(f"Lỗi khi tìm kiếm: {e}")
             return []
 
     def similarity_search_with_score(
@@ -350,103 +357,137 @@ class QdrantVectorService:
         filter_conditions: Optional[Dict[str, Any]] = None,
     ) -> List[Tuple[Document, float]]:
         """
-        Similarity search with scores - RagFlow pattern
+        Tìm kiếm tài liệu tương tự và trả về điểm số
+
+        Args:
+            query: Câu truy vấn
+            k: Số lượng kết quả tối đa
+            score_threshold: Ngưỡng điểm tối thiểu
+            filter_conditions: Điều kiện lọc metadata
+
+        Returns:
+            Danh sách tuple (tài liệu, điểm số)
         """
         if self.vector_store is None:
-            logger.error("Vector store is not initialized.")
+            logger.error("Chưa khởi tạo vector store")
             return []
 
-        k = k or self.config.search_limit
-        score_threshold = score_threshold or self.config.search_score_threshold
-
-        start_time = datetime.now()
-
         try:
-            search_filter = (
+            start_time = datetime.now()
+
+            # Thiết lập tham số tìm kiếm
+            k = k or self.config.search_limit
+            score_threshold = score_threshold or self.config.search_score_threshold
+
+            # Tạo bộ lọc nếu có
+            filter_obj = (
                 self._build_filter(filter_conditions) if filter_conditions else None
             )
 
+            # Thực hiện tìm kiếm
             results = self.vector_store.similarity_search_with_score(
-                query=query, k=k, filter=search_filter, score_threshold=score_threshold
+                query,
+                k=k,
+                score_threshold=score_threshold,
+                filter=filter_obj,
             )
 
-            # Update stats
+            # Cập nhật thống kê
             search_time = (datetime.now() - start_time).total_seconds()
             self._stats["total_searches_performed"] += 1
             self._stats["total_search_time"] += search_time
             self._stats["last_operation_time"] = datetime.now().isoformat()
 
-            logger.debug(
-                f"Search with scores: {len(results)} results in {search_time:.3f}s"
-            )
+            logger.debug(f"Tìm thấy {len(results)} kết quả trong {search_time:.2f}s")
             return results
 
         except Exception as e:
-            logger.error(f"Search with score failed: {e}")
+            logger.error(f"Lỗi khi tìm kiếm: {e}")
             return []
 
     def _build_filter(self, conditions: Dict[str, Any]) -> Optional[Filter]:
         """
-        Build Qdrant filter from conditions
+        Xây dựng bộ lọc từ điều kiện
 
-        RagFlow-style filtering support
+        Args:
+            conditions: Điều kiện lọc dạng dict
+
+        Returns:
+            Đối tượng Filter của Qdrant hoặc None nếu không có điều kiện
         """
-        field_conditions = []
+        if not conditions:
+            return None
 
-        for field, value in conditions.items():
-            if isinstance(value, (str, int, bool)):
-                # Handle different value types properly
-                field_conditions.append(
-                    FieldCondition(key=field, match=MatchValue(value=value))
+        try:
+            filter_conditions = []
+            for field, value in conditions.items():
+                filter_conditions.append(
+                    FieldCondition(
+                        key=field,
+                        match=MatchValue(value=value),
+                    )
                 )
-            elif isinstance(value, list):
-                # Multiple values - create separate conditions for OR logic
-                for v in value:
-                    if isinstance(v, (str, int, bool)):
-                        field_conditions.append(
-                            FieldCondition(key=field, match=MatchValue(value=v))
-                        )
 
-        return Filter(must=field_conditions) if field_conditions else None
+            return Filter(must=filter_conditions)
+
+        except Exception as e:
+            logger.error(f"Lỗi khi tạo bộ lọc: {e}")
+            return None
 
     def get_collection_info(self) -> Dict[str, Any]:
-        """Get collection information"""
+        """
+        Lấy thông tin về collection
+
+        Returns:
+            Dict chứa thông tin về collection
+        """
+        if self.client is None:
+            logger.error("Chưa khởi tạo kết nối Qdrant")
+            return {}
+
         try:
-            if self.client is None:
-                logger.error("Qdrant client is not initialized.")
-                return {}
+            collection_name = self.config.collection_name
+            info = self.client.get_collection(collection_name)
 
-            collection_info = self.client.get_collection(self.config.collection_name)
-
-            # Simplified collection info - use config values if Qdrant API structure is complex
+            # Xử lý cấu hình vector
             try:
-                vectors_config = collection_info.config.params.vectors
+                vectors_config = info.config.params.vectors
                 if isinstance(vectors_config, dict):
                     # Multiple vector configs
                     first_key = next(iter(vectors_config))
                     first_vector = vectors_config[first_key]
+                    vector_size = first_vector.size
                     distance = first_vector.distance
-                    size = first_vector.size
                 else:
                     # Single vector config
-                    distance = vectors_config.distance if vectors_config else None
-                    size = vectors_config.size if vectors_config else None
+                    vector_size = (
+                        vectors_config.size
+                        if vectors_config
+                        else self.config.vector_size
+                    )
+                    distance = (
+                        vectors_config.distance
+                        if vectors_config
+                        else self.config.distance_metric
+                    )
             except:
                 # Fallback to config values
+                vector_size = self.config.vector_size
                 distance = self.config.distance_metric
-                size = self.config.vector_size
 
             return {
-                "name": self.config.collection_name,
-                "vector_size": size,
+                "collection_name": collection_name,
+                "vector_size": vector_size,
                 "distance_metric": distance,
-                "points_count": collection_info.points_count,
-                "indexed_count": collection_info.indexed_vectors_count,
-                "status": collection_info.status,
+                "points_count": getattr(info, "points_count", 0),
+                "status": (
+                    "ready" if getattr(info, "status", None) == "green" else "error"
+                ),
+                "created_at": getattr(info, "created_at", None),
             }
 
         except Exception as e:
-            logger.error(f"Failed to get collection info: {e}")
+            logger.error(f"Lỗi khi lấy thông tin collection: {e}")
             return {}
 
     def delete_documents(
@@ -455,50 +496,61 @@ class QdrantVectorService:
         filter_conditions: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
-        Delete documents by IDs or filter conditions
+        Xóa tài liệu khỏi vector store
+
+        Args:
+            document_ids: Danh sách ID tài liệu cần xóa
+            filter_conditions: Điều kiện lọc để xóa
+
+        Returns:
+            True nếu xóa thành công, False nếu có lỗi
         """
+        if self.client is None:
+            logger.error("Chưa khởi tạo kết nối Qdrant")
+            return False
+
         try:
-            if self.client is None:
-                logger.error("Qdrant client is not initialized.")
-                return False
+            collection_name = self.config.collection_name
 
             if document_ids:
-                self.client.delete(
-                    collection_name=self.config.collection_name,
-                    points_selector=PointIdsList(points=document_ids),
+                # Xóa theo ID
+                points_selector = PointIdsList(
+                    points=[str(id) for id in document_ids],
                 )
-                logger.info(f"Deleted {len(document_ids)} documents by ID")
+                self.client.delete(
+                    collection_name=collection_name,
+                    points_selector=points_selector,
+                )
+                logger.info(f"Đã xóa {len(document_ids)} tài liệu theo ID")
 
-            elif filter_conditions:
-                search_filter = self._build_filter(filter_conditions)
-                if search_filter is not None:
+            if filter_conditions:
+                # Xóa theo điều kiện
+                filter_obj = self._build_filter(filter_conditions)
+                if filter_obj:
                     self.client.delete(
-                        collection_name=self.config.collection_name,
-                        points_selector=FilterSelector(filter=search_filter),
+                        collection_name=collection_name,
+                        points_selector=FilterSelector(filter=filter_obj),
                     )
-                    logger.info("Deleted documents by filter")
-
-            else:
-                logger.warning("No document IDs or filter conditions provided.")
-                return False
+                    logger.info("Đã xóa tài liệu theo điều kiện lọc")
 
             return True
 
         except Exception as e:
-            logger.error(f"Failed to delete documents: {e}")
+            logger.error(f"Lỗi khi xóa tài liệu: {e}")
             return False
 
     def get_stats(self) -> Dict[str, Any]:
-        """Get service statistics - RagFlow monitoring pattern"""
+        """
+        Lấy thống kê hoạt động
+
+        Returns:
+            Dict chứa các thông số thống kê
+        """
         stats = self._stats.copy()
 
-        # Add collection info
-        collection_info = self.get_collection_info()
-        stats.update(collection_info)
-
-        # Calculate averages
+        # Tính trung bình
         if stats["total_searches_performed"] > 0:
-            stats["avg_search_time"] = (
+            stats["avg_search_time_per_search"] = (
                 stats["total_search_time"] / stats["total_searches_performed"]
             )
 
@@ -510,31 +562,23 @@ class QdrantVectorService:
         return stats
 
     def reset_stats(self):
-        """Reset statistics"""
+        """Đặt lại thống kê về 0"""
         for key in self._stats:
             if key != "last_operation_time":
                 self._stats[key] = 0
 
 
-# Factory functions
-def create_qdrant_vector_store(
+def create_vector_store(
     embeddings: Embeddings, config: Optional[VectorStoreConfig] = None
-) -> QdrantVectorService:
-    """Create Qdrant vector store service"""
-    return QdrantVectorService(embeddings, config)
+) -> VectorStore:
+    """
+    Tạo một instance của VectorStore
 
+    Args:
+        embeddings: Model embedding để tạo vector
+        config: Cấu hình cho vector store
 
-def create_vietnamese_vector_store(
-    embeddings: Embeddings, collection_name: str = "vietnamese_docs"
-) -> QdrantVectorService:
-    """Create vector store optimized for Vietnamese documents"""
-    config = VectorStoreConfig(
-        collection_name=collection_name,
-        vector_size=768,  # E5-base
-        distance_metric=Distance.COSINE,
-        search_limit=10,
-        search_score_threshold=0.7,
-        batch_size=100,
-        enable_payload_indexing=True,
-    )
-    return QdrantVectorService(embeddings, config)
+    Returns:
+        Instance của VectorStore
+    """
+    return VectorStore(embeddings=embeddings, config=config)

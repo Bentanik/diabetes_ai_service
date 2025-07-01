@@ -41,8 +41,8 @@ except ImportError:
 
 from .document_parser import DocumentParser
 from .chunking import Chunking, ChunkingConfig
-from .embedding import EmbeddingConfig, MultilinguaE5Embeddings
-from .vector_store import VectorStoreConfig, QdrantVectorService
+from .embedding import EmbeddingConfig, Embedding
+from .vector_store import VectorStoreConfig, VectorStore
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
