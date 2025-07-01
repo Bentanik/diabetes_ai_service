@@ -29,6 +29,7 @@ class ChunkingConfig:
     chunk_overlap: int = 64
     min_chunk_size: int = 50  # Giảm từ 100 xuống 50 để xử lý text ngắn
     max_chunk_size: int = 1024
+    keep_small_chunks: bool = True  # Thêm option để kiểm soát việc giữ/bỏ chunk nhỏ
 
 
 class MultilingualTextProcessor:
@@ -319,11 +320,13 @@ class Chunking:
 
     def _chunk_simple(self, text: str, metadata: Dict[str, Any]) -> List[Document]:
         """
-        Chunking đơn giản cho nội dung cơ bản không có cấu trúc phức tạp.
+        Chunking đơn giản cho nội dung không có cấu trúc đặc biệt.
 
-        Sử dụng LangChain RecursiveCharacterTextSplitter để chia text theo các
-        separators đã định nghĩa. Phù hợp cho văn bản đơn giản, code, hoặc
-        khi không phát hiện được cấu trúc rõ ràng.
+        Chia text thành các chunks có kích thước tương đối đều nhau,
+        có xử lý các trường hợp đặc biệt như:
+        - Merge các chunks quá nhỏ
+        - Tránh cắt giữa từ/câu
+        - Thêm metadata phù hợp
 
         Args:
             text: Văn bản cần chunk
@@ -332,23 +335,12 @@ class Chunking:
         Returns:
             List Document chunks với strategy = "simple"
         """
-        chunks = self.splitter.split_text(text)
+        if not text:
+            return []
 
-        # Nếu text gốc ngắn và chỉ tạo 1 chunk nhỏ, vẫn giữ lại
-        if len(chunks) == 1 and len(text.strip()) > 0:
-            chunk = chunks[0].strip()
-            if chunk:  # Đảm bảo không empty
-                chunk_metadata = metadata.copy()
-                chunk_metadata.update(
-                    {
-                        "chunk_index": 0,
-                        "strategy": "simple",
-                        "token_count": self._count_tokens(chunk),
-                        "language_info": self.text_processor.detect_language(chunk),
-                    }
-                )
-                return [Document(page_content=chunk, metadata=chunk_metadata)]
-
+        # Khởi tạo splitter với các separators phù hợp
+        splitter = self.splitter
+        chunks = splitter.split_text(text)
         documents = []
         doc_index = 0
 
@@ -370,8 +362,11 @@ class Chunking:
                     documents[-1].page_content
                 )
                 continue
-            elif len(chunk_stripped) < self.config.min_chunk_size:
-                # Skip very small chunks if can't merge
+            elif (
+                len(chunk_stripped) < self.config.min_chunk_size
+                and not self.config.keep_small_chunks
+            ):
+                # Skip very small chunks if can't merge and keep_small_chunks is False
                 continue
 
             chunk_metadata = metadata.copy()
