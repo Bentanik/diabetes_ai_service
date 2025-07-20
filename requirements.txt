@@ -1,0 +1,10 @@
+# FastAPI
+fastapi
+uvicorn
+
+# HTTP client
+requests
+
+# MongoDB
+motor
+pymongo
