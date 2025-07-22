@@ -1,10 +1,31 @@
-# FastAPI
+# Web Framework
 fastapi
 uvicorn
 
-# HTTP client
+# HTTP Client
 requests
 
-# MongoDB
+# Database
 motor
 pymongo
+
+# RAG & LangChain
+langchain
+langchain-community
+docling
+
+# Core Dependencies
+numpy
+pandas
+python-multipart
+pydantic
+
+# Optional: For advanced text processing
+scikit-learn
+sentence-transformers==2.2.2
+
+
+PyMuPDF
+pdfplumber
+pypdf
+python-docx

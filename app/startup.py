@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from database import initialize_database, close_mongodb_connection
+from app.database import initialize_database, close_mongodb_connection
 from utils import get_logger
 
 logger = get_logger(__name__)

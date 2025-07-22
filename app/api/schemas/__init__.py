@@ -6,6 +6,7 @@ from .system_schema import (
     PingData,
     HealthStatus,
 )
+from .rag_schema import KnowledgeBaseCreateRequest
 
 __all__ = [
     "ErrorResponse",
@@ -16,4 +17,5 @@ __all__ = [
     "ServiceInfo",
     "PingData",
     "HealthStatus",
+    "KnowledgeBaseCreateRequest",
 ]

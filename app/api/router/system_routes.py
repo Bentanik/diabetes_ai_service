@@ -8,7 +8,7 @@ from app.api.schemas import (
     PingData,
     HealthStatus,
 )
-from database import check_database_health
+from app.database import check_database_health
 from shared import SERVICE_NAME, SERVICE_VERSION
 from utils import get_logger
 from datetime import datetime

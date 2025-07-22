@@ -34,6 +34,7 @@ def setup_logging(debug: bool = False):
         "multipart",
         "uvicorn.access",
         "pymongo",
+        "pdfminer",
     ]
 
     for logger_name in silence_loggers:

@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from app.api.router import rag_router
-from app.api.router import system_router
+from app.api.router import rag_router, system_router
 
 
 def include_routers(app: FastAPI):
