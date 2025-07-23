@@ -1,54 +1,26 @@
-from fastapi import (
-    APIRouter,
-    BackgroundTasks,
-    File,
-    Form,
-    Path,
-    Request,
-    UploadFile,
-    HTTPException,
-    Query,
-    status,
-    Depends,
-)
+from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
-from app.api.schemas import (
-    SuccessResponse,
-    ErrorResponse,
-    KnowledgeBaseCreateRequest,
-)
-
-from app.database.models.knowledge_model import KnowledgeModel
 from utils import get_logger
+from core.cqrs import Mediator
+from app.features.knowledge import CreateKnowledgeCommand
 
-from app.database import get_collections
-
-
+router = APIRouter(prefix="/api/v1", tags=["knowledge"])
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/rag", tags=["RAG"])
 
+@router.post("/knowledge")
+async def create_knowledge(
+    kb_req: CreateKnowledgeCommand,
+) -> JSONResponse:
+    """Tạo cơ sở tri thức mới"""
 
-@router.post(
-    "/knowledge-bases",
-    response_model=SuccessResponse | ErrorResponse,
-    summary="Tạo cơ sở tri thức mới",
-    description="Tạo mới một cơ sở tri thức. Mỗi cơ sở tri thức đại diện cho một lĩnh vực nghiên cứu riêng biệt.",
-)
-async def create_knowledge_base(kb_req: KnowledgeBaseCreateRequest):
+    logger.info(f"Creating knowledge base: {kb_req.name}")
+
     try:
-        collections = get_collections()
+        result = await Mediator.send(kb_req)
 
-        new_kb = KnowledgeModel(name=kb_req.name, description=kb_req.description)
+        return result.to_response()
 
-        print(new_kb._id)
-        await collections.knowledges.insert_one(new_kb.to_dict())
-        return SuccessResponse(
-            isSuccess=True,
-            code="SUCCESS",
-            message="Tạo cơ sở tri thức thành công",
-            data=None,
-        )
     except Exception as e:
-        logger.error(f"Lỗi không tạo được cơ sở tri thức: {e}")
-        raise HTTPException(500, detail=f"Lỗi không tạo được cơ sở tri thức: {str(e)}")
+        logger.error(f"Router error: {str(e)}", exc_info=True)

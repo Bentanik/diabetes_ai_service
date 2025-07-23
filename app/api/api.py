@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.router import rag_router, system_router
+from app.api.router import system_router, rag_router
 
 
 def include_routers(app: FastAPI):
@@ -15,5 +15,5 @@ def include_routers(app: FastAPI):
         - Tách biệt logic routing
         - Dễ thêm/xóa router mới
     """
-    app.include_router(rag_router)
     app.include_router(system_router)
+    app.include_router(rag_router)

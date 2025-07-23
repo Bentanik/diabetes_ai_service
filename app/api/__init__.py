@@ -1,2 +1,3 @@
 from .api import include_routers
-from .schemas import *
+
+__all__ = ["include_routers"]
