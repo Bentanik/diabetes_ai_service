@@ -1,59 +1,28 @@
-from typing import Union, Any, Optional, TypeVar
-from core.cqrs.base import Command, Query
+from typing import Any, Optional
 from core.cqrs.command_registry import CommandRegistry
 from core.cqrs.query_registry import QueryRegistry
-from core.result import Result
-from utils import get_logger
-
-# Type variable để maintain type information
-T = TypeVar("T")
+from core.cqrs.base import Command, Query
 
 
 class Mediator:
-    """Unified mediator for commands and queries"""
-
-    _logger = get_logger("Mediator")
-
-    @classmethod
-    async def send(
-        cls, request: Union[Command, Query], context: Optional[dict] = None
-    ) -> Result[Any]:
+    @staticmethod
+    async def send(request: Any, context: Optional[dict] = None) -> Any:
         """
-        Universal dispatcher for commands and queries
+        Tự động phân loại và điều phối request đến handler tương ứng
 
-        Args:
-            request: Command or Query object
-            context: Optional context (user info, transaction, etc.)
+        Parameters:
+            request (Any): Một instance của Command hoặc Query.
+            context (Optional[dict]): Thông tin ngữ cảnh (context) kèm theo (nếu có)
 
         Returns:
-            Result object
+            Any: Kết quả trả về từ handler (thường là một đối tượng Result).
+
+        Raises:
+            TypeError: Nếu đối tượng không phải là Command hoặc Query.
         """
-        try:
-            if isinstance(request, Command):
-                cls._logger.debug(f"Sending command: {type(request).__name__}")
-                return await CommandRegistry.dispatch(request, context)
-            elif isinstance(request, Query):
-                cls._logger.debug(f"Sending query: {type(request).__name__}")
-                return await QueryRegistry.dispatch(request, context)
-            else:
-                cls._logger.error(f"Unknown request type: {type(request)}")
-                return Result.bad_request(  # Thay đổi từ Result.error
-                    message=f"Unknown request type: {type(request).__name__}",
-                    code="UNKNOWN_REQUEST_TYPE",
-                )
-
-        except Exception as e:
-            cls._logger.error(
-                f"Mediator error: {str(e)}", exc_info=True
-            )  # Thêm exc_info
-            return Result.internal_error(
-                message=f"Mediator error: {str(e)}", code="MEDIATOR_ERROR"
-            )
-
-    @classmethod
-    def get_registered_handlers(cls) -> dict:
-        """Get all registered handlers"""
-        return {
-            "commands": CommandRegistry.get_registered_handlers(),
-            "queries": QueryRegistry.get_registered_handlers(),
-        }
+        if isinstance(request, Command):
+            return await CommandRegistry.dispatch(request, context)
+        elif isinstance(request, Query):
+            return await QueryRegistry.dispatch(request, context)
+        else:
+            raise TypeError("Đối tượng gửi phải là Command hoặc Query")

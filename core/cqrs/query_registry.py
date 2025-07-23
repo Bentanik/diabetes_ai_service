@@ -10,12 +10,12 @@ class QueryRegistry:
 
     @classmethod
     def register_handler(cls, query_type: Type[Query]):
-        """Decorator để auto register query handler"""
+        """Decorator để tự động đăng ký query handler"""
 
         def decorator(handler_class: Type[QueryHandler]):
             cls._handlers[query_type] = handler_class
             cls._logger.info(
-                f"Registered {handler_class.__name__} for {query_type.__name__}"
+                f"Đã đăng ký {handler_class.__name__} cho {query_type.__name__}"
             )
             return handler_class
 
@@ -23,14 +23,13 @@ class QueryRegistry:
 
     @classmethod
     async def dispatch(cls, query: Query, context: Optional[dict] = None) -> Any:
-        """Auto dispatch query to appropriate handler"""
+        """Tự động điều phối query đến handler tương ứng"""
         query_type = type(query)
 
         if query_type not in cls._handlers:
-            available_queries = [q.__name__ for q in cls._handlers.keys()]
-            cls._logger.error(f"No handler for {query_type.__name__}")
-            return Result.error(
-                message=f"No handler registered for {query_type.__name__}",
+            cls._logger.error(f"Không tìm thấy handler cho {query_type.__name__}")
+            return Result.failure(
+                message=f"Không có handler nào được đăng ký cho {query_type.__name__}",
                 code="HANDLER_NOT_FOUND",
             )
 
@@ -38,30 +37,30 @@ class QueryRegistry:
             handler_class = cls._handlers[query_type]
             handler = handler_class()
 
-            # Inject context if handler supports it
             if hasattr(handler, "set_context") and context:
                 handler.set_context(context)
 
-            cls._logger.info(f"Dispatching {query_type.__name__}")
-            result = await handler.handle(query)
-            cls._logger.info(f"{query_type.__name__} completed successfully")
+            cls._logger.info(f"Bắt đầu xử lý {query_type.__name__}")
+            result = await handler.execute(query)
+            cls._logger.info(f"{query_type.__name__} đã xử lý thành công")
 
             return result
 
         except Exception as e:
-            cls._logger.error(f"Error executing {query_type.__name__}: {str(e)}")
+            cls._logger.error(f"Lỗi khi xử lý {query_type.__name__}: {str(e)}")
             return Result.internal_error(
-                message=f"Error executing query: {str(e)}", code="QUERY_EXECUTION_ERROR"
+                message=f"Lỗi khi thực thi query: {str(e)}",
+                code="QUERY_EXECUTION_ERROR",
             )
 
     @classmethod
     def get_registered_handlers(cls) -> Dict[str, str]:
-        """Get all registered query handlers"""
+        """Lấy danh sách tất cả các query handler đã được đăng ký"""
         return {
             query.__name__: handler.__name__ for query, handler in cls._handlers.items()
         }
 
     @classmethod
     def is_registered(cls, query_type: Type[Query]) -> bool:
-        """Check if query handler is registered"""
+        """Kiểm tra xem query handler đã được đăng ký hay chưa"""
         return query_type in cls._handlers

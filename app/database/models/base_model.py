@@ -16,6 +16,10 @@ class BaseModel(ABC):
         self.created_at: datetime = kwargs.get("created_at", datetime.now())
         self.updated_at: datetime = kwargs.get("updated_at", datetime.now())
 
+    @property
+    def id(self) -> str:
+        return str(self._id)
+
     def to_dict(self) -> BaseDict:
         """Convert model thành dictionary"""
         result = {}

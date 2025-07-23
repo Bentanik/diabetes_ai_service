@@ -5,6 +5,7 @@ from .system_schema import (
     PingData,
     HealthStatus,
 )
+from .rag_schema import UpdateKnowledgeRequest
 
 __all__ = [
     "HealthCheckData",
@@ -12,4 +13,5 @@ __all__ = [
     "ServiceInfo",
     "PingData",
     "HealthStatus",
+    "UpdateKnowledgeRequest",
 ]
