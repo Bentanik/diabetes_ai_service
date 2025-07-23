@@ -24,8 +24,8 @@ class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeDTO]]]):
             collection = get_collections()
 
             filter_query = {}
-            if query.search_name:
-                filter_query["name"] = {"$regex": query.search_name, "$options": "i"}
+            if query.search:
+                filter_query["name"] = {"$regex": query.search, "$options": "i"}
 
             total = await collection.knowledges.count_documents(filter_query)
 

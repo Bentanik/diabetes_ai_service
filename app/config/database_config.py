@@ -4,7 +4,7 @@ from functools import lru_cache
 
 
 class DatabaseConfig:
-    """Cấu hình database - load từ file .env"""
+    """Cấu hình database"""
 
     # Cấu hình cơ bản
     MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")

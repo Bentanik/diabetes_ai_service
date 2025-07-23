@@ -4,13 +4,19 @@ from pydantic import BaseModel, Field
 T = TypeVar("T")
 
 
+class SuccessValue(BaseModel, Generic[T]):
+    """Schema cho value khi thành công"""
+
+    code: str = Field(..., description="Mã trạng thái thành công")
+    message: str = Field(..., description="Thông điệp thành công")
+    data: Optional[T] = Field(None, description="Dữ liệu trả về (có thể null)")
+
+
 class SuccessResponse(BaseModel, Generic[T]):
     """Schema cho response khi thành công"""
 
     isSuccess: bool = Field(..., description="Trạng thái thành công")
-    code: str = Field(..., description="Mã trạng thái thành công")
-    message: str = Field(..., description="Thông điệp thành công")
-    data: Optional[T] = Field(..., description="Dữ liệu trả về (có thể null)")
+    value: SuccessValue[T]
 
 
 class ErrorResponse(BaseModel):

@@ -153,23 +153,24 @@ class Result(BaseModel, Generic[T]):
             return self._error_response()
 
     def _success_response(self) -> JSONResponse:
-        """Tạo success response theo định dạng chuẩn"""
+        """Tạo response theo SuccessResponse format"""
         http_status, _ = self._STATUS_MAP[self.status]
 
-        # Serialize data để đảm bảo tương thích JSON
         serialized_data = self._serialize_data(self.data)
 
         content = {
             "isSuccess": True,
-            "code": self.code,
-            "message": self.message,
-            "data": serialized_data,
+            "value": {
+                "code": self.code,
+                "message": self.message,
+                "data": serialized_data,
+            },
         }
 
         return JSONResponse(status_code=http_status, content=content)
 
     def _error_response(self) -> JSONResponse:
-        """Tạo error response theo định dạng chuẩn"""
+        """Tạo response theo ErrorResponse format"""
         http_status, title = self._STATUS_MAP.get(self.status, (400, "Error"))
 
         content = {
@@ -179,7 +180,7 @@ class Result(BaseModel, Generic[T]):
             "title": title,
         }
 
-        # Nếu có data (như trong trường hợp service unavailable)
+        # Nếu có thêm data (optional)
         if self.data is not None:
             content["data"] = self._serialize_data(self.data)
 

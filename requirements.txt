@@ -1,31 +1,34 @@
-# Web Framework
-fastapi
-uvicorn
+# Web framework và server
+fastapi              
+uvicorn               
 
-# HTTP Client
-requests
+# HTTP client
+requests              
 
 # Database
-motor
-pymongo
+motor                 
+pymongo               
 
 # RAG & LangChain
-langchain
-langchain-community
-docling
+langchain             
+langchain-community   
+docling               
 
-# Core Dependencies
-numpy
-pandas
-python-multipart
-pydantic
+# Core dependencies
+numpy               
+pandas               
+python-multipart     
+pydantic             
 
-# Optional: For advanced text processing
-scikit-learn
-sentence-transformers==2.2.2
+# Xử lý file tài liệu
+PyMuPDF                
+pdfplumber          
+pypdf                 
+python-docx      
 
+# Redis
+redis
+rq
 
-PyMuPDF
-pdfplumber
-pypdf
-python-docx
+# Storage
+minio

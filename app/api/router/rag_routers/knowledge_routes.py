@@ -12,7 +12,7 @@ from app.feature.knowledge import (
     GetKnowledgeQuery,
 )
 
-router = APIRouter(prefix="/knowledge", tags=["Knowledge"])
+router = APIRouter(prefix="/knowledges", tags=["Knowledges"])
 logger = get_logger(__name__)
 
 
@@ -39,7 +39,7 @@ async def create_knowledge(kb_req: CreateKnowledgeCommand) -> JSONResponse:
     description="Lấy danh sách cơ sở tri thức với tìm kiếm, phân trang và sắp xếp.",
 )
 async def get_knowledges(
-    search_name: str = Query("", description="Tên cơ sở tri thức cần tìm kiếm"),
+    search: str = Query("", description="Tên cơ sở tri thức cần tìm kiếm"),
     page: int = Query(1, ge=1, description="Trang hiện tại"),
     limit: int = Query(10, ge=1, le=100, description="Số lượng bản ghi mỗi trang"),
     sort_by: str = Query("updated_at", description="Trường cần sắp xếp"),
@@ -49,12 +49,10 @@ async def get_knowledges(
         description="Thứ tự sắp xếp: asc hoặc desc",
     ),
 ) -> JSONResponse:
-    logger.info(
-        f"Lấy danh sách cơ sở tri thức - search_name={search_name}, page={page}"
-    )
+    logger.info(f"Lấy danh sách cơ sở tri thức - search={search}, page={page}")
     try:
         query = GetKnowledgesQuery(
-            search_name=search_name,
+            search=search,
             page=page,
             limit=limit,
             sort_by=sort_by,

@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.database import initialize_database, close_mongodb_connection
+from app.storage import minio_manager
+from app.worker import worker_start_all, worker_stop_all
 from utils import get_logger
 
 logger = get_logger(__name__)
@@ -13,8 +15,13 @@ async def lifespan(app: FastAPI):
     logger.info(f"{app.title} v{app.version}")
 
     try:
+        # Khởi tạo các worker
+        worker_start_all()
+
         # Khởi tạo database
         await initialize_database()
+        minio_manager.create_bucket_if_not_exists("documents")
+
         logger.info("Tất cả hệ thống đã sẵn sàng!")
 
         yield  # Ứng dụng đang chạy
@@ -25,5 +32,6 @@ async def lifespan(app: FastAPI):
     finally:
         # Shutdown
         logger.info("Service đang tắt...")
+        await worker_stop_all()
         await close_mongodb_connection()
         logger.info("Hoàn tất!")

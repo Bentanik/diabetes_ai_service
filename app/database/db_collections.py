@@ -10,3 +10,7 @@ class DBCollections:
     @property
     def knowledges(self) -> AsyncIOMotorCollection:
         return self.db["knowledges"]
+
+    @property
+    def documents(self) -> AsyncIOMotorCollection:
+        return self.db["documents"]
