@@ -1,128 +1,65 @@
-import json
 import os
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import re
-
+import fitz  # PyMuPDF
+import pdfplumber
+from langchain.schema import Document
 from utils.logger_utils import get_logger
 from utils.vietnamese_language_utils import VietnameseLanguageUtils
-
-try:
-    from langchain_community.document_loaders import PyPDFLoader, TextLoader
-except ImportError:
-    from langchain.document_loaders import PyPDFLoader, TextLoader
-
-try:
-    from langchain_core.documents import Document
-except ImportError:
-    from langchain.schema import Document
-
-try:
-    import fitz  # PyMuPDF để tách bố cục PDF
-
-    PYMUPDF_AVAILABLE = True
-except ImportError:
-    PYMUPDF_AVAILABLE = False
-
-try:
-    import pdfplumber  # Tách bảng PDF
-
-    PDFPLUMBER_AVAILABLE = True
-except ImportError:
-    PDFPLUMBER_AVAILABLE = False
-
-try:
-    import pandas as pd  # Định dạng bảng đẹp hơn
-
-    PANDAS_AVAILABLE = True
-except ImportError:
-    PANDAS_AVAILABLE = False
-
-try:
-    from docx import Document as DocxDocument  # Load thư viện DOCX
-
-    DOCX_AVAILABLE = True
-except ImportError:
-    DOCX_AVAILABLE = False
 
 logger = get_logger(__name__)
 
 
 class DocumentParser:
     def __init__(self, vi_words_json: Path):
-        self.supported_formats = {".pdf", ".txt", ".md", ".csv"}
-        if DOCX_AVAILABLE:
-            self.supported_formats.add(".docx")
-        self._vi_words_json = vi_words_json
-        self.vn_utils = VietnameseLanguageUtils(self._vi_words_json)
-        self.capabilities = self._check_capabilities()
-        self._log_capabilities()
-
-    def _check_capabilities(self) -> Dict[str, bool]:
-        return {
-            "pymupdf": PYMUPDF_AVAILABLE,
-            "pdfplumber": PDFPLUMBER_AVAILABLE,
-            "pandas": PANDAS_AVAILABLE,
-            "docx": DOCX_AVAILABLE,
-        }
-
-    def _log_capabilities(self):
-        if PYMUPDF_AVAILABLE:
-            logger.info("Có PyMuPDF (phân tích PDF nâng cao)")
-        else:
-            logger.warning("Thiếu PyMuPDF - sẽ dùng PyPDFLoader cơ bản")
-        if PDFPLUMBER_AVAILABLE:
-            logger.info("Có pdfplumber (tách bảng PDF)")
-        else:
-            logger.warning("Thiếu pdfplumber - không tách được bảng PDF")
-        if PANDAS_AVAILABLE:
-            logger.info("Có pandas (xử lý bảng)")
-        else:
-            logger.warning("Thiếu pandas - hạn chế xử lý bảng")
-        if DOCX_AVAILABLE:
-            logger.info("Có python-docx (hỗ trợ DOCX)")
-        else:
-            logger.warning("Thiếu python-docx - không đọc được file Word")
+        self.vn_utils = VietnameseLanguageUtils(vi_words_json)
+        self.noise_patterns = [
+            r"^\d+\s+of\s+\d+$",
+            r"^trang\s*\d+",
+            r"^page\s*\d+",
+            r"^(http|www)[\w\.\-\/]+",
+            r"^\d{1,2}:\d{2}",
+            r"^\d+$",
+            r"\d{1,2}/\d{1,2}/\d{2,4}",
+        ]
 
     def is_noise_line(self, text: str, y0: Optional[float] = None) -> bool:
         text = text.strip().lower()
-        if re.match(r"^\d+\s+of\s+\d+$", text):
+        if len(text) < 3:  # Quá ngắn
             return True
-        if re.match(r"^trang\s*\d+", text):
+        if any(re.match(pat, text) for pat in self.noise_patterns):
             return True
-        if re.match(r"^page\s*\d+", text):
-            return True
-        if re.match(r"^(http|www)[\w\.\-\/]+", text):
-            return True
-        if re.match(r"^\d{1,2}:\d{2}", text):
-            return True
-        if re.match(r"^\d+$", text):
-            return True
-        if re.match(r"\d{1,2}/\d{1,2}/\d{2,4}", text):
-            return True
-        if y0 is not None and (y0 < 20 or y0 > 800):
+        if y0 is not None and (y0 < 30 or y0 > 800):  # Header/footer area
             return True
         return False
 
-    def detect_content_type(self, text: str) -> str:
-        if self._looks_like_table(text):
-            return "table"
-        if self._looks_like_image_content(text):
-            return "image"
-        if self._looks_like_header(text):
-            return "header"
-        if self._looks_like_list(text):
-            return "list"
-        return "text"
+    def clean_text(self, text: str) -> str:
+        return self.vn_utils.clean_vietnamese_text(text)
 
-    def _looks_like_table(self, text: str) -> bool:
+    def classify_text_block(self, text: str) -> str:
+        text = text.strip()
+        if not text:
+            return "empty"
+
         lines = text.split("\n")
-        if len(lines) < 2:
-            return False
-        sep = sum(1 for l in lines if re.search(r"\s{2,}|\t|[|]", l))
-        return sep >= len(lines) * 0.5
 
-    def _looks_like_image_content(self, text: str) -> bool:
+        # Heading: ít từ, chữ viết hoa hoặc chữ đầu mỗi từ viết hoa (Title Case)
+        if len(lines) == 1 and len(text.split()) <= 12:
+            if text.isupper() or text.istitle() or re.match(r"^[A-Z\d\s\.\-]+$", text):
+                return "heading"
+
+        # List: có dòng bắt đầu bằng - hoặc số + dấu chấm hoặc chữ + dấu chấm
+        list_lines = sum(
+            1
+            for line in lines
+            if line.strip()
+            and re.match(r"^(\s*[-•]\s*|\s*\d+[\.\)]\s*|\s*[a-zA-Z][\.\)]\s*)", line)
+        )
+        if list_lines >= len(lines) * 0.6 and list_lines >= 2:
+            return "list"
+
+        # Caption: đoạn text chứa từ khóa chỉ dẫn hình ảnh, biểu đồ
         image_keywords = [
             "hình",
             "ảnh",
@@ -131,176 +68,295 @@ class DocumentParser:
             "figure",
             "graph",
             "diagram",
+            "bảng",
+            "table",
+            "nguồn:",
+            "source:",
+            "ghi chú:",
+            "note:",
         ]
-        return any(word in text.lower() for word in image_keywords)
+        if any(word in text.lower() for word in image_keywords) and len(lines) <= 3:
+            return "caption"
 
-    def _looks_like_header(self, text: str) -> bool:
-        if re.search(r"(^|\n)\s*(-|\d+\.|[a-zA-Z]\.)", text):
-            return False
-        if len(text.split()) <= 15 and (text.isupper() or text.istitle()):
-            return True
-        return False
-
-    def _looks_like_list(self, text: str) -> bool:
-        lines = text.split("\n")
-        list_lines = sum(
-            1 for l in lines if re.match(r"^(-|\d+\.|[a-zA-Z]\.)", l.strip())
-        )
-        return list_lines >= len(lines) * 0.5
+        # Mặc định coi là đoạn văn bản bình thường
+        return "paragraph"
 
     def extract_metadata(self, text: str, meta: Dict[str, Any]) -> Dict[str, Any]:
-        language = self.vn_utils.detect_language(text)
+        lang = self.vn_utils.detect_language(text)
         return {
             **meta,
             "length": len(text),
             "words": len(text.split()),
-            "content_type": self.detect_content_type(text),
-            "language": language,
-            "detected": language,
+            "language": lang,
             "score": self.vn_utils._calculate_vietnamese_score(text),
         }
 
+    def format_table_for_rag(
+        self, table_data: List[List[str]], table_num: int, page_num: int
+    ) -> str:
+        """
+        Format table data for RAG processing
+        Returns a structured text representation of the table
+        """
+        if not table_data or not table_data[0]:
+            return ""
+
+        # Lọc bỏ các row/cell trống
+        filtered_data = []
+        for row in table_data:
+            filtered_row = [cell.strip() if cell else "" for cell in row]
+            if any(cell for cell in filtered_row):  # Có ít nhất 1 cell không rỗng
+                filtered_data.append(filtered_row)
+
+        if not filtered_data:
+            return ""
+
+        # Format cho RAG: dạng structured text
+        headers = filtered_data[0] if filtered_data else []
+        rows = filtered_data[1:] if len(filtered_data) > 1 else []
+
+        # Tạo text representation cho RAG
+        rag_text = f"Bảng {table_num + 1} (Trang {page_num + 1}):\n"
+
+        # Nếu có headers
+        if headers and any(h.strip() for h in headers):
+            rag_text += "Tiêu đề cột: " + " | ".join(h.strip() for h in headers) + "\n"
+
+        # Thêm các dòng dữ liệu
+        for i, row in enumerate(rows):
+            if any(cell.strip() for cell in row):
+                if headers and len(headers) == len(row):
+                    # Format với tên cột
+                    row_data = []
+                    for j, cell in enumerate(row):
+                        if cell.strip() and j < len(headers) and headers[j].strip():
+                            row_data.append(f"{headers[j].strip()}: {cell.strip()}")
+                    if row_data:
+                        rag_text += f"Dòng {i + 1}: " + "; ".join(row_data) + "\n"
+                else:
+                    # Format đơn giản
+                    row_cells = [cell.strip() for cell in row if cell.strip()]
+                    if row_cells:
+                        rag_text += f"Dòng {i + 1}: " + " | ".join(row_cells) + "\n"
+
+        return rag_text.strip()
+
+    def get_table_json_for_frontend(
+        self, table_data: List[List[str]]
+    ) -> Dict[str, Any]:
+        """
+        Format table data for frontend display
+        """
+        if not table_data:
+            return {"headers": [], "rows": []}
+
+        # Lọc và làm sạch dữ liệu
+        filtered_data = []
+        for row in table_data:
+            filtered_row = [cell.strip() if cell else "" for cell in row]
+            if any(cell for cell in filtered_row):
+                filtered_data.append(filtered_row)
+
+        if not filtered_data:
+            return {"headers": [], "rows": []}
+
+        # Xác định headers và rows
+        headers = filtered_data[0] if filtered_data else []
+        rows = filtered_data[1:] if len(filtered_data) > 1 else []
+
+        # Đảm bảo consistency về số cột
+        max_cols = max(len(row) for row in filtered_data) if filtered_data else 0
+
+        # Chuẩn hóa headers
+        normalized_headers = []
+        for i in range(max_cols):
+            if i < len(headers) and headers[i].strip():
+                normalized_headers.append(headers[i].strip())
+            else:
+                normalized_headers.append(f"Cột {i + 1}")
+
+        # Chuẩn hóa rows
+        normalized_rows = []
+        for row in rows:
+            normalized_row = []
+            for i in range(max_cols):
+                if i < len(row):
+                    normalized_row.append(row[i].strip())
+                else:
+                    normalized_row.append("")
+            normalized_rows.append(normalized_row)
+
+        return {
+            "headers": normalized_headers,
+            "rows": normalized_rows,
+            "total_rows": len(normalized_rows),
+            "total_cols": max_cols,
+        }
+
+    def should_merge_blocks(
+        self, block1: Dict, block2: Dict, threshold: float = 25.0
+    ) -> bool:
+        """
+        Xác định có nên merge 2 text blocks hay không
+        """
+        if not block1 or not block2:
+            return False
+
+        bbox1 = block1.get("bbox", (0, 0, 0, 0))
+        bbox2 = block2.get("bbox", (0, 0, 0, 0))
+
+        # Kiểm tra khoảng cách vertical
+        vertical_gap = bbox2[1] - bbox1[3]  # y0_block2 - y1_block1
+
+        # Kiểm tra overlap horizontal
+        horizontal_overlap = min(bbox1[2], bbox2[2]) - max(bbox1[0], bbox2[0])
+        width_avg = (bbox1[2] - bbox1[0] + bbox2[2] - bbox2[0]) / 2
+
+        # Merge nếu:
+        # 1. Khoảng cách vertical nhỏ
+        # 2. Có overlap horizontal đáng kể
+        # 3. Cùng loại block (heading với heading, paragraph với paragraph)
+        return (
+            vertical_gap < threshold
+            and horizontal_overlap > width_avg * 0.3
+            and block1.get("type") == block2.get("type")
+        )
+
     def load_pdf(self, path: str) -> List[Document]:
         docs = []
-        if not PYMUPDF_AVAILABLE or not PDFPLUMBER_AVAILABLE:
-            logger.warning("Thiếu PyMuPDF hoặc pdfplumber, dùng PyPDFLoader fallback")
-            loader = PyPDFLoader(path)
-            return loader.load()
-
-        with pdfplumber.open(path) as pdf:
+        try:
+            pdf = pdfplumber.open(path)
             doc = fitz.open(path)
-            for page_num, page in enumerate(pdf.pages):
-                blocks = []
-                tables = page.find_tables()
-                table_regions = []
-                for table_num, tb in enumerate(tables or []):
-                    bx0, by0, bx1, by1 = tb.bbox
-                    table_regions.append((bx0 - 5, by0 - 5, bx1 + 5, by1 + 5))
-                    rows = ["\t".join([c or "" for c in r]) for r in tb.extract()]
-                    text = "\n".join(rows)
-                    cleaned = self.vn_utils.clean_vietnamese_text(text)
-                    if cleaned:
-                        meta = self.extract_metadata(
-                            cleaned,
-                            {
-                                "type": "table",
-                                "page": page_num,
-                                "table_num": table_num,
-                                "source": path,
-                                "extraction_method": "pdfplumber",
-                                "x0": bx0,
-                                "y0": by0,
-                                "x1": bx1,
-                                "y1": by1,
-                            },
-                        )
-                        blocks.append(
-                            {
-                                "y0": by0,
-                                "x0": bx0,
-                                "type": "table",
-                                "page_content": cleaned,
-                                "metadata": meta,
-                            }
-                        )
+        except Exception as e:
+            logger.error(f"Lỗi mở file PDF: {e}")
+            return []
 
-                pymupdf_page = doc.load_page(page_num)
-                text_blocks = sorted(
-                    pymupdf_page.get_textpage().extractBLOCKS(),
-                    key=lambda b: (round(b[1], 1), round(b[0], 1)),
+        for page_num, page in enumerate(pdf.pages):
+            table_bboxes = []
+
+            # Xử lý tables trước
+            for table_num, table in enumerate(page.find_tables() or []):
+                bx0, by0, bx1, by1 = table.bbox
+                table_bboxes.append((bx0, by0, bx1, by1))
+
+                table_data = table.extract()
+                if not table_data:
+                    continue
+
+                # Format cho RAG
+                rag_text = self.format_table_for_rag(table_data, table_num, page_num)
+                if not rag_text:
+                    continue
+
+                # Format cho Frontend
+                frontend_data = self.get_table_json_for_frontend(table_data)
+
+                meta = self.extract_metadata(
+                    rag_text,
+                    {
+                        "type": "table",
+                        "page": page_num,
+                        "table_num": table_num,
+                        "bbox": (bx0, by0, bx1, by1),
+                        "source": path,
+                        "table_data": frontend_data,  # Dữ liệu cho frontend
+                        "raw_table": table_data,  # Dữ liệu thô nếu cần
+                    },
                 )
-                current_block = []
-                current_coords = None
 
-                for b in text_blocks:
-                    x0, y0, x1, y1, text, *_ = b
-                    if not text.strip() or self.is_noise_line(text, y0):
-                        continue
-                    is_in_table = False
-                    for bx0, by0, bx1, by1 in table_regions:
-                        if x0 >= bx0 and x1 <= bx1 and y0 >= by0 and y1 <= by1:
-                            is_in_table = True
-                            break
-                    if is_in_table:
-                        continue
+                docs.append(Document(page_content=rag_text, metadata=meta))
 
-                    cleaned = self.vn_utils.clean_vietnamese_text(text)
-                    if not cleaned:
-                        continue
+            # Xử lý text blocks
+            pymupdf_page = doc.load_page(page_num)
+            text_blocks = sorted(
+                pymupdf_page.get_textpage().extractBLOCKS(),
+                key=lambda b: (round(b[1], 1), round(b[0], 1)),
+            )
 
-                    if current_block and (
-                        current_coords and y0 - current_coords[3] < 20
+            processed_blocks = []
+
+            for b in text_blocks:
+                x0, y0, x1, y1, text, *_ = b
+                if not text.strip() or self.is_noise_line(text, y0):
+                    continue
+
+                # Loại bỏ text nằm trong bảng
+                in_table = any(
+                    x0 >= bx0 - 5 and x1 <= bx1 + 5 and y0 >= by0 - 5 and y1 <= by1 + 5
+                    for (bx0, by0, bx1, by1) in table_bboxes
+                )
+                if in_table:
+                    continue
+
+                cleaned = self.clean_text(text)
+                if not cleaned:
+                    continue
+
+                block_info = {
+                    "text": cleaned,
+                    "bbox": (x0, y0, x1, y1),
+                    "type": self.classify_text_block(cleaned),
+                }
+
+                processed_blocks.append(block_info)
+
+            # Merge các blocks liền kề
+            merged_blocks = []
+            i = 0
+            while i < len(processed_blocks):
+                current_block = processed_blocks[i]
+                merged_text = current_block["text"]
+                merged_bbox = current_block["bbox"]
+                block_type = current_block["type"]
+
+                # Tìm các blocks tiếp theo có thể merge
+                j = i + 1
+                while j < len(processed_blocks):
+                    next_block = processed_blocks[j]
+                    if self.should_merge_blocks(
+                        {"bbox": merged_bbox, "type": block_type},
+                        {"bbox": next_block["bbox"], "type": next_block["type"]},
                     ):
-                        current_block.append(cleaned)
-                        if current_coords:
-                            current_coords = (
-                                min(current_coords[0], x0),
-                                current_coords[1],
-                                max(current_coords[2], x1),
-                                max(current_coords[3], y1),
-                            )
-                    else:
-                        if current_block:
-                            full_text = "\n".join(current_block)
-                            meta = self.extract_metadata(
-                                full_text,
-                                {
-                                    "type": "text",
-                                    "page": page_num,
-                                    "source": path,
-                                    "extraction_method": "pymupdf_blocks",
-                                    "x0": current_coords[0] if current_coords else x0,
-                                    "y0": current_coords[1] if current_coords else y0,
-                                    "x1": current_coords[2] if current_coords else x1,
-                                    "y1": current_coords[3] if current_coords else y1,
-                                },
-                            )
-                            blocks.append(
-                                {
-                                    "y0": current_coords[1] if current_coords else y0,
-                                    "x0": current_coords[0] if current_coords else x0,
-                                    "type": "text",
-                                    "page_content": full_text,
-                                    "metadata": meta,
-                                }
-                            )
-                        current_block = [cleaned]
-                        current_coords = (x0, y0, x1, y1)
-
-                if current_block:
-                    full_text = "\n".join(current_block)
-                    meta = self.extract_metadata(
-                        full_text,
-                        {
-                            "type": "text",
-                            "page": page_num,
-                            "x0": current_coords[0] if current_coords else x0,
-                            "y0": current_coords[1] if current_coords else y0,
-                            "x1": current_coords[2] if current_coords else x1,
-                            "y1": current_coords[3] if current_coords else y1,
-                        },
-                    )
-                    blocks.append(
-                        {
-                            "y0": current_coords[1] if current_coords else y0,
-                            "x0": current_coords[0] if current_coords else x0,
-                            "type": "text",
-                            "page_content": full_text,
-                            "metadata": meta,
-                        }
-                    )
-
-                blocks = sorted(
-                    blocks, key=lambda b: (round(b["y0"], 1), round(b["x0"], 1))
-                )
-                for blk in blocks:
-                    docs.append(
-                        Document(
-                            page_content=blk["page_content"], metadata=blk["metadata"]
+                        merged_text += "\n" + next_block["text"]
+                        merged_bbox = (
+                            min(merged_bbox[0], next_block["bbox"][0]),
+                            merged_bbox[1],
+                            max(merged_bbox[2], next_block["bbox"][2]),
+                            max(merged_bbox[3], next_block["bbox"][3]),
                         )
-                    )
-            doc.close()
-        return docs
+                        j += 1
+                    else:
+                        break
+
+                # Re-classify sau khi merge
+                final_type = self.classify_text_block(merged_text)
+
+                meta = self.extract_metadata(
+                    merged_text,
+                    {
+                        "type": final_type,
+                        "page": page_num,
+                        "bbox": merged_bbox,
+                        "source": path,
+                    },
+                )
+
+                docs.append(Document(page_content=merged_text, metadata=meta))
+                i = j
+
+        doc.close()
+        pdf.close()
+
+        # Lọc bỏ các documents quá ngắn hoặc không có ý nghĩa
+        filtered_docs = []
+        for doc in docs:
+            content = doc.page_content.strip()
+            if (
+                len(content) >= 10 and len(content.split()) >= 3
+            ):  # Ít nhất 10 ký tự và 3 từ
+                filtered_docs.append(doc)
+
+        return filtered_docs
 
     def load_document(self, path: str) -> List[Document]:
         if not os.path.exists(path):
@@ -311,24 +367,26 @@ class DocumentParser:
             return self.load_pdf(path)
         else:
             logger.error(f"Không hỗ trợ định dạng: {ext}")
-            logger.info(
-                f"Định dạng được hỗ trợ: {', '.join(sorted(self.supported_formats))}"
-            )
             return []
 
 
-def main():
-    parser = DocumentParser(Path("shared/vietnamese_words.json"))
-    docs = parser.load_document("test_document.pdf")
-
-    # Lưu ra file JSON
-    output_data = [
-        {"content": doc.page_content, "metadata": doc.metadata} for doc in docs
-    ]
-    with open("output.json", "w", encoding="utf-8") as f:
-        json.dump(output_data, f, ensure_ascii=False, indent=2)
-    print("Đã lưu kết quả ra file output.json")
-
-
 if __name__ == "__main__":
-    main()
+    parser = DocumentParser(Path("shared/vietnamese_words.json"))
+    docs = parser.load_document("C:/Users/vietv/Downloads/download.pdf")
+    print(f"Parsed {len(docs)} documents")
+
+    output_data = []
+    for doc in docs:
+        doc_data = {"content": doc.page_content, "metadata": doc.metadata}
+
+        # Đặc biệt format cho table
+        if doc.metadata.get("type") == "table":
+            doc_data["table_data"] = doc.metadata.get("table_data", {})
+
+        output_data.append(doc_data)
+
+    import json
+
+    with open("parsed_output.json", "w", encoding="utf-8") as f:
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
+    print("Đã lưu kết quả ra file parsed_output.json")
