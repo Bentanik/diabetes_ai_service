@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 
 class DocumentParser:
-    def __init__(self, vi_words_json: Path):
+    def __init__(self, vi_words_json: Path = Path("shared/vietnamese_words.json")):
         self.vn_utils = VietnameseLanguageUtils(vi_words_json)
         self.noise_patterns = [
             r"^\d+\s+of\s+\d+$",

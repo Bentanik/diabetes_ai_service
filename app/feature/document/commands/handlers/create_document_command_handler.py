@@ -29,6 +29,8 @@ class CreateDocumentCommandHandler(CommandHandler):
         if valid_result is not None:
             return valid_result
 
+        collections = get_collections()
+
         # 2. Upload file lên Minio
         try:
             file_path = await self._upload_file_to_minio(command)
@@ -36,10 +38,7 @@ class CreateDocumentCommandHandler(CommandHandler):
             self.logger.error(f"Upload file thất bại: {e}")
             return self._failure(DocumentResult.UPLOAD_FAILED, str(e))
 
-        # 3. Lấy collections để thao tác DB
-        collections = get_collections()
-
-        # 4. Đẩy job xử lý lên queue và lưu vào DB
+        # 3. Đẩy job xử lý lên queue và lưu vào DB
         await self._enqueue_document_job(collections, command, file_path)
 
         return Result.success(
@@ -52,15 +51,16 @@ class CreateDocumentCommandHandler(CommandHandler):
 
         collections = get_collections()
 
-        if not await collections.knowledges.count_documents(
-            {"_id": ObjectId(command.knowledge_id)}
+        if (
+            await collections.knowledges.count_documents(
+                {"_id": ObjectId(command.knowledge_id)}
+            )
+            == 0
         ):
             return self._failure(KnowledgeResult.NOT_FOUND, command.knowledge_id)
 
-        if await collections.documents.count_documents(
-            {"title": command.title, "knowledge_id": command.knowledge_id}
-        ):
-            return self._failure(KnowledgeResult.TITLE_EXISTS, command.title)
+        if await collections.documents.count_documents({"title": command.title}) > 0:
+            return self._failure(DocumentResult.TITLE_EXISTS, command.title)
 
         return None
 
@@ -92,7 +92,11 @@ class CreateDocumentCommandHandler(CommandHandler):
 
         # Tạo DocumentJob để đẩy vào Redis queue
         redis_job = DocumentJob(
+            file_path=file_path,
             document_id=document_id,
+            knowledge_id=command.knowledge_id,
+            title=command.title,
+            description=command.description,
             type="upload_document",
         )
         await add_document_job(redis_job)

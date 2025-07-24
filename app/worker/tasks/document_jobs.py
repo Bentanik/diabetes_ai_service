@@ -1,13 +1,22 @@
 from typing import Literal
+from app.feature.document import (
+    ProcessDocumentUploadCommand,
+)
 from app.worker.redis_client import redis_client
 from pydantic import BaseModel
 import asyncio
+
+from core.cqrs import Mediator
 
 DOCUMENT_QUEUE = "document_jobs"
 
 
 class DocumentJob(BaseModel):
+    file_path: str
     document_id: str
+    knowledge_id: str
+    title: str
+    description: str
     type: Literal["upload_document", "training_document"]
 
 
@@ -16,7 +25,14 @@ async def add_document_job(job: DocumentJob):
 
 
 async def process_document_upload_job(job: DocumentJob):
-    print(f"Processing document job: {job.document_id}")
+    command = ProcessDocumentUploadCommand(
+        file_path=job.file_path,
+        knowledge_id=job.knowledge_id,
+        document_id=job.document_id,
+        title=job.title,
+        description=job.description,
+    )
+    _ = await Mediator.send(command)
 
 
 async def document_worker():
