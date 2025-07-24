@@ -12,7 +12,6 @@ pymongo
 # RAG & LangChain
 langchain             
 langchain-community   
-docling               
 
 # Core dependencies
 numpy               
@@ -32,3 +31,6 @@ rq
 
 # Storage
 minio
+
+# Hugging face
+sentence-transformers

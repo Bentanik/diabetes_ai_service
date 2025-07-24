@@ -1,0 +1,174 @@
+{
+    "vietnamese": {
+        "primary_keywords": [
+            "tiểu đường",
+            "đái tháo đường",
+            "bệnh tiểu đường",
+            "tiểu đường type 1",
+            "tiểu đường type 2",
+            "tiểu đường thai kỳ",
+            "đường huyết",
+            "glucose",
+            "insulin",
+            "HbA1c"
+        ],
+        "medical_terms": [
+            "nội tiết",
+            "tuyến tụy",
+            "hormone insulin",
+            "kháng insulin",
+            "rối loạn chuyển hóa",
+            "chuyển hóa glucose",
+            "tăng đường huyết",
+            "hạ đường huyết",
+            "ketoacidosis",
+            "coma tiểu đường"
+        ],
+        "symptoms": [
+            "khát nước nhiều",
+            "đi tiểu nhiều",
+            "polyuria",
+            "polydipsia",
+            "polyphagia",
+            "mệt mỏi",
+            "sụt cân",
+            "mờ mắt",
+            "chậm lành vết thương",
+            "nhiễm trùng thường xuyên"
+        ],
+        "complications": [
+            "biến chứng tiểu đường",
+            "bệnh thận tiểu đường",
+            "retinopathy",
+            "neuropathy",
+            "nephropathy",
+            "bệnh tim mạch",
+            "loét chân tiểu đường",
+            "cắt cụt chi",
+            "mù lòa",
+            "suy thận"
+        ],
+        "treatments": [
+            "điều trị tiểu đường",
+            "metformin",
+            "sulfonylurea",
+            "insulin therapy",
+            "tiêm insulin",
+            "thuốc hạ đường huyết",
+            "chế độ ăn tiểu đường",
+            "tập thể dục",
+            "kiểm soát đường huyết",
+            "theo dõi glucose"
+        ]
+    },
+    "english": {
+        "primary_keywords": [
+            "diabetes",
+            "diabetes mellitus",
+            "type 1 diabetes",
+            "type 2 diabetes",
+            "gestational diabetes",
+            "blood glucose",
+            "blood sugar",
+            "insulin",
+            "HbA1c",
+            "glycemic control"
+        ],
+        "medical_terms": [
+            "endocrine",
+            "pancreas",
+            "insulin hormone",
+            "insulin resistance",
+            "metabolic disorder",
+            "glucose metabolism",
+            "hyperglycemia",
+            "hypoglycemia",
+            "diabetic ketoacidosis",
+            "diabetic coma"
+        ],
+        "symptoms": [
+            "excessive thirst",
+            "frequent urination",
+            "polyuria",
+            "polydipsia",
+            "polyphagia",
+            "fatigue",
+            "weight loss",
+            "blurred vision",
+            "slow healing wounds",
+            "frequent infections"
+        ],
+        "complications": [
+            "diabetic complications",
+            "diabetic nephropathy",
+            "diabetic retinopathy",
+            "diabetic neuropathy",
+            "cardiovascular disease",
+            "diabetic foot ulcer",
+            "amputation",
+            "blindness",
+            "kidney failure",
+            "stroke"
+        ],
+        "treatments": [
+            "diabetes treatment",
+            "metformin",
+            "sulfonylurea",
+            "insulin therapy",
+            "insulin injection",
+            "antidiabetic medication",
+            "diabetic diet",
+            "exercise therapy",
+            "glucose monitoring",
+            "blood sugar control"
+        ]
+    },
+    "context_patterns": {
+        "vietnamese": [
+            "bệnh nhân tiểu đường",
+            "điều trị bệnh tiểu đường",
+            "kiểm soát đường huyết",
+            "chuyên khoa tiểu đường",
+            "nội tiết - đái tháo đường",
+            "biến chứng tiểu đường",
+            "chế độ ăn cho người tiểu đường",
+            "thuốc điều trị tiểu đường"
+        ],
+        "english": [
+            "diabetes patient",
+            "diabetes treatment",
+            "glucose control",
+            "diabetes specialist",
+            "endocrinology diabetes",
+            "diabetic complications",
+            "diabetic diet",
+            "diabetes medication"
+        ]
+    },
+    "medical_specialties": {
+        "vietnamese": [
+            "nội tiết",
+            "chuyên khoa nội tiết",
+            "bác sĩ nội tiết",
+            "khoa nội tiết"
+        ],
+        "english": [
+            "endocrinology",
+            "endocrinologist",
+            "diabetes specialist",
+            "metabolic medicine"
+        ]
+    },
+    "exclusion_keywords": [
+        "diabetes insipidus",
+        "gestational hypertension",
+        "pre-diabetes screening only"
+    ],
+    "keyword_weights": {
+        "primary_keywords": 2.0,
+        "medical_terms": 1.5,
+        "treatments": 1.8,
+        "symptoms": 1.2,
+        "complications": 1.6
+    }
+}

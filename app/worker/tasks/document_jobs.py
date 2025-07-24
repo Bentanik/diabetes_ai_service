@@ -1,3 +1,4 @@
+from typing import Literal
 from app.worker.redis_client import redis_client
 from pydantic import BaseModel
 import asyncio
@@ -6,20 +7,16 @@ DOCUMENT_QUEUE = "document_jobs"
 
 
 class DocumentJob(BaseModel):
-    knowledge_id: str
-    title: str
-    description: str
-    file_path: str
+    document_id: str
+    type: Literal["upload_document", "training_document"]
 
 
 async def add_document_job(job: DocumentJob):
     await redis_client.rpush(DOCUMENT_QUEUE, job.model_dump_json())
 
 
-async def process_document_job(job: DocumentJob):
-    print(f"Processing document job: {job.title}")
-    # Thực hiện xử lý tài liệu, ví dụ:
-    await asyncio.sleep(130)
+async def process_document_upload_job(job: DocumentJob):
+    print(f"Processing document job: {job.document_id}")
 
 
 async def document_worker():
@@ -28,6 +25,7 @@ async def document_worker():
         if job:
             job_json = job[1].decode()
             job_data = DocumentJob.model_validate_json(job_json)
-            await process_document_job(job_data)
+            if job_data.type == "upload_document":
+                await process_document_upload_job(job_data)
         else:
             await asyncio.sleep(1)

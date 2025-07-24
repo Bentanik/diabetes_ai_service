@@ -3,7 +3,8 @@ from fastapi import FastAPI
 from app.database import initialize_database, close_mongodb_connection
 from app.storage import minio_manager
 from app.worker import worker_start_all, worker_stop_all
-from utils import get_logger
+from core.llm import get_embedding_model
+from utils import get_logger, get_scorer
 
 logger = get_logger(__name__)
 
@@ -15,6 +16,12 @@ async def lifespan(app: FastAPI):
     logger.info(f"{app.title} v{app.version}")
 
     try:
+        # Tải model
+        get_embedding_model()
+
+        scorer = get_scorer()
+        await scorer.precompute_embeddings()
+
         # Khởi tạo các worker
         worker_start_all()
 

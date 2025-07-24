@@ -7,6 +7,15 @@ COLLECTION_INDEX_CONFIG = {
     "knowledges": [
         {"fields": [("name", 1)], "unique": True, "name": "name_unique_idx"},
     ],
+    "documents": [
+        {"fields": [("knowledge_id", 1)], "name": "idx_knowledge_id"},
+        {"fields": [("file_hash", 1)], "name": "idx_file_hash"},
+        {
+            "fields": [("knowledge_id", 1), ("title", 1)],
+            "unique": True,
+            "name": "uniq_knowledge_title",
+        },
+    ],
 }
 
 

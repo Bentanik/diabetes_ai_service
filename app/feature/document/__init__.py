@@ -1,4 +1,14 @@
 from .commands.create_document_command import CreateDocumentCommand
-from .commands.handlers import CreateDocumentCommandHandler
+from .commands.process_document_upload_command import ProcessDocumentUploadCommand
 
-__all__ = ["CreateDocumentCommand", "CreateDocumentCommandHandler"]
+from .commands.handlers import (
+    CreateDocumentCommandHandler,
+    ProcessDocumentUploadCommandHandler,
+)
+
+__all__ = [
+    "CreateDocumentCommand",
+    "ProcessDocumentUploadCommand",
+    "CreateDocumentCommandHandler",
+    "ProcessDocumentUploadCommandHandler",
+]
