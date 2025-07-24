@@ -34,3 +34,6 @@ minio
 
 # Hugging face
 sentence-transformers
+
+# Compression
+brotli

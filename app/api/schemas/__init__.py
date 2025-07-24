@@ -6,6 +6,7 @@ from .system_schema import (
     HealthStatus,
 )
 from .rag_schema import UpdateKnowledgeRequest
+from .job_schema import DocumentJobStatus, DocumentJobType
 
 __all__ = [
     "HealthCheckData",
@@ -14,4 +15,6 @@ __all__ = [
     "PingData",
     "HealthStatus",
     "UpdateKnowledgeRequest",
+    "DocumentJobStatus",
+    "DocumentJobType",
 ]
