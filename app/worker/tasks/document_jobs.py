@@ -2,6 +2,7 @@ from typing import Literal
 from app.feature.document import (
     ProcessDocumentUploadCommand,
 )
+from app.feature.train_ai import TrainCommand
 from app.worker.redis_client import redis_client
 from pydantic import BaseModel
 import asyncio
@@ -33,6 +34,10 @@ async def process_document_upload_job(job: DocumentJob):
         description=job.description,
     )
     _ = await Mediator.send(command)
+
+
+async def process_document_training_job(job: DocumentJob):
+    print("Training document")
 
 
 async def document_worker():

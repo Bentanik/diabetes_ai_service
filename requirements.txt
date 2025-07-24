@@ -37,3 +37,7 @@ sentence-transformers
 
 # Compression
 brotli
+
+#
+nltk
+underthesea

@@ -12,13 +12,29 @@ class BaseModel(ABC):
     """Base model chứa các thuộc tính cơ bản của một model"""
 
     def __init__(self, **kwargs):
-        self._id: ObjectId = kwargs.get("_id") or ObjectId()
-        self.created_at: datetime = kwargs.get("created_at", datetime.now())
-        self.updated_at: datetime = kwargs.get("updated_at", datetime.now())
+        # Gán tất cả trường trong kwargs thành thuộc tính instance
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+        # Nếu không có _id, tạo ObjectId mới
+        if not hasattr(self, "_id") or self._id is None:
+            self._id = ObjectId()
+
+        # Nếu không có created_at, gán datetime.now()
+        if not hasattr(self, "created_at") or self.created_at is None:
+            self.created_at = datetime.now()
+
+        # Nếu không có updated_at, gán datetime.now()
+        if not hasattr(self, "updated_at") or self.updated_at is None:
+            self.updated_at = datetime.now()
 
     @property
     def id(self) -> str:
         return str(self._id)
+
+    @id.setter
+    def id(self, value: str):
+        self._id = ObjectId(value)
 
     def to_dict(self) -> BaseDict:
         """Convert model thành dictionary"""

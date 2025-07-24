@@ -16,5 +16,9 @@ class DBCollections:
         return self.db["documents"]
 
     @property
+    def documents_parsers(self) -> AsyncIOMotorCollection:
+        return self.db["documents_parsers"]
+
+    @property
     def document_jobs(self) -> AsyncIOMotorCollection:
         return self.db["document_jobs"]
