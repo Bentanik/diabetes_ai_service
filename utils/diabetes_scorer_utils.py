@@ -126,6 +126,7 @@ class DiabetesScorerUtils:
         return await asyncio.to_thread(self.model.encode, texts, show_progress_bar=True)
 
     def _load_or_create_embeddings(self) -> Dict[str, Any]:
+
         """Load cached embeddings or create new ones with better validation"""
         if self.embeddings_cache_file.exists():
             try:
@@ -155,7 +156,7 @@ class DiabetesScorerUtils:
                 print(f"Error loading cached embeddings: {e}")
                 print("Recreating embeddings...")
 
-        return self._create_diabetes_embeddings()
+        return asyncio.run(self._async_create_diabetes_embeddings())
 
     async def precompute_embeddings(self) -> None:
         """Precompute and cache embeddings at startup."""

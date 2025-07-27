@@ -1,7 +1,14 @@
+"""
+Knowledge DTO
+
+File này định nghĩa KnowledgeDTO để chuyển đổi dữ liệu giữa KnowledgeModel 
+và API responses. DTO giúp tách biệt internal model structure khỏi external API.
+"""
+
 from datetime import datetime
 from pydantic import BaseModel
 
-from app.database.models import KnowledgeModel
+from app.database.models.knowledge_model import KnowledgeModel
 
 
 class KnowledgeDTO(BaseModel):
@@ -16,6 +23,15 @@ class KnowledgeDTO(BaseModel):
 
     @classmethod
     def from_model(cls, model: KnowledgeModel) -> "KnowledgeDTO":
+        """
+        Tạo KnowledgeDTO từ KnowledgeModel
+        
+        Args:
+            model (KnowledgeModel): KnowledgeModel instance
+            
+        Returns:
+            KnowledgeDTO: DTO instance được tạo từ model
+        """
         return cls(
             id=model.id,
             name=model.name,

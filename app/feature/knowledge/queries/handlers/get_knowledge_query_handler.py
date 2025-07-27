@@ -29,7 +29,8 @@ class GetKnowledgeQueryHandler(QueryHandler[Result[KnowledgeDTO]]):
 
             if not doc:
                 return Result.failure(
-                    message="Không tìm thấy dữ liệu", code="not_found", data=None
+                    message=KnowledgeResult.NOT_FOUND.message,
+                    code=KnowledgeResult.NOT_FOUND.code,
                 )
 
             model = KnowledgeModel.from_dict(doc)

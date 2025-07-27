@@ -1,15 +1,26 @@
+"""
+Create Knowledge Command - Command để tạo cơ sở tri thức mới
+
+File này định nghĩa CreateKnowledgeCommand chứa tất cả thông tin cần thiết để tạo một cơ sở tri thức mới.
+
+Chức năng chính:
+- Validation dữ liệu đầu vào
+- Làm sạch dữ liệu (trim whitespace)
+- Đảm bảo tính toàn vẹn dữ liệu trước khi tạo
+"""
+
 from dataclasses import dataclass
-from core.cqrs.base import Command
+from core.cqrs import Command
 
 
 @dataclass
 class CreateKnowledgeCommand(Command):
     """
     Command để tạo cơ sở tri thức mới
-
+    
     Attributes:
-        name: Tên cơ sở tri thức
-        description: Mô tả chi tiết về cơ sở tri thức
+        name (str): Tên của cơ sở tri thức (bắt buộc)
+        description (str): Mô tả chi tiết về cơ sở tri thức (bắt buộc)
     """
 
     name: str

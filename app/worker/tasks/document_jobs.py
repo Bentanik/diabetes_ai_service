@@ -1,8 +1,4 @@
 from typing import Literal
-from app.feature.document import (
-    ProcessDocumentUploadCommand,
-)
-from app.feature.train_ai import TrainCommand
 from app.worker.redis_client import redis_client
 from pydantic import BaseModel
 import asyncio
@@ -26,6 +22,8 @@ async def add_document_job(job: DocumentJob):
 
 
 async def process_document_upload_job(job: DocumentJob):
+    from app.feature.document import ProcessDocumentUploadCommand
+    
     command = ProcessDocumentUploadCommand(
         file_path=job.file_path,
         knowledge_id=job.knowledge_id,

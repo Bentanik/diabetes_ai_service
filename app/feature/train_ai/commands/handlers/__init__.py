@@ -1,4 +1,3 @@
-from .create_document_command_handler import CreateDocumentCommandHandler
-from .process_document_upload_command_handler import ProcessDocumentUploadCommandHandler
+from .train_command_handler import TrainCommandHandler
 
-__all__ = ["CreateDocumentCommandHandler", "ProcessDocumentUploadCommandHandler"]
+__all__ = ["TrainCommandHandler"]

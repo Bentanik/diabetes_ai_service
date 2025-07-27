@@ -1,10 +1,14 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from dotenv import load_dotenv
 from app.database import initialize_database, close_mongodb_connection
 from app.storage import minio_manager
 from app.worker import worker_start_all, worker_stop_all
 from core.llm import get_embedding_model
 from utils import get_logger, get_scorer
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = get_logger(__name__)
 
