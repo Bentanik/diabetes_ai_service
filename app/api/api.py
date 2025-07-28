@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api.router import system_router, rag_router, job_router
+from app.api.router import system_router, rag_router
 
 
 def include_routers(app: FastAPI):
@@ -17,4 +17,3 @@ def include_routers(app: FastAPI):
     """
     app.include_router(system_router)
     app.include_router(rag_router)
-    app.include_router(job_router)

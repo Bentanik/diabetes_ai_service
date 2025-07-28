@@ -13,10 +13,9 @@ Chức năng chính:
 from bson import ObjectId
 
 from app.database.manager import get_collections
-from app.feature.knowledge import DeleteKnowledgeCommand
-from core.cqrs import CommandRegistry
-from core.cqrs.base import CommandHandler
-from core.result.result import Result
+from app.feature.knowledge.commands import DeleteKnowledgeCommand
+from core.cqrs import CommandRegistry, CommandHandler
+from core.result import Result
 from shared.messages.knowledge_message import KnowledgeResult
 from utils import get_logger
 

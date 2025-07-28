@@ -1,9 +1,20 @@
-from fastapi import APIRouter, Query, HTTPException
-from fastapi.responses import JSONResponse
+"""
+Knowledge Routes - Module định nghĩa các API endpoints cho quản lý cơ sở tri thức
 
+File này cung cấp các REST API endpoints để thực hiện các thao tác CRUD
+(Create, Read, Update, Delete) trên cơ sở tri thức:
+- POST /knowledges: Tạo mới cơ sở tri thức
+- GET /knowledges: Lấy danh sách có phân trang và tìm kiếm
+- GET /knowledges/{id}: Lấy chi tiết một cơ sở tri thức
+- PUT /knowledges/{id}: Cập nhật thông tin cơ sở tri thức
+- DELETE /knowledges/{id}: Xóa cơ sở tri thức
+"""
+
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 from app.api.schemas import UpdateKnowledgeRequest
-from utils import get_logger
 from core.cqrs import Mediator
+from utils import get_logger
 from app.feature.knowledge import (
     CreateKnowledgeCommand,
     UpdateKnowledgeCommand,
@@ -12,6 +23,7 @@ from app.feature.knowledge import (
     GetKnowledgeQuery,
 )
 
+# Khởi tạo router với prefix và tag
 router = APIRouter(prefix="/knowledges", tags=["Knowledges"])
 logger = get_logger(__name__)
 
@@ -23,6 +35,17 @@ logger = get_logger(__name__)
     description="Tạo một cơ sở tri thức mới trong hệ thống.",
 )
 async def create_knowledge(kb_req: CreateKnowledgeCommand) -> JSONResponse:
+    """
+    Endpoint tạo mới cơ sở tri thức.
+
+    Args:
+        kb_req (CreateKnowledgeCommand): Command chứa thông tin cơ sở tri thức cần tạo
+
+    Returns:
+        JSONResponse
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
     logger.info(f"Tạo cơ sở tri thức mới: {kb_req.name}")
     try:
         result = await Mediator.send(kb_req)
@@ -49,6 +72,22 @@ async def get_knowledges(
         description="Thứ tự sắp xếp: asc hoặc desc",
     ),
 ) -> JSONResponse:
+    """
+    Endpoint lấy danh sách cơ sở tri thức có phân trang.
+
+    Args:
+        search (str): Từ khóa tìm kiếm theo tên
+        page (int): Số trang, bắt đầu từ 1
+        limit (int): Số bản ghi mỗi trang (1-100)
+        sort_by (str): Trường dùng để sắp xếp
+        sort_order (str): Thứ tự sắp xếp (asc/desc)
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
     logger.info(f"Lấy danh sách cơ sở tri thức - search={search}, page={page}")
     try:
         query = GetKnowledgesQuery(
@@ -74,6 +113,18 @@ async def get_knowledges(
     description="Cập nhật thông tin của một cơ sở tri thức theo ID.",
 )
 async def update_knowledge(id: str, req: UpdateKnowledgeRequest) -> JSONResponse:
+    """
+    Endpoint cập nhật thông tin cơ sở tri thức.
+
+    Args:
+        id (str): ID của cơ sở tri thức cần cập nhật
+        req (UpdateKnowledgeRequest): Dữ liệu cập nhật
+
+    Returns:
+        JSONResponse
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
     logger.info(f"Cập nhật cơ sở tri thức: id={id}")
     try:
         command = UpdateKnowledgeCommand(
@@ -96,6 +147,18 @@ async def update_knowledge(id: str, req: UpdateKnowledgeRequest) -> JSONResponse
     description="Xóa một cơ sở tri thức khỏi hệ thống theo ID.",
 )
 async def delete_knowledge(id: str) -> JSONResponse:
+    """
+    Endpoint xóa cơ sở tri thức.
+
+    Args:
+        id (str): ID của cơ sở tri thức cần xóa
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
     logger.info(f"Xóa cơ sở tri thức: id={id}")
     try:
         command = DeleteKnowledgeCommand(id=id)
@@ -110,18 +173,26 @@ async def delete_knowledge(id: str) -> JSONResponse:
     "/{id}",
     response_model=None,
     summary="Lấy cơ sở tri thức",
-    description="Lấy cơ sở tri thức.",
+    description="Lấy thông tin chi tiết của một cơ sở tri thức theo ID.",
 )
-async def get_knowledge(
-    id: str,
-) -> JSONResponse:
+async def get_knowledge(id: str) -> JSONResponse:
+    """
+    Endpoint lấy thông tin chi tiết một cơ sở tri thức.
+
+    Args:
+        id (str): ID của cơ sở tri thức cần lấy thông tin
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
     logger.info(f"Lấy cơ sở tri thức: id={id}")
     try:
         query = GetKnowledgeQuery(id=id)
         result = await Mediator.send(query)
         return result.to_response()
     except Exception as e:
-        logger.error(f"Lỗi lấy danh sách cơ sở tri thức: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail="Không thể lấy danh sách cơ sở tri thức"
-        )
+        logger.error(f"Lỗi lấy cơ sở tri thức: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Không thể lấy cơ sở tri thức")

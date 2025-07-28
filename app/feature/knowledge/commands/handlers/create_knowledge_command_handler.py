@@ -10,11 +10,11 @@ Chức năng chính:
 - Trả về kết quả thành công hoặc lỗi
 """
 
-from app.database.manager import get_collections
+from app.database import get_collections
 from app.database.models import KnowledgeModel
 from core.result import Result
 from core.cqrs import CommandRegistry, CommandHandler
-from app.feature.knowledge import CreateKnowledgeCommand
+from app.feature.knowledge.commands import CreateKnowledgeCommand
 from shared.messages import KnowledgeResult
 from utils import get_logger
 

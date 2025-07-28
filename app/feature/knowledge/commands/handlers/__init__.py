@@ -4,6 +4,6 @@ from .delete_knowledge_command_handler import DeleteKnowledgeCommandHandler
 
 __all__ = [
     "CreateKnowledgeCommandHandler",
-    "UpdateKnowledgeCommandHandler",
+    "UpdateKnowledgeCommandHandler", 
     "DeleteKnowledgeCommandHandler",
 ]

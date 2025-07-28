@@ -1,37 +1,67 @@
+"""
+Get Knowledges Query Handler - Xử lý truy vấn lấy danh sách cơ sở tri thức
+
+File này định nghĩa handler để xử lý GetKnowledgesQuery, thực hiện việc
+lấy danh sách cơ sở tri thức từ database với các tùy chọn tìm kiếm,
+phân trang và sắp xếp.
+"""
+
+from typing import List
 from app.database import get_collections
 from app.database.models import KnowledgeModel
-from app.dto import KnowledgeDTO, Pagination
-from app.feature.knowledge import GetKnowledgesQuery
-from core.cqrs import QueryHandler
-from core.cqrs import QueryRegistry
+from app.dto.models import KnowledgeModelDTO
+from app.dto.pagination import Pagination
+from ..get_knowledges_query import GetKnowledgesQuery
+from core.cqrs import QueryRegistry, QueryHandler
 from core.result import Result
 from shared.messages import KnowledgeResult
 from utils import get_logger
 
 
 @QueryRegistry.register_handler(GetKnowledgesQuery)
-class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeDTO]]]):
+class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeModelDTO]]]):
+    """
+    Handler xử lý truy vấn GetKnowledgesQuery để lấy danh sách cơ sở tri thức.
+    """
+
     def __init__(self):
+        """
+        Khởi tạo handler
+        """
         super().__init__()
         self.logger = get_logger(__name__)
 
     async def execute(
         self, query: GetKnowledgesQuery
-    ) -> Result[Pagination[KnowledgeDTO]]:
+    ) -> Result[Pagination[KnowledgeModelDTO]]:
+        """
+        Thực thi truy vấn lấy danh sách cơ sở tri thức
+
+        Args:
+            query (GetKnowledgesQuery): Query chứa các tham số tìm kiếm và phân trang
+
+        Returns:
+            Result[Pagination[KnowledgeDTO]]: Kết quả thành công hoặc lỗi với message và code tương ứng
+        """
         try:
             self.logger.info(f"Lấy danh sách cơ sở tri thức: {query}")
 
+            # Lấy collection từ database
             collection = get_collections()
 
+            # Xây dựng query tìm kiếm
             filter_query = {}
             if query.search:
                 filter_query["name"] = {"$regex": query.search, "$options": "i"}
 
+            # Đếm tổng số bản ghi thỏa mãn điều kiện
             total = await collection.knowledges.count_documents(filter_query)
 
+            # Xây dựng tiêu chí sắp xếp
             sort_direction = -1 if query.sort_order == "desc" else 1
             sort_criteria = [(query.sort_by, sort_direction)]
 
+            # Thực hiện truy vấn với phân trang
             cursor = (
                 collection.knowledges.find(filter_query)
                 .sort(sort_criteria)
@@ -39,19 +69,22 @@ class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeDTO]]]):
                 .limit(query.limit)
             )
 
-            items = []
+            # Chuyển đổi kết quả sang DTO
+            knowledge_dtos: List[KnowledgeModelDTO] = []
             async for doc in cursor:
                 knowledge_model = KnowledgeModel.from_dict(doc)
-                knowledge_dto = KnowledgeDTO.from_model(knowledge_model)
-                items.append(knowledge_dto)
+                knowledge_dto = KnowledgeModelDTO.from_model(knowledge_model)
+                knowledge_dtos.append(knowledge_dto)
 
+            # Tạo đối tượng phân trang
             pagination = Pagination(
-                items=items,
+                items=knowledge_dtos,
                 total=total,
                 page=query.page,
                 limit=query.limit,
             )
 
+            # Trả về kết quả thành công
             return Result.success(
                 message=KnowledgeResult.FETCHED.message,
                 code=KnowledgeResult.FETCHED.code,

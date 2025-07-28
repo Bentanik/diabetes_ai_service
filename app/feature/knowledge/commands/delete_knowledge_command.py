@@ -3,15 +3,9 @@ Delete Knowledge Command - Command để xóa cơ sở tri thức
 
 File này định nghĩa DeleteKnowledgeCommand, cần ID của cơ sở tri thức
 để thực hiện thao tác xóa.
-
-Chức năng chính:
-- Validation ID cơ sở tri thức
-- Đảm bảo tính toàn vẹn dữ liệu khi xóa
-- Hỗ trợ soft delete hoặc hard delete tùy theo implementation
 """
 
 from dataclasses import dataclass
-from typing import Optional
 from core.cqrs.base import Command
 
 

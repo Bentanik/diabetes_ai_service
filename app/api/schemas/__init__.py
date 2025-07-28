@@ -5,7 +5,7 @@ from .system_schema import (
     PingData,
     HealthStatus,
 )
-from .rag_schema import UpdateKnowledgeRequest
+from .knowledge_schema import UpdateKnowledgeRequest
 from .job_schema import DocumentJobStatus, DocumentJobType
 
 __all__ = [

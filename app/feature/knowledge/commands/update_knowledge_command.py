@@ -3,11 +3,6 @@ Update Knowledge Command - Command để cập nhật cơ sở tri thức
 
 File này định nghĩa UpdateKnowledgeCommand cho phép cập nhật
 một hoặc nhiều trường của cơ sở tri thức hiện có.
-
-Chức năng chính:
-- Validation ID cơ sở tri thức
-- Hỗ trợ cập nhật từng phần (partial update)
-- Đảm bảo tính toàn vẹn dữ liệu khi cập nhật
 """
 
 from dataclasses import dataclass

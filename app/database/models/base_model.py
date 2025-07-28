@@ -88,27 +88,15 @@ class BaseModel(ABC):
         """
         Chuyển đổi model thành dictionary với xử lý ObjectId
         
-        Method này chuyển đổi tất cả thuộc tính của model thành dictionary,
-        đồng thời xử lý ObjectId để có thể serialize thành JSON.
-        
         Returns:
             BaseDict: Dictionary chứa tất cả thuộc tính của model
         """
-        result = {}
-        
-        # Duyệt qua tất cả thuộc tính của instance
-        for key, value in self.__dict__.items():
-            # Chỉ lấy các thuộc tính public (không bắt đầu bằng _)
-            if not key.startswith("_"):
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                else:
-                    result[key] = value
-        
-        # Thêm _id vào kết quả nếu có
-        if self._id:
-            result["_id"] = str(self._id)
-        
+        result = {
+            "_id": self._id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
         return result
 
     def to_json(self) -> str:

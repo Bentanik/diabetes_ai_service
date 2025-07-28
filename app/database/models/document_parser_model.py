@@ -1,83 +1,52 @@
-from enum import Enum
-from typing import Dict, Union, Optional
+"""
+Document Parser Model - Module xử lý và phân tích tài liệu
+
+File này định nghĩa DocumentParserModel để lưu trữ kết quả phân tích
+và trích xuất nội dung từ tài liệu.
+"""
+
+from typing import Dict, Union
+
 from app.database.models import BaseModel
+from app.database.value_objects import PageLocation
 
 DocumentParserDict = Dict[str, Union[str, bool, dict, None]]
 
 
-class DocumentType(str, Enum):
-    UPLOAD = "upload_document"
-    TRAINING = "training_document"
-
-
-class BBox(BaseModel):
-    x0: float
-    y0: float
-    x1: float
-    y1: float
-
-    def to_dict(self) -> Dict[str, float]:
-        return {
-            "x0": self.x0,
-            "y0": self.y0,
-            "x1": self.x1,
-            "y1": self.y1,
-        }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, float]) -> "BBox":
-        return cls(
-            x0=data.get("x0", 0),
-            y0=data.get("y0", 0),
-            x1=data.get("x1", 0),
-            y1=data.get("y1", 0),
-        )
-
-
-class Metadata(BaseModel):
-    source: str
-    page: int
-    bbox: BBox
-    block_index: Optional[int] = None
-    document_type: Optional[DocumentType] = DocumentType.UPLOAD
-
-    def to_dict(self) -> dict:
-        return {
-            "source": self.source,
-            "page": self.page,
-            "bbox": self.bbox.to_dict(),
-            "block_index": self.block_index,
-            "document_type": self.document_type.value if self.document_type else None,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "Metadata":
-        return cls(
-            source=data.get("source", ""),
-            page=data.get("page", 0),
-            bbox=BBox.from_dict(data.get("bbox", {})),
-            block_index=data.get("block_index"),
-            document_type=(
-                DocumentType(data["document_type"])
-                if data.get("document_type")
-                else DocumentType.UPLOAD
-            ),
-        )
-
-
 class DocumentParserModel(BaseModel):
-    document_id: str
-    content: str
-    metadata: Metadata
-    is_active: bool = True
+    """
+    Model quản lý kết quả phân tích tài liệu
+
+    Attributes:
+        document_id (str): ID của tài liệu gốc
+        content (str): Nội dung được trích xuất
+        location (PageLocation): Vị trí của nội dung trong tài liệu
+        is_active (bool): Trạng thái hoạt động của bản ghi
+    """
+
+    def __init__(
+        self,
+        document_id: str,
+        content: str,
+        location: PageLocation,
+        is_active: bool = True,
+        **kwargs
+    ):
+        """Khởi tạo một bản ghi phân tích tài liệu"""
+        super().__init__(**kwargs)
+        self.document_id = document_id
+        self.content = content
+        self.location = location
+        self.is_active = is_active
 
     def to_dict(self) -> DocumentParserDict:
+        """Chuyển đổi sang dictionary"""
         result = super().to_dict()
         result.update(
             {
                 "document_id": self.document_id,
                 "content": self.content,
-                "metadata": self.metadata.to_dict(),
+                "metadata": self.location.to_dict(),
                 "is_active": self.is_active,
             }
         )
@@ -85,16 +54,17 @@ class DocumentParserModel(BaseModel):
 
     @classmethod
     def from_dict(cls, data: DocumentParserDict) -> "DocumentParserModel":
+        """Tạo instance từ dictionary"""
         data = dict(data)
         document_id = data.pop("document_id", None)
         content = data.pop("content", "")
-        metadata_dict = data.pop("metadata", {})
-        metadata = Metadata.from_dict(metadata_dict)
+        location = PageLocation.from_dict(data.pop("metadata", {}))
         is_active = data.pop("is_active", True)
+        
         return cls(
             document_id=document_id,
             content=content,
-            metadata=metadata,
+            location=location,
             is_active=is_active,
             **data,
         )

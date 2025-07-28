@@ -15,9 +15,9 @@ from bson import ObjectId
 from pymongo import ReturnDocument
 
 from app.database import get_collections
-from app.feature.knowledge import UpdateKnowledgeCommand
+from app.feature.knowledge.commands import UpdateKnowledgeCommand
 from core.cqrs import CommandRegistry, CommandHandler
-from core.result.result import Result
+from core.result import Result
 from shared.messages import KnowledgeResult
 from utils import get_logger
 

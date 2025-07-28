@@ -1,0 +1,56 @@
+"""
+Page Location - Value Object cho vị trí trong trang tài liệu
+
+File này định nghĩa PageLocation để lưu trữ và xử lý thông tin về
+vị trí của nội dung trong một trang tài liệu.
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, Optional
+
+from app.database.enums import DocumentType
+from app.database.value_objects.bounding_box import BoundingBox
+
+
+@dataclass
+class PageLocation:
+    """
+    Value Object chứa thông tin về vị trí trong trang tài liệu
+
+    Attributes:
+        source (str): Nguồn của trang (thường là tên file)
+        page (int): Số trang
+        bbox (BoundingBox): Tọa độ khung chứa nội dung
+        block_index (Optional[int]): Chỉ số của block trong trang
+        doc_type (DocumentType): Loại tài liệu
+    """
+    source: str = ""
+    page: int = 0
+    bbox: BoundingBox = field(default_factory=BoundingBox)
+    block_index: Optional[int] = None
+    doc_type: DocumentType = DocumentType.UPLOAD
+
+    def to_dict(self) -> dict:
+        """Chuyển đổi sang dictionary"""
+        return {
+            "source": self.source,
+            "page": self.page,
+            "bbox": self.bbox.to_dict(),
+            "block_index": self.block_index,
+            "document_type": self.doc_type,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PageLocation":
+        """Tạo instance từ dictionary"""
+        return cls(
+            source=data.get("source", ""),
+            page=data.get("page", 0),
+            bbox=BoundingBox.from_dict(data.get("bbox", {})),
+            block_index=data.get("block_index"),
+            doc_type=(
+                DocumentType(data["document_type"])
+                if data.get("document_type")
+                else DocumentType.UPLOAD
+            ),
+        ) 

@@ -2,11 +2,6 @@
 Create Knowledge Command - Command để tạo cơ sở tri thức mới
 
 File này định nghĩa CreateKnowledgeCommand chứa tất cả thông tin cần thiết để tạo một cơ sở tri thức mới.
-
-Chức năng chính:
-- Validation dữ liệu đầu vào
-- Làm sạch dữ liệu (trim whitespace)
-- Đảm bảo tính toàn vẹn dữ liệu trước khi tạo
 """
 
 from dataclasses import dataclass
