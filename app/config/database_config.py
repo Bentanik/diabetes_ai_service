@@ -1,3 +1,17 @@
+"""
+Database Configuration - Module cấu hình kết nối MongoDB
+
+File này định nghĩa các thông số cấu hình cho kết nối MongoDB, bao gồm:
+- Thông số kết nối cơ bản (URL, database name)
+- Thông tin xác thực (username, password)
+- Cấu hình connection pool
+- Timeout settings
+- Retry policies
+
+Tất cả các thông số được lấy từ environment variables với các giá trị mặc định phù hợp.
+Module sử dụng python-dotenv để load các biến môi trường từ file .env
+"""
+
 import os
 from typing import Optional, Dict, Any
 from functools import lru_cache
@@ -7,7 +21,22 @@ load_dotenv()
 
 
 class DatabaseConfig:
-    """Cấu hình database"""
+    """
+    Class quản lý cấu hình MongoDB.
+
+    Attributes:
+        MONGODB_URL (str): URL kết nối đến MongoDB server
+        DATABASE_NAME (str): Tên database
+        MONGODB_USERNAME (str): Username xác thực (optional)
+        MONGODB_PASSWORD (str): Password xác thực (optional)
+        MAX_POOL_SIZE (int): Số lượng kết nối tối đa trong pool
+        MIN_POOL_SIZE (int): Số lượng kết nối tối thiểu trong pool
+        CONNECT_TIMEOUT_MS (int): Thời gian timeout cho kết nối (ms)
+        SERVER_SELECTION_TIMEOUT_MS (int): Thời gian timeout cho server selection (ms)
+        SOCKET_TIMEOUT_MS (int): Thời gian timeout cho socket operations (ms)
+        RETRY_WRITES (bool): Có retry write operations hay không
+        RETRY_READS (bool): Có retry read operations hay không
+    """
 
     # Cấu hình cơ bản
     MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
@@ -33,7 +62,13 @@ class DatabaseConfig:
     @classmethod
     @lru_cache(maxsize=1)
     def get_connection_url(cls) -> str:
-        """Tạo MongoDB connection URL hoàn chỉnh"""
+        """
+        Tạo MongoDB connection URL hoàn chỉnh bao gồm thông tin xác thực.
+        Kết quả được cache để tránh xử lý lại.
+
+        Returns:
+            str: MongoDB connection URL hoàn chỉnh
+        """
         url = cls.MONGODB_URL
 
         if cls.MONGODB_USERNAME and cls.MONGODB_PASSWORD:
@@ -46,7 +81,13 @@ class DatabaseConfig:
     @classmethod
     @lru_cache(maxsize=1)
     def get_connection_kwargs(cls) -> Dict[str, Any]:
-        """Lấy các tham số kết nối MongoDB"""
+        """
+        Lấy các tham số kết nối MongoDB dưới dạng dictionary.
+        Kết quả được cache để tránh xử lý lại.
+
+        Returns:
+            Dict[str, Any]: Dictionary chứa các tham số kết nối MongoDB
+        """
         return {
             "maxPoolSize": cls.MAX_POOL_SIZE,
             "minPoolSize": cls.MIN_POOL_SIZE,
@@ -59,7 +100,14 @@ class DatabaseConfig:
 
     @classmethod
     def validate_config(cls) -> Dict[str, Any]:
-        """Kiểm tra tính hợp lệ của cấu hình"""
+        """
+        Kiểm tra tính hợp lệ của cấu hình MongoDB.
+
+        Returns:
+            Dict[str, Any]: Dictionary chứa kết quả validation với các key:
+                - valid (bool): True nếu cấu hình hợp lệ
+                - errors (list): Danh sách các lỗi nếu có
+        """
         errors = []
 
         if not cls.MONGODB_URL:

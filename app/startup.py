@@ -2,8 +2,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from app.database import initialize_database, close_mongodb_connection
-from app.storage import minio_manager
+from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
+from app.config import MinioConfig
 from core.llm import get_embedding_model
 from utils import get_logger, get_scorer
 
@@ -29,9 +30,11 @@ async def lifespan(app: FastAPI):
         # Khởi tạo các worker
         worker_start_all()
 
-        # Khởi tạo database
+        # Khởi tạo database và storage
         await initialize_database()
-        minio_manager.create_bucket_if_not_exists("documents")
+        MinioManager.get_instance().create_bucket_if_not_exists(
+            MinioConfig.DOCUMENTS_BUCKET
+        )
 
         logger.info("Tất cả hệ thống đã sẵn sàng!")
 

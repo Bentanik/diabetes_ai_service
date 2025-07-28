@@ -1,4 +1,3 @@
-from .minio_manager import minio_manager
-from .minio_client import MinioClient
+from .minio_manager import MinioManager
 
-__all__ = ["minio_manager", "MinioClient"]
+__all__ = ["MinioManager"]
