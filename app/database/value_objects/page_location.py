@@ -6,7 +6,7 @@ vị trí của nội dung trong một trang tài liệu.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Optional, Dict, Any
 
 from app.database.enums import DocumentType
 from app.database.value_objects.bounding_box import BoundingBox
@@ -24,14 +24,15 @@ class PageLocation:
         block_index (Optional[int]): Chỉ số của block trong trang
         doc_type (DocumentType): Loại tài liệu
     """
+
     source: str = ""
     page: int = 0
     bbox: BoundingBox = field(default_factory=BoundingBox)
     block_index: Optional[int] = None
     doc_type: DocumentType = DocumentType.UPLOAD
 
-    def to_dict(self) -> dict:
-        """Chuyển đổi sang dictionary"""
+    def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi sang dictionary cho MongoDB"""
         return {
             "source": self.source,
             "page": self.page,
@@ -39,18 +40,3 @@ class PageLocation:
             "block_index": self.block_index,
             "document_type": self.doc_type,
         }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "PageLocation":
-        """Tạo instance từ dictionary"""
-        return cls(
-            source=data.get("source", ""),
-            page=data.get("page", 0),
-            bbox=BoundingBox.from_dict(data.get("bbox", {})),
-            block_index=data.get("block_index"),
-            doc_type=(
-                DocumentType(data["document_type"])
-                if data.get("document_type")
-                else DocumentType.UPLOAD
-            ),
-        ) 

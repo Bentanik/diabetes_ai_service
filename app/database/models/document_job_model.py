@@ -5,14 +5,10 @@ File này định nghĩa DocumentJobModel để quản lý và theo dõi tiến 
 xử lý các tài liệu trong hệ thống.
 """
 
-from typing import Dict, Union
-from datetime import datetime
-
+from typing import Dict, Any
 from app.database.enums import DocumentJobType
 from app.database.models import BaseModel
 from app.database.value_objects import ProcessingStatus
-
-DocumentJobDict = Dict[str, Union[str, int, bool, float, datetime, None]]
 
 
 class DocumentJobModel(BaseModel):
@@ -45,7 +41,7 @@ class DocumentJobModel(BaseModel):
         file_path: str,
         type: DocumentJobType = DocumentJobType.UPLOAD,
         is_diabetes: bool = False,
-        status: ProcessingStatus = None,
+        status: ProcessingStatus = ProcessingStatus(),
         priority_diabetes: float = 0.0,
         **kwargs
     ):
@@ -60,56 +56,37 @@ class DocumentJobModel(BaseModel):
         self.type = type
 
         # Thông tin xử lý
-        self.processing = status or ProcessingStatus()
+        self.processing = status
 
         # Thông tin phân loại
         self.is_diabetes = is_diabetes
         self.priority_diabetes = priority_diabetes
 
-    def to_dict(self) -> DocumentJobDict:
-        """Chuyển đổi sang dictionary"""
-        result = super().to_dict()
-        processing_dict = self.processing.to_dict()
-        
-        result.update(
-            {
-                # Thông tin tài liệu
-                "document_id": self.document_id,
-                "knowledge_id": self.knowledge_id,
-                "title": self.title,
-                "description": self.description,
-                "file_path": self.file_path,
-                "type": self.type,
-
-                # Thông tin xử lý
-                "status": processing_dict["status"],
-                "progress": processing_dict["progress"],
-                "progress_message": processing_dict["progress_message"],
-
-                # Thông tin phân loại
-                "is_diabetes": self.is_diabetes,
-                "priority_diabetes": self.priority_diabetes,
-            }
-        )
-        return result
-
     @classmethod
-    def from_dict(cls, data: DocumentJobDict) -> "DocumentJobModel":
-        """Tạo instance từ dictionary"""
+    def from_dict(cls, data: Dict[str, Any]) -> "DocumentJobModel":
+        """Tạo instance từ MongoDB dictionary"""
+        if data is None:
+            return None
+
+        # Tạo copy để không modify original data
         data = dict(data)
-        
-        # Tạo ProcessingStatus
-        status = ProcessingStatus.from_dict(data)
+
+        # Tạo ProcessingStatus từ dữ liệu
+        processing = ProcessingStatus(
+            status=data.pop("status", None),
+            progress=data.pop("progress", 0.0),
+            message=data.pop("progress_message", ""),
+        )
 
         return cls(
-            document_id=data.pop("document_id"),
-            knowledge_id=data.pop("knowledge_id"),
-            title=data.pop("title"),
-            description=data.pop("description"),
-            file_path=data.pop("file_path"),
+            document_id=data.pop("document_id", ""),
+            knowledge_id=data.pop("knowledge_id", ""),
+            title=data.pop("title", ""),
+            description=data.pop("description", ""),
+            file_path=data.pop("file_path", ""),
             type=data.pop("type", DocumentJobType.UPLOAD),
             is_diabetes=data.pop("is_diabetes", False),
-            status=status,
+            status=processing,
             priority_diabetes=data.pop("priority_diabetes", 0.0),
-            **data,
+            **data
         )

@@ -11,7 +11,7 @@ Module chứa các dataclass và type definitions cho việc trích xuất text 
 from dataclasses import dataclass
 from typing import List, Optional
 
-from .bbox import BBox
+from rag.document_parser.models.pdf_types import BBox
 
 
 @dataclass

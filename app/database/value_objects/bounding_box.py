@@ -6,7 +6,7 @@ vị trí và kích thước của một khung chứa nội dung trong trang tà
 """
 
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Any
 
 
 @dataclass
@@ -20,26 +20,17 @@ class BoundingBox:
         x1 (float): Tọa độ x điểm kết thúc
         y1 (float): Tọa độ y điểm kết thúc
     """
+
     x0: float = 0.0
     y0: float = 0.0
     x1: float = 0.0
     y1: float = 0.0
 
-    def to_dict(self) -> Dict[str, float]:
-        """Chuyển đổi sang dictionary"""
+    def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi sang dictionary cho MongoDB"""
         return {
             "x0": self.x0,
             "y0": self.y0,
             "x1": self.x1,
             "y1": self.y1,
         }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, float]) -> "BoundingBox":
-        """Tạo instance từ dictionary"""
-        return cls(
-            x0=data.get("x0", 0),
-            y0=data.get("y0", 0),
-            x1=data.get("x1", 0),
-            y1=data.get("y1", 0),
-        ) 

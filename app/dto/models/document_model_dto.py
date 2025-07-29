@@ -29,6 +29,7 @@ class DocumentModelDTO(BaseModel):
         created_at (datetime): Thời điểm tạo
         updated_at (datetime): Thời điểm cập nhật cuối
     """
+
     id: str = Field(..., description="ID của tài liệu")
     knowledge_id: str = Field(..., description="ID của cơ sở tri thức")
     title: str = Field(..., min_length=1, description="Tiêu đề tài liệu")
@@ -43,13 +44,13 @@ class DocumentModelDTO(BaseModel):
     def from_model(cls, model: DocumentModel) -> "DocumentModelDTO":
         """Tạo DTO từ model"""
         return cls(
-            id=str(model.id),
+            id=model.id,
             knowledge_id=model.knowledge_id,
             title=model.title,
             description=model.description,
             file=DocumentFileDTO.from_value_object(model.file),
-            type=DocumentType(model.type.value),
+            type=model.type,
             priority_diabetes=model.priority_diabetes,
             created_at=model.created_at,
-            updated_at=model.updated_at
-        ) 
+            updated_at=model.updated_at,
+        )

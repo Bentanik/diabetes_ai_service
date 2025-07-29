@@ -10,6 +10,7 @@ class DocumentResult(BaseResultCode):
     NO_UPDATE = ("DOCUMENT_NO_UPDATE", "Không có thay đổi")
     UPDATED = ("DOCUMENT_UPDATED", "Tài liệu đã được cập nhật thành công")
     DELETED = ("DOCUMENT_DELETED", "Tài liệu đã được xóa thành công")
+    UPLOAD_FAILED = ("DOCUMENT_UPLOAD_FAILED", "Lỗi khi tải lên tài liệu")
     DUPLICATE = ("DOCUMENT_DUPLICATE", "Tài liệu đã tồn tại")
     NO_CONTENT = ("DOCUMENT_NO_CONTENT", "Không có nội dung để xử lý")
     FAILED_TO_PARSE = ("DOCUMENT_FAILED_TO_PARSE", "Lỗi khi xử lý tài liệu")

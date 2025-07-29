@@ -6,7 +6,7 @@ về số lượng và dung lượng tài liệu trong cơ sở tri thức.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Union
+from typing import Dict, Any
 
 
 @dataclass
@@ -22,17 +22,9 @@ class KnowledgeStats:
     document_count: int = 0
     total_size_bytes: int = 0
 
-    def to_dict(self) -> Dict[str, int]:
-        """Chuyển đổi sang dictionary"""
+    def to_dict(self) -> Dict[str, Any]:
+        """Chuyển đổi sang dictionary cho MongoDB"""
         return {
             "document_count": self.document_count,
             "total_size_bytes": self.total_size_bytes,
         }
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Union[int, None]]) -> "KnowledgeStats":
-        """Tạo instance từ dictionary"""
-        return cls(
-            document_count=data.get("document_count", 0),
-            total_size_bytes=data.get("total_size_bytes", 0),
-        )

@@ -5,12 +5,11 @@ File này định nghĩa DocumentParserModel để lưu trữ kết quả phân 
 và trích xuất nội dung từ tài liệu.
 """
 
-from typing import Dict, Union
-
+from typing import Dict, Any
 from app.database.models import BaseModel
 from app.database.value_objects import PageLocation
-
-DocumentParserDict = Dict[str, Union[str, bool, dict, None]]
+from app.database.value_objects.bounding_box import BoundingBox
+from app.database.enums import DocumentType
 
 
 class DocumentParserModel(BaseModel):
@@ -39,32 +38,40 @@ class DocumentParserModel(BaseModel):
         self.location = location
         self.is_active = is_active
 
-    def to_dict(self) -> DocumentParserDict:
-        """Chuyển đổi sang dictionary"""
-        result = super().to_dict()
-        result.update(
-            {
-                "document_id": self.document_id,
-                "content": self.content,
-                "metadata": self.location.to_dict(),
-                "is_active": self.is_active,
-            }
-        )
-        return result
-
     @classmethod
-    def from_dict(cls, data: DocumentParserDict) -> "DocumentParserModel":
-        """Tạo instance từ dictionary"""
+    def from_dict(cls, data: Dict[str, Any]) -> "DocumentParserModel":
+        """Tạo instance từ MongoDB dictionary"""
+        if data is None:
+            return None
+
+        # Tạo copy để không modify original data
         data = dict(data)
-        document_id = data.pop("document_id", None)
+
+        document_id = data.pop("document_id", "")
         content = data.pop("content", "")
-        location = PageLocation.from_dict(data.pop("metadata", {}))
         is_active = data.pop("is_active", True)
-        
+
+        # Tạo PageLocation từ metadata hoặc các field riêng lẻ
+        bbox_data = data.pop("bbox", {})
+        bbox = BoundingBox(
+            x0=bbox_data.get("x0", 0.0),
+            y0=bbox_data.get("y0", 0.0),
+            x1=bbox_data.get("x1", 0.0),
+            y1=bbox_data.get("y1", 0.0),
+        )
+
+        location = PageLocation(
+            source=data.pop("source", ""),
+            page=data.pop("page", 0),
+            bbox=bbox,
+            block_index=data.pop("block_index", None),
+            doc_type=data.pop("document_type", DocumentType.UPLOAD),
+        )
+
         return cls(
             document_id=document_id,
             content=content,
             location=location,
             is_active=is_active,
-            **data,
+            **data  # Các field còn lại như _id, created_at, updated_at
         )

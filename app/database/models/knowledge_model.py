@@ -5,14 +5,12 @@ File này định nghĩa KnowledgeModel để lưu trữ và quản lý thông t
 về các cơ sở tri thức trong hệ thống.
 """
 
-from typing import Dict, Union, Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
 from bson import ObjectId
 
 from app.database.models import BaseModel
 from app.database.value_objects import KnowledgeStats
-
-KnowledgeDict = Dict[str, Union[str, int, bool, datetime, ObjectId, None]]
 
 
 class KnowledgeModel(BaseModel):
@@ -47,24 +45,13 @@ class KnowledgeModel(BaseModel):
         # Thông tin thống kê
         self.stats = stats or KnowledgeStats()
 
-    def to_dict(self) -> KnowledgeDict:
-        """Chuyển đổi sang dictionary"""
-        result = super().to_dict()
-        result.update(
-            {
-                # Thông tin cơ bản
-                "name": self.name,
-                "description": self.description,
-                "select_training": self.select_training,
-                # Thông tin thống kê
-                **self.stats.to_dict(),
-            }
-        )
-        return result
-
     @classmethod
-    def from_dict(cls, data: KnowledgeDict) -> "KnowledgeModel":
-        """Tạo instance từ dictionary"""
+    def from_dict(cls, data: Dict[str, Any]) -> "KnowledgeModel":
+        """Tạo instance từ MongoDB dictionary"""
+        if data is None:
+            return None
+
+        # Tạo copy để không modify original data
         data = dict(data)
 
         # Thông tin cơ bản
@@ -73,16 +60,15 @@ class KnowledgeModel(BaseModel):
         select_training = data.pop("select_training", False)
 
         # Tạo KnowledgeStats từ dữ liệu thống kê
-        stats = KnowledgeStats.from_dict(data)
-
-        # Xóa các trường thống kê khỏi data để tránh trùng lặp
-        data.pop("document_count", None)
-        data.pop("total_size_bytes", None)
+        stats = KnowledgeStats(
+            document_count=data.pop("document_count", 0),
+            total_size_bytes=data.pop("total_size_bytes", 0),
+        )
 
         return cls(
             name=name,
             description=description,
             select_training=select_training,
             stats=stats,
-            **data,
+            **data  # Các field còn lại như _id, created_at, updated_at
         )
