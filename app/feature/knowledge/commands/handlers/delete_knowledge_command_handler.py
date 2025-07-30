@@ -16,6 +16,7 @@ from app.database.manager import get_collections
 from app.feature.knowledge.commands import DeleteKnowledgeCommand
 from core.cqrs import CommandRegistry, CommandHandler
 from core.result import Result
+from rag.vector_store import VectorStoreOperations
 from shared.messages.knowledge_message import KnowledgeResult
 from utils import get_logger
 
@@ -25,22 +26,24 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
     """
     Handler để xử lý DeleteKnowledgeCommand
     """
-    
+
     def __init__(self):
         """Khởi tạo handler"""
         super().__init__()
+        self.vector_operations = VectorStoreOperations()
         self.logger = get_logger(__name__)
 
     async def execute(self, command: DeleteKnowledgeCommand) -> Result[None]:
         """
         Thực hiện xóa cơ sở tri thức
-        
+
         Method này thực hiện các bước sau:
         1. Validate ObjectId format
         2. Thực hiện xóa cơ sở tri thức theo ID
         3. Kiểm tra kết quả xóa
-        4. Trả về kết quả thành công hoặc lỗi
-        
+        4. Xóa collection từ VectorStore
+        5. Trả về kết quả thành công hoặc lỗi
+
         Args:
             command (DeleteKnowledgeCommand): Command chứa ID cơ sở tri thức cần xóa
 
@@ -72,6 +75,9 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
                 message=KnowledgeResult.NOT_FOUND.message,
                 code=KnowledgeResult.NOT_FOUND.code,
             )
+
+        # Xóa collection từ VectorStore
+        self.vector_operations.delete_collection(command.id)
 
         self.logger.info(f"Cơ sở tri thức đã được xóa: {command.id}")
 

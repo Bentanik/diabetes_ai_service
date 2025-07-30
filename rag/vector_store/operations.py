@@ -1,5 +1,4 @@
 from typing import Optional, List, Dict, Any
-import time
 from langchain_core.documents import Document
 from rag.vector_store import VectorStoreManager
 from utils import get_logger
@@ -13,11 +12,7 @@ class VectorStoreOperations:
     def create_collection(self, collection_name: str, vector_size: int = 768) -> None:
         try:
             self.logger.info(f"Đang tạo collection {collection_name}...")
-            start_time = time.time()
             self.manager.create_collection_if_not_exists(collection_name, vector_size)
-            self.logger.info(
-                f"Tạo collection {collection_name} thành công trong {time.time() - start_time:.2f}s"
-            )
         except Exception as e:
             self.logger.error(
                 f"Lỗi tạo collection {collection_name}: {str(e)}", exc_info=True
@@ -27,36 +22,47 @@ class VectorStoreOperations:
     def store_vectors(
         self,
         texts: List[str],
-        ids: List[str],
         collection_name: str,
         metadatas: Optional[List[Dict[str, Any]]] = None,
         vector_size: int = 768,
     ) -> None:
-        if len(texts) != len(ids):
-            raise ValueError("texts và ids phải bằng số lượng")
+        # Validate inputs
+        if not texts:
+            raise ValueError("Danh sách texts không được rỗng")
         if metadatas is None:
             metadatas = [{}] * len(texts)
         elif len(metadatas) != len(texts):
             raise ValueError("metadatas phải cùng số lượng với texts")
 
-        metadatas = [{**md, "id": id_} for md, id_ in zip(metadatas, ids)]
+        # Validate text content
+        for text in texts:
+            if not isinstance(text, str) or not text.strip():
+                raise ValueError("Mỗi text phải là chuỗi không rỗng")
 
         try:
             self.logger.info(f"Đang lưu {len(texts)} vector vào {collection_name}...")
-            start_time = time.time()
 
             vector_store = self.manager.get_store(collection_name, vector_size)
 
+            # Create Document objects
             documents = [
                 Document(page_content=text, metadata=metadata)
                 for text, metadata in zip(texts, metadatas)
             ]
 
-            vector_store.add_documents(documents=documents, ids=ids)
+            # Debug embeddings before storing
+            from core.llm import get_embedding_model
 
-            self.logger.info(
-                f"Lưu vector thành công trong {time.time() - start_time:.2f}s"
+            embeddings = get_embedding_model().embed_documents(
+                [doc.page_content for doc in documents]
             )
+            self.logger.info(
+                f"Generated {len(embeddings)} embeddings, each of size {len(embeddings[0])}"
+            )
+
+            # Store documents
+            vector_store.add_documents(documents=documents)
+
         except Exception as e:
             self.logger.error(
                 f"Lỗi lưu vector vào {collection_name}: {str(e)}", exc_info=True
@@ -71,10 +77,12 @@ class VectorStoreOperations:
         vector_size: int = 768,
     ) -> List[Dict[str, Any]]:
         try:
+            if not query_text.strip():
+                raise ValueError("query_text không được rỗng")
+
             self.logger.info(
                 f"Tìm kiếm trong {collection_name} với query: {query_text[:50]}..."
             )
-            start_time = time.time()
 
             vector_store = self.manager.get_store(collection_name, vector_size)
             results = vector_store.similarity_search_with_score(
@@ -91,7 +99,6 @@ class VectorStoreOperations:
                 for i, (doc, score) in enumerate(results)
             ]
 
-            self.logger.info(f"Tìm kiếm hoàn tất trong {time.time() - start_time:.2f}s")
             return formatted_results
         except Exception as e:
             self.logger.error(
@@ -99,24 +106,21 @@ class VectorStoreOperations:
             )
             raise
 
-    def delete_vectors(
-        self, ids: List[str], collection_name: str, vector_size: int = 768
-    ) -> None:
+    def delete_collection(self, collection_name: str) -> None:
         try:
-            self.logger.info(f"Đang xóa {len(ids)} vector từ {collection_name}...")
-            start_time = time.time()
+            self.logger.info(f"Đang xóa toàn bộ collection {collection_name}...")
 
-            vector_store = self.manager.get_store(collection_name, vector_size)
-            vector_store.delete(ids=ids)
+            self.manager.delete_collection(collection_name)
 
-            self.logger.info(
-                f"Xóa vector thành công trong {time.time() - start_time:.2f}s"
-            )
         except Exception as e:
             self.logger.error(
-                f"Lỗi xóa vector trong {collection_name}: {str(e)}", exc_info=True
+                f"Lỗi xóa collection {collection_name}: {str(e)}", exc_info=True
             )
             raise
 
     def get_available_collections(self) -> List[str]:
-        return self.manager.get_collection_names()
+        try:
+            return self.manager.get_collection_names()
+        except Exception as e:
+            self.logger.error(f"Lỗi lấy danh sách collections: {str(e)}", exc_info=True)
+            raise

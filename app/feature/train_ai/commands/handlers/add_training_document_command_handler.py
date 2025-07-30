@@ -1,9 +1,10 @@
+from bson import ObjectId
 from rag.chunking import Chunk, get_chunking_instance
-import json
 from app.database import get_collections
 from app.database.models import DocumentParserModel
 from core.cqrs import CommandHandler, CommandRegistry
 from core.result import Result
+from rag.vector_store import VectorStoreOperations
 from ..add_training_document_command import AddTrainingDocumentCommand
 from shared.messages import DocumentResult
 from utils import get_logger
@@ -14,23 +15,35 @@ class AddTrainingDocumentCommandHandler(CommandHandler):
     def __init__(self):
         super().__init__()
         self.logger = get_logger(__name__)
+        self.vector_operations = VectorStoreOperations()
         self.collections = get_collections()
 
     async def execute(self, command: AddTrainingDocumentCommand) -> Result[None]:
         self.logger.info(f"Thêm tài liệu vào vector database: {command.document_id}")
 
         try:
-            # Khởi tạo chunker tại đây vì cần await
-            chunking = await get_chunking_instance()
-
-            # Tìm các document parser liên quan
+            # 1. Lấy document từ MongoDB
             document_parsers = await self.collections.document_parsers.find(
                 {"document_id": command.document_id}
             ).to_list(length=None)
 
-            if not document_parsers:
+            document = await self.collections.documents.find_one(
+                {"_id": ObjectId(command.document_id)},
+                {"knowledge_id": 1},
+            )
+
+            if not document:
                 self.logger.info(
                     f"Không tìm thấy document với ID: {command.document_id}"
+                )
+                return Result.failure(
+                    message=DocumentResult.NOT_FOUND.message,
+                    code=DocumentResult.NOT_FOUND.code,
+                )
+
+            if not document_parsers:
+                self.logger.info(
+                    f"Không tìm thấy document parser với Document ID: {command.document_id}"
                 )
                 return Result.failure(
                     message=DocumentResult.NOT_FOUND.message,
@@ -41,42 +54,52 @@ class AddTrainingDocumentCommandHandler(CommandHandler):
                 DocumentParserModel.from_dict(doc) for doc in document_parsers
             ]
 
-            # Chunk từng document
-            all_chunks: list[Chunk] = []
+            # 2. Chunk tài liệu
+            chunking = await get_chunking_instance()
+            all_chunks = []
+
             for parser in document_parsers:
                 chunks = await chunking.chunk_text(
                     text=parser.content,
                     metadata={
-                        "document_parser_id": parser.id,
+                        "document_parser_id": str(parser.id),
                         "is_active": parser.is_active,
                     },
                 )
                 all_chunks.extend(chunks)
 
-            # Lưu all_chunks vào file JSON
-            try:
-                json_output = {
-                    "document_id": command.document_id,
-                    "chunk_count": len(all_chunks),
-                    "chunks": all_chunks,
-                }
-                output_file = f"chunks_{command.document_id}.json"
-                with open(output_file, "w", encoding="utf-8") as f:
-                    json.dump(json_output, f, ensure_ascii=False, indent=2)
+            if not all_chunks:
                 self.logger.info(
-                    f"Đã chunk và lưu {len(all_chunks)} đoạn văn bản vào {output_file}"
+                    f"Không tạo được chunk nào từ tài liệu {command.document_id}"
                 )
-            except Exception as e:
-                self.logger.error(f"Lỗi khi lưu chunks vào JSON: {e}")
-                # Không làm thất bại command chính, chỉ log lỗi
+                return Result.failure(
+                    message=DocumentResult.TRAINING_FAILED.message,
+                    code=DocumentResult.TRAINING_FAILED.code,
+                )
 
+            # 3. Lưu vào vector database (Qdrant)
+            texts = [chunk["text"] for chunk in all_chunks]
+            metadatas = [chunk.get("metadata", {}) for chunk in all_chunks]
+            print(document["knowledge_id"])
+            collection_name = document["knowledge_id"]
+
+            self.vector_operations.store_vectors(
+                texts=texts,
+                collection_name=collection_name,
+                metadatas=metadatas,
+            )
+
+            # 4. Thành công
+            self.logger.info(
+                f"Đã lưu {len(texts)} vector vào collection {collection_name}"
+            )
             return Result.success(
-                message=DocumentResult.CREATED.message,
-                code=DocumentResult.CREATED.code,
+                message=DocumentResult.TRAINING_COMPLETED.message,
+                code=DocumentResult.TRAINING_COMPLETED.code,
             )
 
         except Exception as e:
-            self.logger.error(f"Lỗi xử lý tài liệu huấn luyện: {e}")
+            self.logger.error(f"Lỗi xử lý tài liệu huấn luyện: {e}", exc_info=True)
             return Result.failure(
                 message=DocumentResult.TRAINING_FAILED.message,
                 code=DocumentResult.TRAINING_FAILED.code,
