@@ -61,7 +61,6 @@ class DocumentParserModel(BaseModel):
         )
 
         location = PageLocation(
-            source=data.pop("source", ""),
             page=data.pop("page", 0),
             bbox=bbox,
             block_index=data.pop("block_index", None),
@@ -73,5 +72,5 @@ class DocumentParserModel(BaseModel):
             content=content,
             location=location,
             is_active=is_active,
-            **data  # Các field còn lại như _id, created_at, updated_at
+            **data
         )

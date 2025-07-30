@@ -6,7 +6,8 @@ from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
 from core.llm import get_embedding_model
-from utils import get_logger, get_scorer
+from utils import get_logger
+from utils.diabetes_scorer_utils import get_scorer_async
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,8 +25,7 @@ async def lifespan(app: FastAPI):
         # Tải model
         get_embedding_model()
 
-        scorer = get_scorer()
-        await scorer.precompute_embeddings()
+        scorer = await get_scorer_async()
 
         # Khởi tạo các worker
         worker_start_all()

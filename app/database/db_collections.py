@@ -12,12 +12,12 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 class DBCollections:
     """
     Quản lý các collection trong database MongoDB.
-    
+
     Class này đóng vai trò như một facade pattern để truy cập
     các collections trong database. Mỗi collection được expose
     thông qua một property riêng biệt, đảm bảo type safety
     và dễ dàng sử dụng.
-    
+
     Attributes:
         db: Database connection object từ Motor
     """
@@ -25,7 +25,7 @@ class DBCollections:
     def __init__(self, db):
         """
         Constructor của DBCollections
-        
+
         Args:
             db: Database connection object (thường là AsyncIOMotorDatabase)
         """
@@ -35,7 +35,7 @@ class DBCollections:
     def knowledges(self) -> AsyncIOMotorCollection:
         """
         Collection lưu trữ thông tin cơ sở tri thức
-        
+
         Returns:
             AsyncIOMotorCollection: Collection knowledges
         """
@@ -45,27 +45,27 @@ class DBCollections:
     def documents(self) -> AsyncIOMotorCollection:
         """
         Collection lưu trữ thông tin tài liệu
-        
+
         Returns:
             AsyncIOMotorCollection: Collection documents
         """
         return self.db["documents"]
 
     @property
-    def documents_parsers(self) -> AsyncIOMotorCollection:
+    def document_parsers(self) -> AsyncIOMotorCollection:
         """
         Collection lưu trữ thông tin document parsers
-        
+
         Returns:
-            AsyncIOMotorCollection: Collection documents_parsers
+            AsyncIOMotorCollection: Collection document_parsers
         """
-        return self.db["documents_parsers"]
+        return self.db["document_parsers"]
 
     @property
     def document_jobs(self) -> AsyncIOMotorCollection:
         """
         Collection lưu trữ thông tin jobs xử lý tài liệu
-        
+
         Returns:
             AsyncIOMotorCollection: Collection document_jobs
         """

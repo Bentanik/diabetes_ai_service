@@ -24,12 +24,12 @@ class ProcessingStatus:
 
     status: DocumentJobStatus = DocumentJobStatus.PENDING
     progress: float = 0.0
-    message: str = ""
+    progress_message: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         """Chuyển đổi sang dictionary cho MongoDB"""
         return {
             "status": self.status,
             "progress": self.progress,
-            "progress_message": self.message,
+            "progress_message": self.progress_message,
         }

@@ -54,9 +54,7 @@ class DocumentJobModel(BaseModel):
         self.description = description
         self.file_path = file_path
         self.type = type
-
-        # Thông tin xử lý
-        self.processing = status
+        self.status = status
 
         # Thông tin phân loại
         self.is_diabetes = is_diabetes
@@ -72,10 +70,10 @@ class DocumentJobModel(BaseModel):
         data = dict(data)
 
         # Tạo ProcessingStatus từ dữ liệu
-        processing = ProcessingStatus(
+        status = ProcessingStatus(
             status=data.pop("status", None),
             progress=data.pop("progress", 0.0),
-            message=data.pop("progress_message", ""),
+            progress_message=data.pop("progress_message", ""),
         )
 
         return cls(
@@ -86,7 +84,7 @@ class DocumentJobModel(BaseModel):
             file_path=data.pop("file_path", ""),
             type=data.pop("type", DocumentJobType.UPLOAD),
             is_diabetes=data.pop("is_diabetes", False),
-            status=processing,
+            status=status,
             priority_diabetes=data.pop("priority_diabetes", 0.0),
             **data
         )

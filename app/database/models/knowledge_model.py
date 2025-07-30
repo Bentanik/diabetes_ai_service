@@ -5,9 +5,7 @@ File này định nghĩa KnowledgeModel để lưu trữ và quản lý thông t
 về các cơ sở tri thức trong hệ thống.
 """
 
-from typing import Optional, Dict, Any
-from datetime import datetime
-from bson import ObjectId
+from typing import Any, Dict, Optional
 
 from app.database.models import BaseModel
 from app.database.value_objects import KnowledgeStats

@@ -18,14 +18,12 @@ class PageLocation:
     Value Object chứa thông tin về vị trí trong trang tài liệu
 
     Attributes:
-        source (str): Nguồn của trang (thường là tên file)
         page (int): Số trang
         bbox (BoundingBox): Tọa độ khung chứa nội dung
         block_index (Optional[int]): Chỉ số của block trong trang
         doc_type (DocumentType): Loại tài liệu
     """
 
-    source: str = ""
     page: int = 0
     bbox: BoundingBox = field(default_factory=BoundingBox)
     block_index: Optional[int] = None
@@ -34,7 +32,6 @@ class PageLocation:
     def to_dict(self) -> Dict[str, Any]:
         """Chuyển đổi sang dictionary cho MongoDB"""
         return {
-            "source": self.source,
             "page": self.page,
             "bbox": self.bbox.to_dict(),
             "block_index": self.block_index,

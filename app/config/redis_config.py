@@ -47,8 +47,12 @@ class RedisConfig:
     )
 
     # Timeout settings
-    SOCKET_TIMEOUT: int = int(os.getenv("REDIS_SOCKET_TIMEOUT", "5"))
-    SOCKET_CONNECT_TIMEOUT: int = int(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "5"))
+    SOCKET_TIMEOUT: int = int(
+        os.getenv("REDIS_SOCKET_TIMEOUT", "30")
+    )  # Tăng từ 5 lên 30
+    SOCKET_CONNECT_TIMEOUT: int = int(
+        os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "10")
+    )  # Tăng từ 5 lên 10
 
     # SSL settings
     SSL: bool = os.getenv("REDIS_SSL", "false").lower() == "true"

@@ -6,8 +6,10 @@ File này định nghĩa các task và worker để xử lý các công việc l
 - Training model với tài liệu
 """
 
-from typing import Literal
 import asyncio
+from typing import Literal
+
+import redis.exceptions
 from pydantic import BaseModel
 
 from app.worker.redis_client import redis_client
@@ -27,19 +29,11 @@ class DocumentJob(BaseModel):
     Model định nghĩa cấu trúc của một document job
 
     Attributes:
-        file_path (str): Đường dẫn đến file tài liệu
-        document_id (str): ID của tài liệu
-        knowledge_id (str): ID của cơ sở tri thức chứa tài liệu
-        title (str): Tiêu đề tài liệu
-        description (str): Mô tả tài liệu
-        type (str): Loại job - "upload_document" hoặc "training_document"
+        id (str): ID của DocumentJob
+        type (str): Loại DocumentJob - "upload_document" hoặc "training_document"
     """
 
-    file_path: str
-    document_id: str
-    knowledge_id: str
-    title: str
-    description: str
+    id: str
     type: Literal["upload_document", "training_document"]
 
 
@@ -50,9 +44,7 @@ async def add_document_job(job: DocumentJob) -> None:
     Args:
         job (DocumentJob): Thông tin về job cần xử lý
     """
-    logger.info(
-        f"Thêm document job mới: type={job.type}, document_id={job.document_id}"
-    )
+    logger.info(f"Thêm document job mới: type={job.type}, id={job.id}")
     await redis_client.rpush(DOCUMENT_QUEUE, job.model_dump_json())
 
 
@@ -63,41 +55,31 @@ async def process_document_upload_job(job: DocumentJob) -> None:
     Args:
         job (DocumentJob): Thông tin về job upload
     """
-    logger.info(f"Xử lý upload tài liệu: document_id={job.document_id}")
+    logger.info(f"Xử lý upload tài liệu: id={job.id}")
     try:
-        from app.feature.document import ProcessDocumentUploadCommand
+        from app.feature.document.commands import ProcessDocumentUploadCommand
 
-        command = ProcessDocumentUploadCommand(
-            file_path=job.file_path,
-            knowledge_id=job.knowledge_id,
-            document_id=job.document_id,
-            title=job.title,
-            description=job.description,
-        )
+        command = ProcessDocumentUploadCommand(document_job_id=job.id)
         await Mediator.send(command)
-        logger.info(f"Hoàn thành xử lý upload tài liệu: document_id={job.document_id}")
+        logger.info(f"Hoàn thành xử lý upload tài liệu: id={job.id}")
     except Exception as e:
-        logger.error(
-            f"Lỗi xử lý upload tài liệu {job.document_id}: {str(e)}", exc_info=True
-        )
+        logger.error(f"Lỗi xử lý upload tài liệu {job.id}: {str(e)}", exc_info=True)
         raise
 
 
 async def process_document_training_job(job: DocumentJob) -> None:
     """
-    Xử lý job training với tài liệu.
+    Xử lý job training tài liệu.
 
     Args:
         job (DocumentJob): Thông tin về job training
     """
-    logger.info(f"Xử lý training tài liệu: document_id={job.document_id}")
+    logger.info(f"Bắt đầu training tài liệu: id={job.id}")
+
     try:
-        # TODO: Implement training logic
-        logger.info(f"Hoàn thành training tài liệu: document_id={job.document_id}")
+        logger.info(f"Hoàn thành training tài liệu: id={job.id}")
     except Exception as e:
-        logger.error(
-            f"Lỗi training tài liệu {job.document_id}: {str(e)}", exc_info=True
-        )
+        logger.error(f"Lỗi training tài liệu {job.id}: {str(e)}", exc_info=True)
         raise
 
 
@@ -131,8 +113,9 @@ async def document_worker() -> None:
                     )
             else:
                 await asyncio.sleep(WORKER_SLEEP_INTERVAL)
+        except redis.exceptions.TimeoutError:
+            # Redis timeout - bình thường khi không có job
+            await asyncio.sleep(WORKER_SLEEP_INTERVAL)
         except Exception as e:
             logger.error(f"Lỗi trong document worker: {str(e)}", exc_info=True)
-            await asyncio.sleep(
-                WORKER_SLEEP_INTERVAL
-            )  # Tránh loop quá nhanh khi có lỗi
+            await asyncio.sleep(WORKER_SLEEP_INTERVAL)

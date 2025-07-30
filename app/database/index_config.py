@@ -5,46 +5,27 @@ File này chứa cấu hình cho tất cả các indexes cần thiết trong dat
 """
 
 COLLECTION_INDEX_CONFIG = {
-    # Collection "knowledges" - lưu trữ thông tin cơ sở tri thức
     "knowledges": [
-        {
-            "fields": [("name", 1)],
-            "unique": True,
-            "name": "name_unique_idx"
-        },
+        {"fields": [("name", 1)], "unique": True, "name": "idx_name"},
     ],
-    
-    # Collection "documents" - lưu trữ thông tin tài liệu
     "documents": [
-        {
-            "fields": [("knowledge_id", 1)],
-            "name": "idx_knowledge_id"
-        },
-        {
-            "fields": [("file_hash", 1)],
-            "unique": True,
-            "name": "file_hash_unique_idx"
-        },
+        {"fields": [("knowledge_id", 1)], "name": "idx_knowledge_id"},
+        {"fields": [("file_hash", 1)], "unique": True, "name": "file_hash_unique_idx"},
         {
             "fields": [("knowledge_id", 1), ("title", 1)],
             "unique": True,
-            "name": "knowledge_title_unique_idx"
+            "name": "knowledge_title_unique_idx",
         },
+        {"fields": [("is_diabetes", 1)], "name": "idx_is_diabetes"},
+        {"fields": [("title", 1)], "name": "idx_title"},
     ],
-    
-    # Collection "document_jobs" - lưu trữ thông tin jobs xử lý tài liệu
-    # "document_jobs": [
-    #     {
-    #         "fields": [("document_id", 1)],
-    #         "name": "idx_document_id"
-    #     },
-    #     {
-    #         "fields": [("status", 1)],  # Index trên status để tìm jobs theo trạng thái
-    #         "name": "idx_status"
-    #     },
-    #     {
-    #         "fields": [("created_at", -1)],  # Index trên created_at để sắp xếp theo thời gian tạo
-    #         "name": "idx_created_at"
-    #     },
-    # ],
-} 
+    "document_parsers": [
+        {"fields": [("document_id", 1)], "name": "idx_document_id"},
+        {"fields": [("is_active", 1)], "name": "idx_is_active"},
+    ],
+    "document_jobs": [
+        {"fields": [("title", 1)], "name": "idx_title"},
+        {"fields": [("status", 1)], "name": "idx_status"},
+        {"fields": [("created_at", -1)], "name": "idx_created_at"},
+    ],
+}

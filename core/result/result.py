@@ -29,7 +29,7 @@ class Result(BaseModel, Generic[T]):
         ResultStatus.UNAUTHORIZED: (401, "Unauthorized"),
         ResultStatus.FORBIDDEN: (403, "Forbidden"),
         ResultStatus.INTERNAL_ERROR: (500, "Internal Server Error"),
-        ResultStatus.SERVICE_UNAVAILABLE: (503, "Service Unavailable"),  # Thêm này
+        ResultStatus.SERVICE_UNAVAILABLE: (503, "Service Unavailable"),
     }
 
     @staticmethod
