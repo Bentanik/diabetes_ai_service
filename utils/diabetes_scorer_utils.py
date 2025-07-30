@@ -20,7 +20,6 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from langchain.schema import Document
-from core.llm import get_embedding_model
 
 
 class DiabetesAnalysisResult:
@@ -89,6 +88,8 @@ class DiabetesScorer:
         self.medium_threshold = 0.35
 
     async def _ensure_initialized(self):
+        from core.llm import get_embedding_model
+
         """Đảm bảo model đã được khởi tạo - thread-safe"""
         if self._initialized:
             return
@@ -505,6 +506,8 @@ async def get_scorer_async(
 
 
 def get_scorer(data_dir: str = "shared", model_dir: str = "model") -> DiabetesScorer:
+    from core.llm import get_embedding_model
+
     global _scorer_instance
 
     with _scorer_lock:

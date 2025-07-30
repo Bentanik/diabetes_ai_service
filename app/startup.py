@@ -6,10 +6,10 @@ from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
 from core.llm import get_embedding_model
-from utils import get_logger
-from utils.diabetes_scorer_utils import get_scorer_async
+from rag.chunking import get_chunking_instance
+from rag.vector_store import VectorStoreManager
+from utils import get_logger, get_scorer_async
 
-# Load environment variables from .env file
 load_dotenv()
 
 logger = get_logger(__name__)
@@ -25,7 +25,11 @@ async def lifespan(app: FastAPI):
         # Tải model
         get_embedding_model()
 
-        scorer = await get_scorer_async()
+        # Khởi tạo scorer
+        await get_scorer_async()
+
+        # Khởi tạo Chunking
+        await get_chunking_instance(enable_caching=True)
 
         # Khởi tạo các worker
         worker_start_all()
@@ -35,6 +39,11 @@ async def lifespan(app: FastAPI):
         MinioManager.get_instance().create_bucket_if_not_exists(
             MinioConfig.DOCUMENTS_BUCKET
         )
+
+        # Khởi tạo Qdrant VectorStoreManager
+        vector_store_manager = VectorStoreManager()
+        available_collections = vector_store_manager.get_collection_names()
+        logger.info(f"Đã khởi tạo Qdrant với các collection: {available_collections}")
 
         logger.info("Tất cả hệ thống đã sẵn sàng!")
 
