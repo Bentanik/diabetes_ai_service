@@ -7,7 +7,7 @@ from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
 from core.llm import get_embedding_model
 from rag.chunking import get_chunking_instance
-from rag.vector_store import VectorStoreManager
+from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
 
 load_dotenv()
@@ -40,9 +40,9 @@ async def lifespan(app: FastAPI):
             MinioConfig.DOCUMENTS_BUCKET
         )
 
-        # Khởi tạo Qdrant VectorStoreManager
-        vector_store_manager = VectorStoreManager()
-        available_collections = vector_store_manager.get_collection_names()
+        # Khởi tạo Vector Store
+        vector_store_operations = VectorStoreOperations.get_instance()
+        available_collections = vector_store_operations.get_available_collections()
         logger.info(f"Đã khởi tạo Qdrant với các collection: {available_collections}")
 
         logger.info("Tất cả hệ thống đã sẵn sàng!")

@@ -91,7 +91,6 @@ class AddTrainingDocumentCommandHandler(CommandHandler):
             status=processing_status,
             type=DocumentJobType.TRAINING,
             priority_diabetes=document.priority_diabetes,
-            is_diabetes=False,
         )
         await db.document_jobs.insert_one(document_job_model.to_dict())
 

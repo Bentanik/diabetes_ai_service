@@ -23,12 +23,12 @@ class DocumentJobModel(BaseModel):
             description (str): Mô tả tài liệu
             file_path (str): Đường dẫn đến file
             type (DocumentJobType): Loại công việc (upload/training)
+            is_document_delete (bool): Có xóa tài liệu gốc chưa
 
         Thông tin xử lý:
             processing (ProcessingStatus): Trạng thái và tiến độ xử lý
 
         Thông tin phân loại:
-            is_diabetes (bool): Đánh dấu có liên quan đến tiểu đường
             priority_diabetes (float): Độ ưu tiên về tiểu đường (0.0 - 1.0)
     """
 
@@ -40,9 +40,9 @@ class DocumentJobModel(BaseModel):
         description: str,
         file_path: str,
         type: DocumentJobType = DocumentJobType.UPLOAD,
-        is_diabetes: bool = False,
         status: ProcessingStatus = ProcessingStatus(),
         priority_diabetes: float = 0.0,
+        is_document_delete: bool = False,
         **kwargs
     ):
         """Khởi tạo một công việc xử lý tài liệu mới"""
@@ -57,8 +57,9 @@ class DocumentJobModel(BaseModel):
         self.status = status
 
         # Thông tin phân loại
-        self.is_diabetes = is_diabetes
         self.priority_diabetes = priority_diabetes
+
+        self.is_document_delete = is_document_delete
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DocumentJobModel":
@@ -83,8 +84,8 @@ class DocumentJobModel(BaseModel):
             description=data.pop("description", ""),
             file_path=data.pop("file_path", ""),
             type=data.pop("type", DocumentJobType.UPLOAD),
-            is_diabetes=data.pop("is_diabetes", False),
             status=status,
             priority_diabetes=data.pop("priority_diabetes", 0.0),
+            is_document_delete=data.pop("is_document_delete", False),
             **data
         )

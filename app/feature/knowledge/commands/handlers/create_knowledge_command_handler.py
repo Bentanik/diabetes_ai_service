@@ -29,7 +29,7 @@ class CreateKnowledgeCommandHandler(CommandHandler):
     def __init__(self):
         """Khởi tạo handler"""
         super().__init__()
-        self.vector_operations = VectorStoreOperations()
+        self.vector_operations = VectorStoreOperations.get_instance()
         self.logger = get_logger(__name__)
 
     async def execute(self, command: CreateKnowledgeCommand) -> Result[None]:

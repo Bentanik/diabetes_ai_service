@@ -6,7 +6,7 @@ File này định nghĩa DeleteKnowledgeCommand, cần ID của cơ sở tri th�
 """
 
 from dataclasses import dataclass
-from core.cqrs.base import Command
+from core.cqrs import Command
 
 
 @dataclass

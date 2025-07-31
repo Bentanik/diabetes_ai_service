@@ -17,7 +17,7 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
     def __init__(self):
         super().__init__()
         self.logger = get_logger(__name__)
-        self.vector_operations = VectorStoreOperations()
+        self.vector_operations = VectorStoreOperations.get_instance()
         self.collections = get_collections()
 
     async def execute(self, command: ProcessTrainingDocumentCommand) -> Result[None]:

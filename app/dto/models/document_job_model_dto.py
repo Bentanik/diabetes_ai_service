@@ -27,8 +27,8 @@ class DocumentJobModelDTO(BaseModel):
         file_path (str): Đường dẫn đến file
         type (DocumentJobType): Loại công việc
         processing (ProcessingStatusDTO): Trạng thái và tiến độ xử lý
-        is_diabetes (bool): Đánh dấu có liên quan đến tiểu đường
         priority_diabetes (float): Độ ưu tiên về tiểu đường
+        is_document_delete (bool): Có xóa tài liệu gốc chưa
         created_at (datetime): Thời điểm tạo
         updated_at (datetime): Thời điểm cập nhật cuối
     """
@@ -40,8 +40,8 @@ class DocumentJobModelDTO(BaseModel):
     file_path: str = Field("", description="Đường dẫn file")
     type: DocumentJobType
     processing: ProcessingStatusDTO
-    is_diabetes: bool = Field(False, description="Liên quan đến tiểu đường")
     priority_diabetes: float = Field(0.0, ge=0.0, le=1.0, description="Độ ưu tiên")
+    is_document_delete: bool = Field(False, description="Có xóa tài liệu gốc chưa")
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -57,8 +57,8 @@ class DocumentJobModelDTO(BaseModel):
             file_path=model.file_path,
             type=DocumentJobType(model.type.value),
             processing=ProcessingStatusDTO.from_value_object(model.processing),
-            is_diabetes=model.is_diabetes,
             priority_diabetes=model.priority_diabetes,
+            is_document_delete=model.is_document_delete,
             created_at=model.created_at,
             updated_at=model.updated_at
         ) 

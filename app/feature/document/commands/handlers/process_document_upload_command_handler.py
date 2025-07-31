@@ -141,12 +141,12 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 progress_message="Đang phân tích nội dung diabetes",
             )
 
-            diabetes_score, is_diabetes = await self._calculate_diabetes_score(
+            diabetes_score = await self._calculate_diabetes_score(
                 cleaned_text
             )
 
             self.logger.info(
-                f"Điểm diabetes cho document {command.document_job_id}: {diabetes_score} (is_diabetes: {is_diabetes})"
+                f"Điểm diabetes cho document {command.document_job_id}: {diabetes_score})"
             )
 
             # Lưu tài liệu vào database
@@ -185,6 +185,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
 
             await self._save_document_parser_results(
                 document_id=str(document_model.id),
+                knowledge_id=document_job.knowledge_id,
                 pages_data=pages_data,
                 cleaned_text=cleaned_text,
             )
@@ -208,7 +209,6 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 progress=100,
                 progress_message="Đã hoàn thành phân tích và lưu tài liệu",
                 priority_diabetes=diabetes_score,
-                is_diabetes=is_diabetes,
             )
 
             return Result.success(
@@ -340,13 +340,14 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             return "", []
 
     async def _save_document_parser_results(
-        self, document_id: str, pages_data: list, cleaned_text: str
+        self, document_id: str, knowledge_id: str, pages_data: list, cleaned_text: str
     ) -> None:
         """
         Lưu kết quả phân tích document vào DocumentParserModel
 
         Args:
             document_id: ID của document
+            knowledge_id: ID của knowledge
             pages_data: Dữ liệu pages từ PDF extractor
             cleaned_text: Text đã được làm sạch
         """
@@ -382,6 +383,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                             # Tạo DocumentParserModel
                             parser_model = DocumentParserModel(
                                 document_id=document_id,
+                                knowledge_id=knowledge_id,
                                 content=block.context,
                                 location=location,
                                 is_active=True,
@@ -429,7 +431,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         except Exception as e:
             self.logger.error(f"Lỗi lưu document parser results: {e}")
 
-    async def _calculate_diabetes_score(self, cleaned_text: str) -> tuple[float, bool]:
+    async def _calculate_diabetes_score(self, cleaned_text: str) -> float:
         """
         Tính điểm diabetes cho text đã được làm sạch
 
@@ -437,7 +439,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             cleaned_text: Text đã được extract và làm sạch
 
         Returns:
-            tuple[float, bool]: (diabetes_score, is_diabetes)
+            tuple[float, bool]: (diabetes_score)
         """
         try:
             if not cleaned_text or not cleaned_text.strip():
@@ -461,8 +463,6 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
 
             analysis = await async_analyze_diabetes_content(sample_text)
 
-            is_diabetes = analysis.final_score >= 0.35  # Medium threshold
-
             self.logger.info(
                 f"Diabetes analysis - Score: {analysis.final_score}, "
                 f"Level: {analysis.relevance_level}, "
@@ -471,7 +471,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 f"Words: {analysis.word_count}"
             )
 
-            return analysis.final_score, is_diabetes
+            return analysis.final_score
 
         except Exception as e:
             self.logger.error(f"Lỗi tính điểm diabetes: {e}")
@@ -484,7 +484,6 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         progress: float = None,
         progress_message: str = None,
         priority_diabetes: float = None,
-        is_diabetes: bool = None,
     ) -> None:
 
         update_fields = {
@@ -494,7 +493,6 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 "progress": progress,
                 "progress_message": progress_message,
                 "priority_diabetes": priority_diabetes,
-                "is_diabetes": is_diabetes,
             }.items()
             if v is not None
         }

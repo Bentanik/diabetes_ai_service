@@ -109,6 +109,7 @@ class DeleteDocumentCommandHandler(CommandHandler):
                 minio_client.remove_object(bucket_name, object_name)
 
                 self.logger.info(f"Đã xóa file từ storage: {file_path}")
+
             else:
                 self.logger.warning(f"Định dạng file path không hợp lệ: {file_path}")
 
@@ -156,4 +157,3 @@ class DeleteDocumentCommandHandler(CommandHandler):
 
         except Exception as e:
             self.logger.error(f"Lỗi khi cập nhật knowledge stats: {e}")
-            # Không raise exception vì đây không phải lỗi critical

@@ -16,7 +16,6 @@ COLLECTION_INDEX_CONFIG = {
             "unique": True,
             "name": "knowledge_title_unique_idx",
         },
-        {"fields": [("is_diabetes", 1)], "name": "idx_is_diabetes"},
         {"fields": [("title", 1)], "name": "idx_title"},
     ],
     "document_parsers": [

@@ -235,14 +235,14 @@ class DiabetesScorer:
         print(f"Tạo embeddings cho {len(unique_texts)} từ khóa...")
 
         # Tạo embeddings trong thread pool
-        embeddings = await asyncio.to_thread(self.model.encode, unique_texts)
+        embeddings = await asyncio.to_thread(self.model.embed_documents, unique_texts)
 
         # Tạo category embeddings
         category_embeddings = {}
         for lang in ["vietnamese", "english"]:
             for category, words in self.keywords[lang].items():
                 if words:
-                    cat_embeddings = await asyncio.to_thread(self.model.encode, words)
+                    cat_embeddings = await asyncio.to_thread(self.model.embed_documents, words)
                     category_embeddings[f"{lang}_{category}"] = np.mean(
                         cat_embeddings, axis=0
                     )
@@ -275,7 +275,9 @@ class DiabetesScorer:
 
         try:
             # Encode text trong thread pool
-            text_emb = await asyncio.to_thread(self.model.encode, [text])
+            text_emb = await asyncio.to_thread(self.model.embed_query, text)
+            # text_emb shape: (embedding_dim,) -> reshape to (1, embedding_dim)
+            text_emb = np.array(text_emb).reshape(1, -1)
             similarities = cosine_similarity(text_emb, self.embeddings["embeddings"])[0]
 
             # Kết hợp các metrics

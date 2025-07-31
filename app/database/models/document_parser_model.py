@@ -18,6 +18,7 @@ class DocumentParserModel(BaseModel):
 
     Attributes:
         document_id (str): ID của tài liệu gốc
+        knowledge_id (str): ID của cơ sở tri thức liên quan
         content (str): Nội dung được trích xuất
         location (PageLocation): Vị trí của nội dung trong tài liệu
         is_active (bool): Trạng thái hoạt động của bản ghi
@@ -26,6 +27,7 @@ class DocumentParserModel(BaseModel):
     def __init__(
         self,
         document_id: str,
+        knowledge_id: str,
         content: str,
         location: PageLocation,
         is_active: bool = True,
@@ -34,6 +36,7 @@ class DocumentParserModel(BaseModel):
         """Khởi tạo một bản ghi phân tích tài liệu"""
         super().__init__(**kwargs)
         self.document_id = document_id
+        self.knowledge_id = knowledge_id
         self.content = content
         self.location = location
         self.is_active = is_active
@@ -48,6 +51,7 @@ class DocumentParserModel(BaseModel):
         data = dict(data)
 
         document_id = data.pop("document_id", "")
+        knowledge_id = data.pop("knowledge_id", "")
         content = data.pop("content", "")
         is_active = data.pop("is_active", True)
 
@@ -69,6 +73,7 @@ class DocumentParserModel(BaseModel):
 
         return cls(
             document_id=document_id,
+            knowledge_id=knowledge_id,
             content=content,
             location=location,
             is_active=is_active,
