@@ -10,6 +10,7 @@ from rag.chunking import get_chunking_instance
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
 from rag.re_ranker import Reranker
+from core.llm.load_llm import get_gemini_llm
 
 load_dotenv()
 
@@ -26,6 +27,9 @@ async def lifespan(app: FastAPI):
         # Tải model
         await get_embedding_model()
         await get_reranker_model()
+
+        # Khởi tạo LLM
+        get_gemini_llm()
 
         # Khởi tạo scorer
         await get_scorer_async()

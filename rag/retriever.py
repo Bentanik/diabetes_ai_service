@@ -1,8 +1,7 @@
 from typing import List, Dict, Any, Optional
 import asyncio
-import json
 from rag.vector_store import VectorStoreOperations
-from rag.re_ranker import Reranker
+from rag.re_ranker import Reranker, RerankResult
 from utils import get_logger
 
 logger = get_logger(__name__)
@@ -12,14 +11,8 @@ class Retriever:
         self.logger = get_logger(__name__)
         self.vector_store = VectorStoreOperations.get_instance()
         self.reranker = Reranker()
-        # giả sử bạn có scorer, nếu không thì comment dòng dưới
-        # from rag.analysis import DiabetesScorer
-        # self.scorer = DiabetesScorer()
 
     async def initialize(self):
-        """
-        Khởi tạo async cho reranker.
-        """
         await self.reranker._ensure_initialized()
 
     async def retrieve(
@@ -29,20 +22,7 @@ class Retriever:
         rerank_top_n: int = 5,
         filter: Optional[Dict[str, Any]] = None,
         min_score: float = 0.5
-    ) -> List[Dict[str, Any]]:
-        """
-        Truy vấn và rerank documents.
-
-        Args:
-            query (str): Câu truy vấn.
-            top_k (int): Số lượng kết quả ban đầu từ vector store.
-            rerank_top_n (int): Số lượng kết quả sau rerank.
-            filter (Optional[Dict[str, Any]]): Bộ lọc metadata.
-            min_score (float): Ngưỡng điểm tối thiểu.
-
-        Returns:
-            List[Dict[str, Any]]: Danh sách kết quả với metadata và điểm.
-        """
+    ) -> List[RerankResult]:
         try:
             await self.initialize()
             results = await self.vector_store.search(
@@ -59,16 +39,16 @@ class Retriever:
             documents = [result.text for result in results]
             reranked_docs = await self.reranker.rerank(query=query, documents=documents, top_k=rerank_top_n)
 
-            reranked_results = []
+            text_to_result = {r.text: r for r in results}
+            reranked_results: List[RerankResult] = []
+
             for reranked_doc in reranked_docs:
-                for result in results:
-                    if result.text == reranked_doc['text']:
-                        result_dict = result.dict()
-                        result_dict["score"] = float(reranked_doc['score'])
-                        # Lọc theo điểm tối thiểu
-                        if result_dict["score"] >= min_score:
-                            reranked_results.append(result_dict)
-                        break
+                source = text_to_result.get(reranked_doc.text)
+                if source and reranked_doc.score >= min_score:
+                    reranked_results.append(RerankResult(
+                        text=reranked_doc.text,
+                        score=reranked_doc.score,
+                    ))
 
             self.logger.info(f"Reranked to {len(reranked_results)} results")
             return reranked_results[:rerank_top_n]
@@ -77,8 +57,10 @@ class Retriever:
             raise
 
 async def main():
+    import json
+
     retriever = Retriever()
-    query = "Bệnh tiểu đường là gì?"
+    query = "Bệnh tiểu đường có mấy loại?"
     output_file = "output_file.json"
     try:
         results = await retriever.retrieve(
@@ -91,14 +73,9 @@ async def main():
 
         # Lưu file json, kết quả đã là list dict nên json.dump sẽ chạy tốt
         with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(results, f, ensure_ascii=False, indent=2)
+            json.dump([r.dict() for r in results], f, ensure_ascii=False, indent=2)
 
         logger.info(f"Kết quả tìm kiếm được lưu tại: {output_file}")
-
-        # In ra console test
-        for i, res in enumerate(results, 1):
-            print(f"{i}. Text: {res.get('text', 'No text')} - Score: {res.get('score', 0):.3f}")
-
     except Exception as e:
         logger.error(f"Lỗi khi chạy main: {str(e)}", exc_info=True)
         raise
