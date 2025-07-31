@@ -9,6 +9,7 @@ from app.database.models.document_model import DocumentModel
 from app.database.models.document_job_model import DocumentJobModel
 from app.database.models.document_parser_model import DocumentParserModel
 from app.database.models.knowledge_model import KnowledgeModel
+from app.database.models.chat_model import ChatModel
 
 __all__ = [
     "BaseModel",
@@ -16,4 +17,5 @@ __all__ = [
     "DocumentJobModel",
     "DocumentParserModel",
     "KnowledgeModel",
+    "ChatModel",
 ]
