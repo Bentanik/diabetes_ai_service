@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from app.feature.train_ai.commands import AddTrainingDocumentCommand
+from app.feature.train_ai.commands import (
+    AddTrainingDocumentCommand,
+)
 from core.cqrs import Mediator
 from utils import (
     get_logger,

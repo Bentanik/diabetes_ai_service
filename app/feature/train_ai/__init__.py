@@ -1,12 +1,12 @@
 # Import từ commands
 from .commands import (
-    AddTrainingDocumentCommand,
-    AddTrainingDocumentCommandHandler,
+    ProcessTrainingDocumentCommand,
+    ProcessTrainingDocumentCommandHandler,
 )
 
 __all__ = [
     # Commands
-    "AddTrainingDocumentCommand",
+    "ProcessTrainingDocumentCommand",
     # Command Handlers
-    "AddTrainingDocumentCommandHandler",
+    "ProcessTrainingDocumentCommandHandler",
 ]

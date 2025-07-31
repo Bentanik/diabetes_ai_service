@@ -25,7 +25,6 @@ from app.feature.document import (
 from app.dto.models import DocumentModelDTO
 from app.storage import MinioManager
 from core.cqrs import Mediator
-from shared.messages.document_message import DocumentResult
 from utils import (
     compress_stream,
     get_best_compression,
