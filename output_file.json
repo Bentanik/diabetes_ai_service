@@ -1,0 +1,32 @@
+[
+  {
+    "id": "6",
+    "score": 0.9704338908195496,
+    "payload": {
+      "document_parser_id": "688b6ded0a4cb9bb963afc8a",
+      "is_active": true,
+      "original_length": 538,
+      "structure_analysis": {
+        "has_headings": true,
+        "has_lists": false,
+        "has_tables": false,
+        "has_code": false,
+        "paragraph_count": 11,
+        "structure_type": "simple"
+      },
+      "strategy": "simple",
+      "token_count": 179,
+      "language_info": {
+        "language": "vietnamese",
+        "vietnamese_ratio": 0.2882205513784461,
+        "confidence": 0.5764411027568922
+      },
+      "processed_by_llm": false,
+      "chunk_index": 0,
+      "_id": "08e8aaa9-144f-44bb-8bac-a198214a094c",
+      "_collection_name": "688b6dd90a4cb9bb963afc74",
+      "collection_name": "688b6dd90a4cb9bb963afc74"
+    },
+    "text": "Đái tháo đường hay tiểu đường là một nhóm các rối\nloạn chuyển hóa đặc trưng là tình trạng đường huyết\ncao kéo dài.[11] Các triệu chứng bao gồm tiểu tiện, khát\nnước và cảm thấy đói nhiều hơn bình thường.[2] Nếu\nkhông được điều trị, đái tháo đường có thể gây ra\nnhiều biến chứng,[2] bao gồm các biến chứng cấp\ntính như nhiễm toan ceton, tăng áp lực thẩm thấu và tử\nvong,[3] cũng như các biến chứng mạn tính như bệnh\ntim mạch, tai biến mạch máu não, bệnh thận, loét bàn\nchân, tổn thương thần kinh, tổn thương mắt và suy\ngiảm nhận thức.[2][5]"
+  }
+]

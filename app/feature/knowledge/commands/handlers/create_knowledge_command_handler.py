@@ -70,7 +70,7 @@ class CreateKnowledgeCommandHandler(CommandHandler):
         await collection.knowledges.insert_one(knowledge.to_dict())
 
         # Tạo collection VectorStore
-        self.vector_operations.create_collection(
+        await self.vector_operations.create_collection(
             collection_name=knowledge.id,
         )
 

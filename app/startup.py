@@ -5,10 +5,11 @@ from app.database import initialize_database, close_mongodb_connection
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
-from core.llm import get_embedding_model
+from core.llm import get_embedding_model, get_reranker_model
 from rag.chunking import get_chunking_instance
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
+from rag.re_ranker import Reranker
 
 load_dotenv()
 
@@ -23,13 +24,17 @@ async def lifespan(app: FastAPI):
 
     try:
         # Tải model
-        get_embedding_model()
+        await get_embedding_model()
+        await get_reranker_model()
 
         # Khởi tạo scorer
         await get_scorer_async()
 
         # Khởi tạo Chunking
         await get_chunking_instance(enable_caching=True)
+
+        # Khởi tạo Reranker
+        Reranker()
 
         # Khởi tạo các worker
         worker_start_all()

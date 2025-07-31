@@ -9,18 +9,21 @@ from utils import get_logger
 class VectorStoreManager:
     def __init__(self, force_recreate: bool = False):
         self.logger = get_logger(__name__)
-        self.embedding_model = get_embedding_model()
+        self.embedding_model = None
         self.client = QdrantClient(host="localhost", port=6333)
         self.vector_stores: Dict[str, Qdrant] = {}
         self.force_recreate = force_recreate
 
-    def create_collection_if_not_exists(
+    async def create_collection_if_not_exists(
         self,
         collection_name: str,
         vector_size: int = 768,
         distance: Distance = Distance.COSINE,
     ) -> None:
         try:
+            if self.embedding_model is None:
+                self.embedding_model = await get_embedding_model()
+
             if self.force_recreate and self.client.collection_exists(collection_name):
                 self.logger.info(
                     f"Force recreate enabled. Deleting collection: {collection_name}"
@@ -54,13 +57,13 @@ class VectorStoreManager:
             )
             raise
 
-    def get_store(self, collection_name: str, vector_size: int = 768) -> Qdrant:
+    async def get_store(self, collection_name: str, vector_size: int = 768) -> Qdrant:
         try:
             if collection_name not in self.vector_stores:
                 self.logger.info(
                     f"Collection '{collection_name}' not initialized, creating now."
                 )
-                self.create_collection_if_not_exists(collection_name, vector_size)
+                await self.create_collection_if_not_exists(collection_name, vector_size)
             return self.vector_stores[collection_name]
         except Exception as e:
             self.logger.error(
