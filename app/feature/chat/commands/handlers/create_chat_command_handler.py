@@ -21,6 +21,7 @@ from app.database import get_collections
 from app.database.models import ChatSessionModel
 from rag.retriever import Retriever
 from core.llm.load_llm import get_gemini_llm
+from app.dto.models import ChatHistoryModelDTO
 
 
 class DiabetesPrompt:
@@ -92,7 +93,7 @@ class CreateChatCommandHandler(CommandHandler):
             )
             await self.db.chat_histories.insert_one(chat_user.to_dict())
 
-            await self.process_chat_with_ai(
+            ai_response = await self.process_chat_with_ai(
                 session_id=session_id,
                 content=command.content,
                 user_id=command.user_id,
@@ -101,7 +102,7 @@ class CreateChatCommandHandler(CommandHandler):
             return Result.success(
                 message=ChatResult.CHAT_CREATED.message,
                 code=ChatResult.CHAT_CREATED.code,
-                data=None,
+                data=ai_response,
             )
 
         except Exception as e:
@@ -126,7 +127,7 @@ class CreateChatCommandHandler(CommandHandler):
 
     async def process_chat_with_ai(
         self, session_id: str, content: str, user_id: str
-    ) -> Result[None]:
+    ) -> Result[ChatHistoryModelDTO]:
         try:
             # Lấy lịch sử 20 cuộc trò chuyện gần nhất từ database
             chat_histories_dicts = (
@@ -164,10 +165,11 @@ class CreateChatCommandHandler(CommandHandler):
                 role=ChatRoleType.AI,
             )
             await self.db.chat_histories.insert_one(chat_assistant.to_dict())
+            chat_history_dto = ChatHistoryModelDTO.from_model(chat_assistant)
             return Result.success(
                 message=ChatResult.CHAT_CREATED.message,
                 code=ChatResult.CHAT_CREATED.code,
-                data=None,
+                data=chat_history_dto,
             )
 
         except Exception as e:
