@@ -17,7 +17,8 @@ class DocumentJobStatus(str, Enum):
         COMPLETED: Đã xử lý hoàn thành
         FAILED: Xử lý thất bại
     """
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
-    FAILED = "failed" 
+    FAILED = "failed"

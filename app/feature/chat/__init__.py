@@ -1,3 +1,16 @@
-from .queries import ChatQuery, ChatQueryHandler
+from .commands import (
+    CreateChatCommand,
+    CreateChatCommandHandler,
+)
 
-__all__ = ["ChatQuery", "ChatQueryHandler"]
+from .queries import (
+    GetChatHistoriesQuery,
+    GetChatHistoriesQueryHandler,
+)
+
+__all__ = [
+    "CreateChatCommand",
+    "CreateChatCommandHandler",
+    "GetChatHistoriesQuery",
+    "GetChatHistoriesQueryHandler",
+]

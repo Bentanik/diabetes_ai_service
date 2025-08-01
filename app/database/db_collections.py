@@ -72,11 +72,18 @@ class DBCollections:
         return self.db["document_jobs"]
 
     @property
-    def chats(self) -> AsyncIOMotorCollection:
+    def chat_sessions(self) -> AsyncIOMotorCollection:
         """
-        Collection lưu trữ thông tin chats
+        Collection lưu trữ thông tin phiên trò chuyện
+        """
+        return self.db["chat_sessions"]
+
+    @property
+    def chat_histories(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin lịch sử cuộc trò chuyện
 
         Returns:
-            AsyncIOMotorCollection: Collection chats
+            AsyncIOMotorCollection: Collection chat_histories
         """
-        return self.db["chats"]
+        return self.db["chat_histories"]

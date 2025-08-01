@@ -6,6 +6,9 @@ from .commands import (
     AddTrainingDocumentCommandHandler,
 )
 
+# Import từ queries
+from .queries import GetRetrievedContextQuery, GetRetrievedContextQueryHandler
+
 __all__ = [
     # Commands
     "AddTrainingDocumentCommand",
@@ -13,4 +16,8 @@ __all__ = [
     # Command Handlers
     "AddTrainingDocumentCommandHandler",
     "ProcessTrainingDocumentCommandHandler",
+    # Queries
+    "GetRetrievedContextQuery",
+    # Query Handlers
+    "GetRetrievedContextQueryHandler",
 ]

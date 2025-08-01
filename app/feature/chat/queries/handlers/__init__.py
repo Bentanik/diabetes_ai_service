@@ -1,3 +1,3 @@
-from .chat_query_handler import ChatQueryHandler
+from .get_chat_histories_query_handler import GetChatHistoriesQueryHandler
 
-__all__ = ["ChatQueryHandler"]
+__all__ = ["GetChatHistoriesQueryHandler"]

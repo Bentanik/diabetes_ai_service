@@ -27,8 +27,12 @@ COLLECTION_INDEX_CONFIG = {
         {"fields": [("status", 1)], "name": "idx_status"},
         {"fields": [("created_at", -1)], "name": "idx_created_at"},
     ],
-    "chats": [
-        {"fields": [("session_id", 1)], "name": "idx_session_id"},
+    "chat_sessions": [
         {"fields": [("user_id", 1)], "name": "idx_user_id"},
+        {"fields": [("title", 1)], "name": "idx_title"},
+    ],
+    "chat_histories": [
+        {"fields": [("session_id", 1)], "name": "idx_session_id"},
+        {"fields": [("created_at", -1)], "name": "idx_created_at"},
     ],
 }

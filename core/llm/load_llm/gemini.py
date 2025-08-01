@@ -8,12 +8,15 @@ from typing import Optional
 load_dotenv()
 
 if not os.getenv("GOOGLE_API_KEY"):
-    raise EnvironmentError("GOOGLE_API_KEY chưa được thiết lập! Hãy thêm vào file .env hoặc biến môi trường hệ thống.")
+    raise EnvironmentError(
+        "GOOGLE_API_KEY chưa được thiết lập! Hãy thêm vào file .env hoặc biến môi trường hệ thống."
+    )
 
 
 logger = get_logger(__name__)
 
 _gemini_instance: Optional[ChatGoogleGenerativeAI] = None
+
 
 def get_gemini_llm() -> ChatGoogleGenerativeAI:
     global _gemini_instance

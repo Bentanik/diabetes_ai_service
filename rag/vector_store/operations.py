@@ -16,9 +16,8 @@ class SearchResult(BaseModel):
     text: str
 
     class Config:
-        json_encoders = {
-            float: lambda v: float(v)
-        }
+        json_encoders = {float: lambda v: float(v)}
+
 
 def create_qdrant_filter(filter_dict: Optional[Dict[str, Any]]) -> Optional[Filter]:
     """Convert a filter dictionary to a Qdrant Filter object."""
@@ -37,18 +36,23 @@ def create_qdrant_filter(filter_dict: Optional[Dict[str, Any]]) -> Optional[Filt
             if "lt" in value:
                 range_condition["lt"] = value["lt"]
             if range_condition:
-                must_conditions.append(FieldCondition(key=key, range=Range(**range_condition)))
+                must_conditions.append(
+                    FieldCondition(key=key, range=Range(**range_condition))
+                )
         else:
-            must_conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
+            must_conditions.append(
+                FieldCondition(key=key, match=MatchValue(value=value))
+            )
     return Filter(must=must_conditions) if must_conditions else None
 
+
 class VectorStoreOperations:
-    _instance: Optional['VectorStoreOperations'] = None
+    _instance: Optional["VectorStoreOperations"] = None
     _lock: Lock = Lock()
     _logger = get_logger(__name__)
 
     @classmethod
-    def get_instance(cls, force_recreate: bool = False) -> 'VectorStoreOperations':
+    def get_instance(cls, force_recreate: bool = False) -> "VectorStoreOperations":
         """Get the singleton instance of VectorStoreOperations (thread-safe)."""
         with cls._lock:
             if cls._instance is None:
@@ -70,13 +74,15 @@ class VectorStoreOperations:
         self.logger = self._logger
         self.manager = VectorStoreManager(force_recreate=force_recreate)
 
-    async def create_collection(self, collection_name: str, vector_size: int = 768) -> None:
+    async def create_collection(
+        self, collection_name: str, vector_size: int = 768
+    ) -> None:
         try:
             self.logger.info(f"Đang tạo collection {collection_name}...")
-            await self.manager.create_collection_if_not_exists(collection_name, vector_size)
-            self.logger.info(
-                f"Tạo collection {collection_name} thành công trong"
+            await self.manager.create_collection_if_not_exists(
+                collection_name, vector_size
             )
+            self.logger.info(f"Tạo collection {collection_name} thành công trong")
         except Exception as e:
             self.logger.error(
                 f"Lỗi tạo collection {collection_name}: {str(e)}", exc_info=True
@@ -111,8 +117,12 @@ class VectorStoreOperations:
                 for text, metadata in zip(texts, metadatas)
             ]
 
-            embeddings = await get_embedding_model().embed_documents([doc.page_content for doc in documents])
-            self.logger.info(f"Generated {len(embeddings)} embeddings, each of size {len(embeddings[0])}")
+            embeddings = await get_embedding_model().embed_documents(
+                [doc.page_content for doc in documents]
+            )
+            self.logger.info(
+                f"Generated {len(embeddings)} embeddings, each of size {len(embeddings[0])}"
+            )
 
             vector_store.add_documents(documents=documents)
 
@@ -153,18 +163,23 @@ class VectorStoreOperations:
             all_results = []
             for collection_name in collection_names:
                 try:
-                    vector_store = await self.manager.get_store(collection_name, vector_size)
+                    vector_store = await self.manager.get_store(
+                        collection_name, vector_size
+                    )
                     results = await asyncio.to_thread(
                         vector_store.similarity_search_with_score,
                         query=query_text,
                         k=top_k,
-                        filter=qdrant_filter
+                        filter=qdrant_filter,
                     )
                     formatted_results = [
                         SearchResult(
                             id=doc.metadata.get("id", str(i)),
                             score=float(score),
-                            payload={**doc.metadata, "collection_name": collection_name},
+                            payload={
+                                **doc.metadata,
+                                "collection_name": collection_name,
+                            },
                             text=doc.page_content,
                         )
                         for i, (doc, score) in enumerate(results)
@@ -177,7 +192,9 @@ class VectorStoreOperations:
                     )
                     continue
 
-            all_results = sorted(all_results, key=lambda x: x.score, reverse=True)[:top_k]
+            all_results = sorted(all_results, key=lambda x: x.score, reverse=True)[
+                :top_k
+            ]
             self.logger.info(f"Tìm kiếm hoàn tất")
             return all_results
         except Exception as e:
@@ -198,7 +215,5 @@ class VectorStoreOperations:
         try:
             return self.manager.get_collection_names()
         except Exception as e:
-            self.logger.error(
-                f"Lỗi lấy danh sách collections: {str(e)}", exc_info=True
-            )
+            self.logger.error(f"Lỗi lấy danh sách collections: {str(e)}", exc_info=True)
             raise
