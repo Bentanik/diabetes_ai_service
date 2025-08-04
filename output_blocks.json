@@ -1,0 +1,3472 @@
+[
+  {
+    "page_index": 0,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "Đái tháo đường",
+        "display_context": "Đái tháo đường",
+        "metadata": {
+          "bbox": {
+            "left": 411.15234375,
+            "top": 133.55038452148438,
+            "right": 510.0255126953125,
+            "bottom": 148.29727172851562,
+            "width": 98.8731689453125,
+            "height": 14.74688720703125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.5,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": "2_merged",
+        "context": "Biểu tượng của bệnh đái tháo đường là một hình tròn viền xanh Triệu chứng Tiểu tiện nhiều, khát nước quá mức, đói quá mức Biến chứng Nhiễm toan ceton, tăng áp lực thẩm thấu, bệnh tim mạch, tai biến mạch máu não, bệnh thần kinh ngoại biên, bệnh thận mạn tính, loét bàn chân, suy giảm nhận thức, liệt dạ dày Yếu tố nguy Loại 1: Tiền sử gia đình Loại 2: Béo phì, không tập thể dục, di truyền Phương pháp chẩn đoán Đường huyết cao Điều trị Chế độ ăn lành mạnh, tập thể dục Thuốc Insulin, Thuốc trị đái tháo đường như metformin Dịch tễ 463 triệu (8.8%) Tử vong 4,2 triệu",
+        "display_context": "Biểu tượng của bệnh đái tháo đường là một hình tròn viền xanh Triệu chứng Tiểu tiện nhiều, khát nước quá mức, đói quá mức Biến chứng Nhiễm toan ceton, tăng áp lực thẩm thấu, bệnh tim mạch, tai biến mạch máu não, bệnh thần kinh ngoại biên, bệnh thận mạn tính, loét bàn chân, suy giảm nhận thức, liệt dạ dày Yếu tố nguy Loại 1: Tiền sử gia đình Loại 2: Béo phì, không tập thể dục, di truyền Phương pháp chẩn đoán Đường huyết cao Điều trị Chế độ ăn lành mạnh, tập thể dục Thuốc Insulin, Thuốc trị đái tháo đường như metformin Dịch tễ 463 triệu (8.8%) Tử vong 4,2 triệu",
+        "metadata": {
+          "bbox": {
+            "left": 350.296875,
+            "top": 308.4403076171875,
+            "right": 569.519775390625,
+            "bottom": 702.73779296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 31,
+          "num_spans": 43,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3939393939393939,
+            "confidence": 0.7878787878787878
+          }
+        }
+      },
+      {
+        "block_id": "19_merged",
+        "context": "Đái tháo đường Đái tháo đường hay tiểu đường là một nhóm các rối loạn chuyển hóa đặc trưng là tình trạng đường huyết cao kéo dài. Các triệu chứng bao gồm tiểu tiện, khát nước và cảm thấy đói nhiều hơn bình thường. Nếu không được điều trị, đái tháo đường có thể gây ra nhiều biến chứng, bao gồm các biến chứng cấp tính như nhiễm toan ceton, tăng áp lực thẩm thấu và tử vong, cũng như các biến chứng mạn tính như bệnh tim mạch, tai biến mạch máu não, bệnh thận, loét bàn chân, tổn thương thần kinh, tổn thương mắt và suy giảm nhận thức.",
+        "display_context": "Đái tháo đường Đái tháo đường hay tiểu đường là một nhóm các rối loạn chuyển hóa đặc trưng là tình trạng đường huyết cao kéo dài. Các triệu chứng bao gồm tiểu tiện, khát nước và cảm thấy đói nhiều hơn bình thường. Nếu không được điều trị, đái tháo đường có thể gây ra nhiều biến chứng, bao gồm các biến chứng cấp tính như nhiễm toan ceton, tăng áp lực thẩm thấu và tử vong, cũng như các biến chứng mạn tính như bệnh tim mạch, tai biến mạch máu não, bệnh thận, loét bàn chân, tổn thương thần kinh, tổn thương mắt và suy giảm nhận thức.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 70.50750732421875,
+            "right": 333.90478515625,
+            "bottom": 298.376953125
+          },
+          "block_type": "title_with_content",
+          "num_lines": 12,
+          "num_spans": 113,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.5,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": 21,
+        "context": "Đái tháo đường được gây ra bởi một trong hai nguyên nhân: do tuyến tụy không sản xuất đủ insulin hoặc do các thể bào của cơ thể không phản ứng một cách bình thường với insulin mà tuyến tụy sản xuất. Có 3 loại đái tháo đường chính:",
+        "display_context": "Đái tháo đường được gây ra bởi một trong hai nguyên nhân: do tuyến tụy không sản xuất đủ insulin hoặc do các thể bào của cơ thể không phản ứng một cách bình thường với insulin mà tuyến tụy sản xuất. Có 3 loại đái tháo đường chính:",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 312.99609375,
+            "right": 333.8803405761719,
+            "bottom": 390.626953125,
+            "width": 297.8803405761719,
+            "height": 77.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 50,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.28651685393258425,
+            "confidence": 0.5730337078651685
+          }
+        }
+      },
+      {
+        "block_id": 22,
+        "context": "Đái tháo đường loại 1 là kết quả của việc tuyến tụy không sản xuất đủ insulin do mất tế bào beta. Loại đái tháo đường này từng có tên là \"đái tháo đường phụ thuộc insulin\" hoặc \"đái tháo đường trẻ em\". Tế bào beta mất đi do một phản ứng tự miễn dịch. Nguyên nhân gây ra phản ứng này vẫn chưa được tìm ra.",
+        "display_context": "Đái tháo đường loại 1 là kết quả của việc tuyến tụy không sản xuất đủ insulin do mất tế bào beta. Loại đái tháo đường này từng có tên là \"đái tháo đường phụ thuộc insulin\" hoặc \"đái tháo đường trẻ em\". Tế bào beta mất đi do một phản ứng tự miễn dịch. Nguyên nhân gây ra phản ứng này vẫn chưa được tìm ra.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 405.38671875,
+            "right": 332.1376037597656,
+            "bottom": 506.7890625,
+            "width": 276.9422912597656,
+            "height": 101.40234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 13,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.314410480349345,
+            "confidence": 0.62882096069869
+          }
+        }
+      },
+      {
+        "block_id": "23_merged",
+        "context": "Đái tháo đường loại 2 bắt đầu bằng tình trạng kháng insulin, nghĩa là các tế bào của cơ thể không phản ứng một cách bình thường với insulin. Người bệnh cũng có thể trở nên thiếu insulin sau một thời gian. Loại này từng có tên gọi là \"đái tháo đường không phụ thuộc insulin\" hoặc \"đái tháo đường khởi phát ở tuổi trưởng thành\". Nguyên nhân phổ biến nhất là thừa cân và không tập thể dục. Đái tháo đường thai kỳ, loại đái tháo đường chính thứ ba, xảy ra khi phụ nữ mang thai có đường huyết cao mặc dù không có tiền sử đái tháo đường. Đái tháo đường loại 1 cần phải được kiểm soát bằng cách tiêm insulin. Đối với đái tháo đường loại 2, các biện pháp ngăn ngừa và điều trị bao gồm duy trì chế độ ăn lành mạnh, tập thể dục thường xuyên, giữ cân nặng ở mức bình thường và tránh hút thuốc lá. Cũng có thể điều trị đái tháo đường loại",
+        "display_context": "Đái tháo đường loại 2 bắt đầu bằng tình trạng kháng insulin, nghĩa là các tế bào của cơ thể không phản ứng một cách bình thường với insulin. Người bệnh cũng có thể trở nên thiếu insulin sau một thời gian. Loại này từng có tên gọi là \"đái tháo đường không phụ thuộc insulin\" hoặc \"đái tháo đường khởi phát ở tuổi trưởng thành\". Nguyên nhân phổ biến nhất là thừa cân và không tập thể dục. Đái tháo đường thai kỳ, loại đái tháo đường chính thứ ba, xảy ra khi phụ nữ mang thai có đường huyết cao mặc dù không có tiền sử đái tháo đường. Đái tháo đường loại 1 cần phải được kiểm soát bằng cách tiêm insulin. Đối với đái tháo đường loại 2, các biện pháp ngăn ngừa và điều trị bao gồm duy trì chế độ ăn lành mạnh, tập thể dục thường xuyên, giữ cân nặng ở mức bình thường và tránh hút thuốc lá. Cũng có thể điều trị đái tháo đường loại",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 509.63671875,
+            "right": 576.7686767578125,
+            "bottom": 752.126953125
+          },
+          "block_type": "paragraph",
+          "num_lines": 16,
+          "num_spans": 79,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.28440366972477066,
+            "confidence": 0.5688073394495413
+          }
+        }
+      },
+      {
+        "block_id": 27,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 0,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 1,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 1,
+        "context": "Đái tháo đường có thể dẫn đến các biến chứng như bệnh võng mạc, bệnh thận và bệnh thần kinh",
+        "display_context": "Đái tháo đường có thể dẫn đến các biến chứng như bệnh võng mạc, bệnh thận và bệnh thần kinh",
+        "metadata": {
+          "bbox": {
+            "left": 387.75,
+            "top": 664.4495239257812,
+            "right": 571.2180786132812,
+            "bottom": 703.3685913085938,
+            "width": 183.46807861328125,
+            "height": 38.9190673828125
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.323943661971831,
+            "confidence": 0.647887323943662
+          }
+        }
+      },
+      {
+        "block_id": "2_merged",
+        "context": "bằng các loại thuốc như thuốc làm nhạy cảm insulin có hoặc không kết hợp với insulin. Việc kiểm soát huyết áp cũng như chăm sóc chân và mắt đúng cách là rất quan trọng với người bệnh. Insulin và một số loại thuốc uống có thể gây hạ đường huyết. Ở người bệnh béo phì, phẫu thuật giảm cân cũng có thể là một biện pháp điều trị hiệu quả. Đái tháo đường thai kỳ thường tự chấm dứt sau khi thai nhi được sinh ra.",
+        "display_context": "bằng các loại thuốc như thuốc làm nhạy cảm insulin có hoặc không kết hợp với insulin. Việc kiểm soát huyết áp cũng như chăm sóc chân và mắt đúng cách là rất quan trọng với người bệnh. Insulin và một số loại thuốc uống có thể gây hạ đường huyết. Ở người bệnh béo phì, phẫu thuật giảm cân cũng có thể là một biện pháp điều trị hiệu quả. Đái tháo đường thai kỳ thường tự chấm dứt sau khi thai nhi được sinh ra.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 27.196874618530273,
+            "right": 576.767333984375,
+            "bottom": 108.626953125
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 85,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2569444444444444,
+            "confidence": 0.5138888888888888
+          }
+        }
+      },
+      {
+        "block_id": 4,
+        "context": "Tính đến năm 2019, ước tính có 463 triệu bệnh nhân đái tháo đường trên toàn thế giới (8,8% tổng số người trưởng thành), trong đó đái tháo đường loại 2 chiếm khoảng 90%. Tỷ lệ mắc bệnh giữa nam và nữ là tương đương nhau. Các số liệu cho thấy tỉ lệ mắc bệnh sẽ tiếp tục gia tăng. Đái tháo đường làm tắng nguy cơ tử vong sớm ít nhất là gấp hai lần. Năm 2019, đái tháo đường gây khoảng 4,2 triệu ca tử vong. Căn bệnh này là nguyên nhân tử vong lớn thứ 7 trên toàn thế giới. Các chi phí y tế liên quan đến đái tháo đường trên toàn cầu vào năm 2017 được ước tính là đã gây ra tổn thất kinh tế lên đến 727 tỉ đô la Mỹ. Ở Hoa Kỳ, đái tháo đường gây tổn thất gần 327 tỉ đô la Mỹ chỉ tính riêng trong năm 2017. Trung bình, bệnh nhân đái tháo đường phải chịu phí tổn về y tế cao gấp 2,3 lần người bình thường.",
+        "display_context": "Tính đến năm 2019, ước tính có 463 triệu bệnh nhân đái tháo đường trên toàn thế giới (8,8% tổng số người trưởng thành), trong đó đái tháo đường loại 2 chiếm khoảng 90%. Tỷ lệ mắc bệnh giữa nam và nữ là tương đương nhau. Các số liệu cho thấy tỉ lệ mắc bệnh sẽ tiếp tục gia tăng. Đái tháo đường làm tắng nguy cơ tử vong sớm ít nhất là gấp hai lần. Năm 2019, đái tháo đường gây khoảng 4,2 triệu ca tử vong. Căn bệnh này là nguyên nhân tử vong lớn thứ 7 trên toàn thế giới. Các chi phí y tế liên quan đến đái tháo đường trên toàn cầu vào năm 2017 được ước tính là đã gây ra tổn thất kinh tế lên đến 727 tỉ đô la Mỹ. Ở Hoa Kỳ, đái tháo đường gây tổn thất gần 327 tỉ đô la Mỹ chỉ tính riêng trong năm 2017. Trung bình, bệnh nhân đái tháo đường phải chịu phí tổn về y tế cao gấp 2,3 lần người bình thường.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 122.49609375,
+            "right": 576.7586669921875,
+            "bottom": 266.126953125,
+            "width": 540.7586669921875,
+            "height": 143.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 9,
+          "num_spans": 138,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.32562277580071175,
+            "confidence": 0.6512455516014235
+          }
+        }
+      },
+      {
+        "block_id": 5,
+        "context": "Triệu chứng điển hình nhất của bệnh đái tháo đường không được điều trị là tình trạng giảm cân không chủ đích cũng như tiểu tiện, khát nước và cảm thấy đói nhiều hơn bình thường. Các triệu chứng có thể xuất hiện nhanh chóng (trong vài tuần hoặc vài tháng) ở đái tháo đường loại 1, nhưng thường xuất hiện chậm và ít rõ rệt hơn nhiều hay thậm chí là không xuất hiện ở đái tháo đường loại 2.",
+        "display_context": "Triệu chứng điển hình nhất của bệnh đái tháo đường không được điều trị là tình trạng giảm cân không chủ đích cũng như tiểu tiện, khát nước và cảm thấy đói nhiều hơn bình thường. Các triệu chứng có thể xuất hiện nhanh chóng (trong vài tuần hoặc vài tháng) ở đái tháo đường loại 1, nhưng thường xuất hiện chậm và ít rõ rệt hơn nhiều hay thậm chí là không xuất hiện ở đái tháo đường loại 2.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 331.74609375,
+            "right": 576.7608642578125,
+            "bottom": 409.376953125,
+            "width": 540.7608642578125,
+            "height": 77.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 82,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.31438127090301005,
+            "confidence": 0.6287625418060201
+          }
+        }
+      },
+      {
+        "block_id": 6,
+        "context": "Một số triệu chứng khác cũng có thể đánh dấu sự khởi phát của đái tháo đường nhưng không phải là đặc trưng của bệnh, bao gồm mờ mắt, đau đầu, mệt mỏi, vết thương lâu lành và ngứa ngáy. Tình trạng đường huyết cao kéo dài có thể làm thủy tinh thể hấp thu glucose, khiến hình dạng của nó thay đổi và dẫn đến rối loạn thị lực. Người bệnh cũng có thể mất thị lực do bệnh võng mạc đái tháo đường.",
+        "display_context": "Một số triệu chứng khác cũng có thể đánh dấu sự khởi phát của đái tháo đường nhưng không phải là đặc trưng của bệnh, bao gồm mờ mắt, đau đầu, mệt mỏi, vết thương lâu lành và ngứa ngáy. Tình trạng đường huyết cao kéo dài có thể làm thủy tinh thể hấp thu glucose, khiến hình dạng của nó thay đổi và dẫn đến rối loạn thị lực. Người bệnh cũng có thể mất thị lực do bệnh võng mạc đái tháo đường.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 423.99609375,
+            "right": 576.8333129882812,
+            "bottom": 502.130859375,
+            "width": 540.8333129882812,
+            "height": 78.134765625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 84,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.31208053691275167,
+            "confidence": 0.6241610738255033
+          }
+        }
+      },
+      {
+        "block_id": 7,
+        "context": "Tất cả các loại đái tháo đường đều làm tăng nguy cơ người bệnh gặp phải các biến chứng lâu dài. Các biến chứng này thường xuất hiện sau nhiều năm (10–20) nhưng cũng có thể là những triệu chứng đầu tiên nếu người bệnh chưa từng được chẩn đoán là mắc bệnh.",
+        "display_context": "Tất cả các loại đái tháo đường đều làm tăng nguy cơ người bệnh gặp phải các biến chứng lâu dài. Các biến chứng này thường xuất hiện sau nhiều năm (10–20) nhưng cũng có thể là những triệu chứng đầu tiên nếu người bệnh chưa từng được chẩn đoán là mắc bệnh.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 550.74609375,
+            "right": 366.4580383300781,
+            "bottom": 628.376953125,
+            "width": 330.4580383300781,
+            "height": 77.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 53,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3160621761658031,
+            "confidence": 0.6321243523316062
+          }
+        }
+      },
+      {
+        "block_id": 8,
+        "context": "Các biến chứng lâu dài phổ biến nhất có liên quan đến thương tổn ở các mạch máu. Đái tháo đường làm tăng gấp đôi nguy cơ mắc bệnh tim mạch và khoảng 75% ca tử vong ở bệnh nhân đái tháo đường là do bệnh động mạch vành. Các bệnh tim mạch thường gặp khác bao gồm tai biến mạch máu não và bệnh động mạch ngoại biên. Các biến chứng này cũng là những yếu tố nguy cơ lớn ở bệnh COVID-19 nghiêm trọng.",
+        "display_context": "Các biến chứng lâu dài phổ biến nhất có liên quan đến thương tổn ở các mạch máu. Đái tháo đường làm tăng gấp đôi nguy cơ mắc bệnh tim mạch và khoảng 75% ca tử vong ở bệnh nhân đái tháo đường là do bệnh động mạch vành. Các bệnh tim mạch thường gặp khác bao gồm tai biến mạch máu não và bệnh động mạch ngoại biên. Các biến chứng này cũng là những yếu tố nguy cơ lớn ở bệnh COVID-19 nghiêm trọng.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 642.99609375,
+            "right": 410.8500061035156,
+            "bottom": 753.626953125,
+            "width": 374.8500061035156,
+            "height": 110.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 81,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.28859060402684567,
+            "confidence": 0.5771812080536913
+          }
+        }
+      },
+      {
+        "block_id": 9,
+        "context": "Biểu hiện và triệu chứng",
+        "display_context": "Biểu hiện và triệu chứng",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 294.603515625,
+            "right": 238.58999633789062,
+            "bottom": 318.8876953125,
+            "width": 202.58999633789062,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 10,
+        "context": "Biến chứng",
+        "display_context": "Biến chứng",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 527.3306884765625,
+            "right": 113.78105163574219,
+            "bottom": 542.9657592773438,
+            "width": 77.78105163574219,
+            "height": 15.63507080078125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2222222222222222,
+            "confidence": 0.4444444444444444
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 1,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 2,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": "0_merged",
+        "context": "So sánh đái tháo đường loại 1 và loại 2 Đặc điểm Đái tháo đường loại Đái tháo đường loại Khởi phát Đột ngột Từ từ Độ tuổi khởi phát Hầu hết ở trẻ em Hầu hết ở người lớn Cơ thể Gầy hoặc bình thường Thường béo phì Nhiễm toan ceton Thường gặp Hiếm gặp Tự kháng thể Thường là có Không có Insulin nội sinh Thấp hoặc không có Bình thường, thấp hoặc cao Tỷ lệ các cặp sinh đôi cùng trứng cùng mắc bệnh 50% 90% Tỷ lệ ~10% ~90%",
+        "display_context": "So sánh đái tháo đường loại 1 và loại 2 Đặc điểm Đái tháo đường loại Đái tháo đường loại Khởi phát Đột ngột Từ từ Độ tuổi khởi phát Hầu hết ở trẻ em Hầu hết ở người lớn Cơ thể Gầy hoặc bình thường Thường béo phì Nhiễm toan ceton Thường gặp Hiếm gặp Tự kháng thể Thường là có Không có Insulin nội sinh Thấp hoặc không có Bình thường, thấp hoặc cao Tỷ lệ các cặp sinh đôi cùng trứng cùng mắc bệnh 50% 90% Tỷ lệ ~10% ~90%",
+        "metadata": {
+          "bbox": {
+            "left": 200.3671875,
+            "top": 307.7623291015625,
+            "right": 562.4891357421875,
+            "bottom": 525.6185913085938
+          },
+          "block_type": "paragraph",
+          "num_lines": 30,
+          "num_spans": 32,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.35714285714285715,
+            "confidence": 0.7142857142857143
+          }
+        }
+      },
+      {
+        "block_id": 10,
+        "context": "Các biến chứng phổ biến nhất do tổn thương mạch máu là thương tốn đến mắt, thận và thần kinh. Thương tổn đến các mạnh máu ở võng mạc gây ra bệnh võng mạc đái tháo đường, từ đó có thể dẫn đến suy giảm thị lực từ từ và cuối cùng là mù. Đái tháo đường cũng làm tăng nguy cơ mắc cườm nước, cườm khô và các vấn đề khác ở mắt. Người mắc đái tháo đường được khuyến cáo nên khám mắt mỗi năm một lần. Các thương tổn đến thận, gọi chung là bệnh thận đái tháo đường, có thể dẫn đến xơ hóa cầu thận, protein niệu, và cuối cùng là bệnh thận mạn tính, đôi khi buộc người bệnh phải lọc máu hoặc cấy ghép thận. Thương tổn đến hệ thần kinh, gọi chung là bệnh thần kinh tiểu đường, là biến chứng thường gặp nhất của đái tháo đường.",
+        "display_context": "Các biến chứng phổ biến nhất do tổn thương mạch máu là thương tốn đến mắt, thận và thần kinh. Thương tổn đến các mạnh máu ở võng mạc gây ra bệnh võng mạc đái tháo đường, từ đó có thể dẫn đến suy giảm thị lực từ từ và cuối cùng là mù. Đái tháo đường cũng làm tăng nguy cơ mắc cườm nước, cườm khô và các vấn đề khác ở mắt. Người mắc đái tháo đường được khuyến cáo nên khám mắt mỗi năm một lần. Các thương tổn đến thận, gọi chung là bệnh thận đái tháo đường, có thể dẫn đến xơ hóa cầu thận, protein niệu, và cuối cùng là bệnh thận mạn tính, đôi khi buộc người bệnh phải lọc máu hoặc cấy ghép thận. Thương tổn đến hệ thần kinh, gọi chung là bệnh thần kinh tiểu đường, là biến chứng thường gặp nhất của đái tháo đường.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 29.49609375,
+            "right": 576.7701416015625,
+            "bottom": 156.626953125,
+            "width": 540.7701416015625,
+            "height": 127.130859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 8,
+          "num_spans": 152,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.33948339483394835,
+            "confidence": 0.6789667896678967
+          }
+        }
+      },
+      {
+        "block_id": "11_merged",
+        "context": "Đái tháo đường có liên hệ với suy giảm nhận thức. So với những người không mắc đái tháo đường, bệnh nhân đái tháo đường chịu nguy cơ suy giảm chức năng nhận thức cao gấp 1,2 đến 1,5 lần. Nếu mắc đái tháo đường, và đặc biệt là khi được điều trị bằng insulin, người cao tuổi có nguy cơ té ngã cao hơn.",
+        "display_context": "Đái tháo đường có liên hệ với suy giảm nhận thức. So với những người không mắc đái tháo đường, bệnh nhân đái tháo đường chịu nguy cơ suy giảm chức năng nhận thức cao gấp 1,2 đến 1,5 lần. Nếu mắc đái tháo đường, và đặc biệt là khi được điều trị bằng insulin, người cao tuổi có nguy cơ té ngã cao hơn.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 170.49609375,
+            "right": 576.75732421875,
+            "bottom": 233.126953125
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 60,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3188405797101449,
+            "confidence": 0.6376811594202898
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "Đái tháo đường được chia thành 6 loại: đái tháo đường loại 1, đái tháo đường loại 2, đái tháo đường hỗn hợp, đái tháo đường thai kỳ, \"đái tháo đường chưa phân loại\" và \"các loại đái tháo đường khác\". Đái tháo đường đa dạng hơn so với những gì được biết đến trước đây và người bệnh có thể mắc cùng lúc nhiều loại đái tháo đường.",
+        "display_context": "Đái tháo đường được chia thành 6 loại: đái tháo đường loại 1, đái tháo đường loại 2, đái tháo đường hỗn hợp, đái tháo đường thai kỳ, \"đái tháo đường chưa phân loại\" và \"các loại đái tháo đường khác\". Đái tháo đường đa dạng hơn so với những gì được biết đến trước đây và người bệnh có thể mắc cùng lúc nhiều loại đái tháo đường.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 297.99609375,
+            "right": 186.13453674316406,
+            "bottom": 503.876953125,
+            "width": 150.13453674316406,
+            "height": 205.880859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 13,
+          "num_spans": 72,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.4,
+            "confidence": 0.8
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "Đái tháo đường loại 1 có đặc trưng là sự mất đi tế bào beta có chức năng sản xuất insulin ở các tiểu đảo tụy, dẫn đến tình trạng thiếu hụt insulin. Đái tháo đường loại 1 được chia nhỏ nữa thành đái tháo đường loại 1 qua trung gian miễn dịch và đái tháo đường loại 1 tự phát. Phần lớn ca bệnh đái tháo đường loại 1 do trung gian miễn dịch; cụ thể, một đợt tấn công tự miễn dịch có trung gian là tế bào T gây giảm tế bào beta và theo đó là insulin. Đái tháo đường loại 1 chiếm khoảng 10% tổng số ca đái tháo đường ở Bắc Mỹ và châu Âu. Ở thời điểm bệnh khởi phát, phần lớn bệnh nhân khỏe mạnh và có cân nặng bình thường. Độ nhạy cảm và phản ứng với insulin thường ở mức bình thường, nhất là trong các giai đoạn đầu của bệnh. Đái tháo đường loại 1 thường được gọi là \"đái tháo đường trẻ em\" vì bệnh thường khởi phát ở độ tuổi này, tuy nhiên, phần lớn bệnh nhân đái tháo đường loại 1 đã sang độ tuổi trưởng thành.",
+        "display_context": "Đái tháo đường loại 1 có đặc trưng là sự mất đi tế bào beta có chức năng sản xuất insulin ở các tiểu đảo tụy, dẫn đến tình trạng thiếu hụt insulin. Đái tháo đường loại 1 được chia nhỏ nữa thành đái tháo đường loại 1 qua trung gian miễn dịch và đái tháo đường loại 1 tự phát. Phần lớn ca bệnh đái tháo đường loại 1 do trung gian miễn dịch; cụ thể, một đợt tấn công tự miễn dịch có trung gian là tế bào T gây giảm tế bào beta và theo đó là insulin. Đái tháo đường loại 1 chiếm khoảng 10% tổng số ca đái tháo đường ở Bắc Mỹ và châu Âu. Ở thời điểm bệnh khởi phát, phần lớn bệnh nhân khỏe mạnh và có cân nặng bình thường. Độ nhạy cảm và phản ứng với insulin thường ở mức bình thường, nhất là trong các giai đoạn đầu của bệnh. Đái tháo đường loại 1 thường được gọi là \"đái tháo đường trẻ em\" vì bệnh thường khởi phát ở độ tuổi này, tuy nhiên, phần lớn bệnh nhân đái tháo đường loại 1 đã sang độ tuổi trưởng thành.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 552.99609375,
+            "right": 576.7711181640625,
+            "bottom": 710.876953125,
+            "width": 540.7711181640625,
+            "height": 157.880859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 10,
+          "num_spans": 194,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3240058910162003,
+            "confidence": 0.6480117820324006
+          }
+        }
+      },
+      {
+        "block_id": 15,
+        "context": "Nguyên nhân",
+        "display_context": "Nguyên nhân",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 260.853515625,
+            "right": 146.51641845703125,
+            "bottom": 285.1376953125,
+            "width": 110.51641845703125,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.2,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 16,
+        "context": "Loại",
+        "display_context": "Loại",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 529.5806884765625,
+            "right": 76.4384765625,
+            "bottom": 545.2157592773438,
+            "width": 40.4384765625,
+            "height": 15.63507080078125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 17,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 2,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 3,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 1,
+        "context": "Ở đái tháo đường loại 2, sự suy giảm sản xuất và hấp thụ insulin làm tăng hàm lượng glucose trong máu.",
+        "display_context": "Ở đái tháo đường loại 2, sự suy giảm sản xuất và hấp thụ insulin làm tăng hàm lượng glucose trong máu.",
+        "metadata": {
+          "bbox": {
+            "left": 387.75,
+            "top": 167.19952392578125,
+            "right": 569.481689453125,
+            "bottom": 206.1186065673828,
+            "width": 181.731689453125,
+            "height": 38.91908264160156
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2727272727272727,
+            "confidence": 0.5454545454545454
+          }
+        }
+      },
+      {
+        "block_id": 2,
+        "context": "Đái tháo đường loại 2 có đặc trưng là tình trạng kháng insulin. Người bệnh cũng có thể sản xuất ít insulin hơn mức bình thường. Việc các mô của cơ thể phản ứng không bình thường với insulin được cho là có liên quan đến thụ thể insulin. Tuy nhiên, chưa rõ rối loạn đó cụ thể là gì. Các ca đái tháo đường do một rối loạn đã được xác định thuộc loại đái tháo đường khác chứ không phải loại 2. Đây là loại đái tháo đường phổ biến nhất. Nhiều bệnh nhân đái tháo đường loại 2 có những biểu hiện cho thấy họ đã trải qua các tình trạng tiền đái tháo đường (rối loạn glucose lúc đói và/hoặc rối loạn dung nạp glucose) trước khi đạt đến các tiêu chí của đái tháo đường loại 2. Quá trình tiền đái tháo đường tiến triển thành đái tháo đường loại 2 có thể được trì hoãn hoặc đảo ngược bằng cách thay đổi lối sống hoặc sử dụng các loại thuốc có tác dụng tăng phản ứng với insulin hoặc giảm sản xuất glucose ở gan.",
+        "display_context": "Đái tháo đường loại 2 có đặc trưng là tình trạng kháng insulin. Người bệnh cũng có thể sản xuất ít insulin hơn mức bình thường. Việc các mô của cơ thể phản ứng không bình thường với insulin được cho là có liên quan đến thụ thể insulin. Tuy nhiên, chưa rõ rối loạn đó cụ thể là gì. Các ca đái tháo đường do một rối loạn đã được xác định thuộc loại đái tháo đường khác chứ không phải loại 2. Đây là loại đái tháo đường phổ biến nhất. Nhiều bệnh nhân đái tháo đường loại 2 có những biểu hiện cho thấy họ đã trải qua các tình trạng tiền đái tháo đường (rối loạn glucose lúc đói và/hoặc rối loạn dung nạp glucose) trước khi đạt đến các tiêu chí của đái tháo đường loại 2. Quá trình tiền đái tháo đường tiến triển thành đái tháo đường loại 2 có thể được trì hoãn hoặc đảo ngược bằng cách thay đổi lối sống hoặc sử dụng các loại thuốc có tác dụng tăng phản ứng với insulin hoặc giảm sản xuất glucose ở gan.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 53.49609375,
+            "right": 576.754638671875,
+            "bottom": 275.876953125,
+            "width": 540.754638671875,
+            "height": 222.380859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 14,
+          "num_spans": 183,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.315028901734104,
+            "confidence": 0.630057803468208
+          }
+        }
+      },
+      {
+        "block_id": 3,
+        "context": "Đái tháo đường thai kỳ có nhiều điểm tương đồng với đái tháo đường loại 2. Người mắc vừa không sản xuất đủ vừa không phản ứng bình thường với insulin. Tình trạng này xảy ra ở 2–10% tất cả lần thai nghén và có thể cải thiện hoặc biến mất sau khi người mắc đã sinh con. Phụ nữ mang thai được khuyến khích bắt đầu xét nghiệm đái tháo đường thai kỳ từ 24-28 tuần tính từ thời điểm thụ thai. Bệnh thường được chẩn đoán vào thai kỳ thứ hai hoặc thứ ba khi hàm lượng nội tiết tố đối kháng insulin trong cơ thể tăng lên. Sau khi sinh con, 5–10% số người mắc đái tháo đường thai kỳ được phát hiện là mắc một loại đái tháo đường khác, thường là đái tháo đường loại 2. Đái tháo đường thai kỳ hoàn toàn có thể chữa khỏi được nhưng người bệnh cần phải được theo dõi y tế trong suốt qua trình mang thai. Các biện pháp kiểm soát bao gồm thay đổi chế độ ăn, theo dõi đường huyết và, trong một số trường hợp, tiêm insulin.",
+        "display_context": "Đái tháo đường thai kỳ có nhiều điểm tương đồng với đái tháo đường loại 2. Người mắc vừa không sản xuất đủ vừa không phản ứng bình thường với insulin. Tình trạng này xảy ra ở 2–10% tất cả lần thai nghén và có thể cải thiện hoặc biến mất sau khi người mắc đã sinh con. Phụ nữ mang thai được khuyến khích bắt đầu xét nghiệm đái tháo đường thai kỳ từ 24-28 tuần tính từ thời điểm thụ thai. Bệnh thường được chẩn đoán vào thai kỳ thứ hai hoặc thứ ba khi hàm lượng nội tiết tố đối kháng insulin trong cơ thể tăng lên. Sau khi sinh con, 5–10% số người mắc đái tháo đường thai kỳ được phát hiện là mắc một loại đái tháo đường khác, thường là đái tháo đường loại 2. Đái tháo đường thai kỳ hoàn toàn có thể chữa khỏi được nhưng người bệnh cần phải được theo dõi y tế trong suốt qua trình mang thai. Các biện pháp kiểm soát bao gồm thay đổi chế độ ăn, theo dõi đường huyết và, trong một số trường hợp, tiêm insulin.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 324.24609375,
+            "right": 576.75244140625,
+            "bottom": 483.626953125,
+            "width": 540.75244140625,
+            "height": 159.380859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 10,
+          "num_spans": 164,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.30161054172767204,
+            "confidence": 0.6032210834553441
+          }
+        }
+      },
+      {
+        "block_id": 4,
+        "context": "Đái tháo đường khởi phát ở tuổi trẻ (tiếng Anh: maturity onset diabetes of the young, hay MODY) là một loại đái tháo đường di truyền hiếm gặp, trong đó một trong một số loại đột biến gen gây rối loạn trong việc sản xuất insulin. Loại đái tháo đường này hiếm gặp hơn rất nhiều so với ba loại đái tháo đường chính và chỉ chiếm 1–2% tổng số ca đái tháo đường. Tên của loại đái tháo đường này bắt nguồn từ những giả thuyết ban đầu về bản chất của nó. Do có nguyên nhân là một gen bị rối loạn, loại đái tháo đường này có thể khởi phát ở những độ tuổi khác nhau tùy vào việc gen nào bị rối loạn. Vì vậy, có ít nhất 13 loại MODY. Người mắc MODY thường có khả năng kiểm soát được bệnh mà không cần dùng insulin.",
+        "display_context": "Đái tháo đường khởi phát ở tuổi trẻ (tiếng Anh: maturity onset diabetes of the young, hay MODY) là một loại đái tháo đường di truyền hiếm gặp, trong đó một trong một số loại đột biến gen gây rối loạn trong việc sản xuất insulin. Loại đái tháo đường này hiếm gặp hơn rất nhiều so với ba loại đái tháo đường chính và chỉ chiếm 1–2% tổng số ca đái tháo đường. Tên của loại đái tháo đường này bắt nguồn từ những giả thuyết ban đầu về bản chất của nó. Do có nguyên nhân là một gen bị rối loạn, loại đái tháo đường này có thể khởi phát ở những độ tuổi khác nhau tùy vào việc gen nào bị rối loạn. Vì vậy, có ít nhất 13 loại MODY. Người mắc MODY thường có khả năng kiểm soát được bệnh mà không cần dùng insulin.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 531.99609375,
+            "right": 576.7572021484375,
+            "bottom": 657.626953125,
+            "width": 540.7572021484375,
+            "height": 125.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 8,
+          "num_spans": 121,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2846441947565543,
+            "confidence": 0.5692883895131086
+          }
+        }
+      },
+      {
+        "block_id": 5,
+        "context": "Một số ca đái tháo đường có nguyên nhân là việc các thụ thể mô của cơ thể không phản ứng với insulin (ngay cả khi insulin ở mức bình thường, không giống như với đái tháo đường loại 2); loại đái tháo đường này rất hiếm gặp. Các đột biến gen (ở nhiễm sắc thể thường hoặc ty thể) có thể gây ra rối loạn chức năng ở tế bào beta. Trong một số trường hợp, các rối loạn về insulin cũng có thể là do di truyền. Bất cứ bệnh lý nào gây tổn thương lớn đến tụy đều có thể gây ra đái tháo đường (ví dụ như",
+        "display_context": "Một số ca đái tháo đường có nguyên nhân là việc các thụ thể mô của cơ thể không phản ứng với insulin (ngay cả khi insulin ở mức bình thường, không giống như với đái tháo đường loại 2); loại đái tháo đường này rất hiếm gặp. Các đột biến gen (ở nhiễm sắc thể thường hoặc ty thể) có thể gây ra rối loạn chức năng ở tế bào beta. Trong một số trường hợp, các rối loạn về insulin cũng có thể là do di truyền. Bất cứ bệnh lý nào gây tổn thương lớn đến tụy đều có thể gây ra đái tháo đường (ví dụ như",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 672.24609375,
+            "right": 576.7550659179688,
+            "bottom": 749.630859375,
+            "width": 540.7550659179688,
+            "height": 77.384765625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 100,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3108108108108108,
+            "confidence": 0.6216216216216216
+          }
+        }
+      },
+      {
+        "block_id": 6,
+        "context": "Loại",
+        "display_context": "Loại",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 30.080698013305664,
+            "right": 76.4384765625,
+            "bottom": 45.715736389160156,
+            "width": 40.4384765625,
+            "height": 15.635038375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 7,
+        "context": "Đái tháo đường thai kỳ",
+        "display_context": "Đái tháo đường thai kỳ",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 301.5806884765625,
+            "right": 189.04757690429688,
+            "bottom": 317.2157287597656,
+            "width": 153.04757690429688,
+            "height": 15.635040283203125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3888888888888889,
+            "confidence": 0.7777777777777778
+          }
+        }
+      },
+      {
+        "block_id": 8,
+        "context": "Các loại khác",
+        "display_context": "Các loại khác",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 508.5806884765625,
+            "right": 125.45510864257812,
+            "bottom": 524.2157592773438,
+            "width": 89.45510864257812,
+            "height": 15.63507080078125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2727272727272727,
+            "confidence": 0.5454545454545454
+          }
+        }
+      },
+      {
+        "block_id": 9,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 3,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 4,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "viêm tụy mãn tính và xơ nang). Các bệnh lý có liên quan đến việc tiết quá nhiều nội tiết tố đối kháng insulin có thể gây đái tháo đường. Trong những trường hợp đó, thông thường đái tháo đường sẽ chấm dứt khi lượng nội tiết tố dư thừa được loại bỏ. Nhiều loại thuốc làm giảm sản xuất insulin, trong khi một số độc tố làm tổn thương tế báo beta ở tụy, còn số khác thì làm tăng mức độ kháng insulin (đặc biệt là các loại glucocorticoid có khả năng gây ra \"đái tháo đường steroid\"). Đái tháo đường liên quan đến kém dinh dưỡng (tiếng Anh: malnutrition-related diabetes mellitus, hay MRDM hoặc MMDM) xuất hiện trong ICD-10 nhưng đã trở nên lỗi thời khi Tổ chức Y tế Thế giới (WHO) đưa vào sử dụng cách phân loại hiện hành được vào năm 1999. Một loại đái tháo đường nữa người bệnh có thể mắc phải là đái tháo đường kép: khi bệnh nhân đái tháo đường loại 1 trở nên kháng insulin (đặc trưng của đái tháo đường loại 2) hoặc có người thân mắc đái tháo đường loại 2. Loại đái tháo đường này được phát hiện lần đầu tiên vào năm 1990 hoặc 1991.",
+        "display_context": "viêm tụy mãn tính và xơ nang). Các bệnh lý có liên quan đến việc tiết quá nhiều nội tiết tố đối kháng insulin có thể gây đái tháo đường. Trong những trường hợp đó, thông thường đái tháo đường sẽ chấm dứt khi lượng nội tiết tố dư thừa được loại bỏ. Nhiều loại thuốc làm giảm sản xuất insulin, trong khi một số độc tố làm tổn thương tế báo beta ở tụy, còn số khác thì làm tăng mức độ kháng insulin (đặc biệt là các loại glucocorticoid có khả năng gây ra \"đái tháo đường steroid\"). Đái tháo đường liên quan đến kém dinh dưỡng (tiếng Anh: malnutrition-related diabetes mellitus, hay MRDM hoặc MMDM) xuất hiện trong ICD-10 nhưng đã trở nên lỗi thời khi Tổ chức Y tế Thế giới (WHO) đưa vào sử dụng cách phân loại hiện hành được vào năm 1999. Một loại đái tháo đường nữa người bệnh có thể mắc phải là đái tháo đường kép: khi bệnh nhân đái tháo đường loại 1 trở nên kháng insulin (đặc trưng của đái tháo đường loại 2) hoặc có người thân mắc đái tháo đường loại 2. Loại đái tháo đường này được phát hiện lần đầu tiên vào năm 1990 hoặc 1991.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 29.49609375,
+            "right": 576.76123046875,
+            "bottom": 203.630859375,
+            "width": 540.76123046875,
+            "height": 174.134765625
+          },
+          "block_type": "paragraph",
+          "num_lines": 11,
+          "num_spans": 176,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2972972972972973,
+            "confidence": 0.5945945945945946
+          }
+        }
+      },
+      {
+        "block_id": "1_merged",
+        "context": "Dưới đây là danh sách các rối loạn có khả năng làm tăng nguy cơ đái tháo đường: Rối loạn di truyền về chức năng của tế bào β Đái tháo đường khởi phát ở tuổi trẻ Đột biến ty thể ADN Rối loạn di truyền về xử lý insulin Rối loạn chuyển hóa proinsulin Đột biến gen insulin Đột biến thụ thể insulin Rối loạn tụy Viêm tụy mãn tính Cắt bỏ tuyến tụy Ung thư tuyến tụy Xơ nang Nhiễm sắc tố sắt mô Xơ sỏi tụy",
+        "display_context": "Dưới đây là danh sách các rối loạn có khả năng làm tăng nguy cơ đái tháo đường: Rối loạn di truyền về chức năng của tế bào β Đái tháo đường khởi phát ở tuổi trẻ Đột biến ty thể ADN Rối loạn di truyền về xử lý insulin Rối loạn chuyển hóa proinsulin Đột biến gen insulin Đột biến thụ thể insulin Rối loạn tụy Viêm tụy mãn tính Cắt bỏ tuyến tụy Ung thư tuyến tụy Xơ nang Nhiễm sắc tố sắt mô Xơ sỏi tụy",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 215.44686889648438,
+            "right": 482.9320373535156,
+            "bottom": 503.54296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 15,
+          "num_spans": 26,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3442622950819672,
+            "confidence": 0.6885245901639344
+          }
+        }
+      },
+      {
+        "block_id": "6_merged",
+        "context": "Bệnh nội tiết Dư thừa hormone tăng trưởng (bệnh to đầu chi) Hội chứng Cushing Cường giáp Suy giáp U tủy thượng thận U tiết glucagon Nhiễm trùng Cytomegalovirus Coxsackievirus B Thuốc Glucocorticoid Hormone tuyến giáp Chất chủ vận Beta Statin",
+        "display_context": "Bệnh nội tiết Dư thừa hormone tăng trưởng (bệnh to đầu chi) Hội chứng Cushing Cường giáp Suy giáp U tủy thượng thận U tiết glucagon Nhiễm trùng Cytomegalovirus Coxsackievirus B Thuốc Glucocorticoid Hormone tuyến giáp Chất chủ vận Beta Statin",
+        "metadata": {
+          "bbox": {
+            "left": 326.3203125,
+            "top": 254.63671875,
+            "right": 554.930419921875,
+            "bottom": 535.04296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 16,
+          "num_spans": 17,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2727272727272727,
+            "confidence": 0.5454545454545454
+          }
+        }
+      },
+      {
+        "block_id": 10,
+        "context": "Đái tháo đường được chẩn đoán bằng cách xét nghiệm đường huyết. Một người được chẩn đoán là mắc đái tháo đường khi có bất kỳ kết quả xét nghiệm nào dưới đây:",
+        "display_context": "Đái tháo đường được chẩn đoán bằng cách xét nghiệm đường huyết. Một người được chẩn đoán là mắc đái tháo đường khi có bất kỳ kết quả xét nghiệm nào dưới đây:",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 606.99609375,
+            "right": 576.7435302734375,
+            "bottom": 636.626953125,
+            "width": 540.7435302734375,
+            "height": 29.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 29,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3983739837398374,
+            "confidence": 0.7967479674796748
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "Glucose huyết tương lúc đói ≥ 7,0 mmol/L (126 mg/dL). Ở xét nghiệm này, mẫu máu được lấy khi đang đói, chẳng hạn như vào buổi sáng khi chưa ăn sáng. Glucose huyết tương ≥ 11,1 mmol/L (200 mg/dL) 2 giờ sau khi tiêu thụ 75 gram glucose như trong xét nghiệm dung nạp glucose (tiếng Anh: glucose tolerance test hay OGTT) Triệu chứng đường huyết cao và glucose huyết tương ≥ 11,1 mmol/L (200 mg/dL) dù có đang đói hay không Glycated hemoglobin (HbA1C) ≥ 48 mmol/mol (≥ 6,5 DCCT %).",
+        "display_context": "Glucose huyết tương lúc đói ≥ 7,0 mmol/L (126 mg/dL). Ở xét nghiệm này, mẫu máu được lấy khi đang đói, chẳng hạn như vào buổi sáng khi chưa ăn sáng. Glucose huyết tương ≥ 11,1 mmol/L (200 mg/dL) 2 giờ sau khi tiêu thụ 75 gram glucose như trong xét nghiệm dung nạp glucose (tiếng Anh: glucose tolerance test hay OGTT) Triệu chứng đường huyết cao và glucose huyết tương ≥ 11,1 mmol/L (200 mg/dL) dù có đang đói hay không Glycated hemoglobin (HbA1C) ≥ 48 mmol/mol (≥ 6,5 DCCT %).",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 651.38671875,
+            "right": 575.8314208984375,
+            "bottom": 759.1710815429688,
+            "width": 520.6361083984375,
+            "height": 107.78436279296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 10,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.1697530864197531,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "Chẩn đoán",
+        "display_context": "Chẩn đoán",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 569.853515625,
+            "right": 125.49600219726562,
+            "bottom": 594.1376953125,
+            "width": 89.49600219726562,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.375,
+            "confidence": 0.75
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 4,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 5,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": "0_merged",
+        "context": "Tiêu chí chẩn đoán tiểu đường của WHO Tình trạng Glucose 2 giờ sau ăn Glucose lúc đói HbA1c Bình thường < 7, < 6, < 6, Rối loạn đường huyết lúc đói < 7, 6,1–7, 110– 42– 6,0–6, Rối loạn dung nạp glucose ≥ 7, < 7, 42– 6,0–6, Tiểu đường ≥ 11, ≥ 7, ≥ 6,",
+        "display_context": "Tiêu chí chẩn đoán tiểu đường của WHO Tình trạng Glucose 2 giờ sau ăn Glucose lúc đói HbA1c Bình thường < 7, < 6, < 6, Rối loạn đường huyết lúc đói < 7, 6,1–7, 110– 42– 6,0–6, Rối loạn dung nạp glucose ≥ 7, < 7, 42– 6,0–6, Tiểu đường ≥ 11, ≥ 7, ≥ 6,",
+        "metadata": {
+          "bbox": {
+            "left": 150.31640625,
+            "top": 41.5123405456543,
+            "right": 566.9559326171875,
+            "bottom": 185.8686065673828
+          },
+          "block_type": "paragraph",
+          "num_lines": 34,
+          "num_spans": 37,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3333333333333333,
+            "confidence": 0.6666666666666666
+          }
+        }
+      },
+      {
+        "block_id": 8,
+        "context": "Nếu kết quả xét nghiệm là dương tính nhưng không cho thấy hàm lượng đường huyết cao rõ rệt thì nên làm xét nghiệm thêm một lần nữa vào một ngày khác để xác nhận lại kết quả. Xét nghiệm glucose lúc đói tối ưu hơn bởi xét nghiệm dung nạp glucose mất 2 giờ để hoàn thành trong khi không mang lại hiệu quả chẩn đoán cao hơn so với xét nghiệm glucose lúc đói. Theo tiêu chí hiện hành, một người được chẩn đoán là mắc đái tháo đường khi có kết quả hàm lượng glucose lúc đói trên 7,0 mmol/L (126 mg/dL) trong hai lần xét nghiệm.",
+        "display_context": "Nếu kết quả xét nghiệm là dương tính nhưng không cho thấy hàm lượng đường huyết cao rõ rệt thì nên làm xét nghiệm thêm một lần nữa vào một ngày khác để xác nhận lại kết quả. Xét nghiệm glucose lúc đói tối ưu hơn bởi xét nghiệm dung nạp glucose mất 2 giờ để hoàn thành trong khi không mang lại hiệu quả chẩn đoán cao hơn so với xét nghiệm glucose lúc đói. Theo tiêu chí hiện hành, một người được chẩn đoán là mắc đái tháo đường khi có kết quả hàm lượng glucose lúc đói trên 7,0 mmol/L (126 mg/dL) trong hai lần xét nghiệm.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 201.99609375,
+            "right": 576.756103515625,
+            "bottom": 295.880859375,
+            "width": 540.756103515625,
+            "height": 93.884765625
+          },
+          "block_type": "paragraph",
+          "num_lines": 6,
+          "num_spans": 86,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2695214105793451,
+            "confidence": 0.5390428211586902
+          }
+        }
+      },
+      {
+        "block_id": 9,
+        "context": "Theo Tổ chức Y tế Thế giới WHO, người có hàm lượng glucose từ 6,1 đến 6,9 mmol/L (110 đến 125 mg/dL) được xem là bị rối loạn đường máu lúc đói. Người có hàm lượng glucose lớn hơn hoặc bằng 7,8 mmol/L (140 mg/dL), nhưng không lớn hơn 11,1 mmol/L (200 mg/dL), 2 giờ sau khi tiêu thụ 75 gram glucose được xem là bị rối loạn dung nạp glucose. Trong số hai tình trạng tiền đái tháo đường này, tình trạng thứ hai có nguy cơ tiến triển thành đái tháo đường và dẫn đến bệnh tim mạch đặc biệt cao. Từ năm 2003, Hiệp hội Đái tháo đường Hoa Kỳ (American Diabetes Association hay ADA) bắt đầu sử dụng một khoảng hơi khác đối với rối loạn glucose lúc đói: 5,6 đến 6,9 mmol/L (100 đến 125 mg/dL).",
+        "display_context": "Theo Tổ chức Y tế Thế giới WHO, người có hàm lượng glucose từ 6,1 đến 6,9 mmol/L (110 đến 125 mg/dL) được xem là bị rối loạn đường máu lúc đói. Người có hàm lượng glucose lớn hơn hoặc bằng 7,8 mmol/L (140 mg/dL), nhưng không lớn hơn 11,1 mmol/L (200 mg/dL), 2 giờ sau khi tiêu thụ 75 gram glucose được xem là bị rối loạn dung nạp glucose. Trong số hai tình trạng tiền đái tháo đường này, tình trạng thứ hai có nguy cơ tiến triển thành đái tháo đường và dẫn đến bệnh tim mạch đặc biệt cao. Từ năm 2003, Hiệp hội Đái tháo đường Hoa Kỳ (American Diabetes Association hay ADA) bắt đầu sử dụng một khoảng hơi khác đối với rối loạn glucose lúc đói: 5,6 đến 6,9 mmol/L (100 đến 125 mg/dL).",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 309.99609375,
+            "right": 576.76123046875,
+            "bottom": 436.376953125,
+            "width": 540.76123046875,
+            "height": 126.380859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 8,
+          "num_spans": 107,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2574468085106383,
+            "confidence": 0.5148936170212766
+          }
+        }
+      },
+      {
+        "block_id": 10,
+        "context": "Glycated hemoglobin hiệu quả hơn glucose lúc đói trong việc xác định nguy cơ bệnh tim mạch và tử vong vì bất cứ nguyên nhân nào.",
+        "display_context": "Glycated hemoglobin hiệu quả hơn glucose lúc đói trong việc xác định nguy cơ bệnh tim mạch và tử vong vì bất cứ nguyên nhân nào.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 450.99609375,
+            "right": 576.76123046875,
+            "bottom": 480.626953125,
+            "width": 540.76123046875,
+            "height": 29.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 22,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.20588235294117646,
+            "confidence": 0.4117647058823529
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "Không có biện pháp nào có tác dụng ngăn ngừa đái tháo đường loại 1. Đái tháo đường loại 2—chiếm 85–90% tất cả số ca đái tháo đường trên toàn thế giối—thì thường có thể ngăn chặn hoặc trì hoãn được bằng cách giữ cân nặng ở mức bình thường, tập thể dục và duy trì chế độ ăn lành mạnh.",
+        "display_context": "Không có biện pháp nào có tác dụng ngăn ngừa đái tháo đường loại 1. Đái tháo đường loại 2—chiếm 85–90% tất cả số ca đái tháo đường trên toàn thế giối—thì thường có thể ngăn chặn hoặc trì hoãn được bằng cách giữ cân nặng ở mức bình thường, tập thể dục và duy trì chế độ ăn lành mạnh.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 543.9468994140625,
+            "right": 576.752197265625,
+            "bottom": 592.376953125,
+            "width": 540.752197265625,
+            "height": 48.4300537109375
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 56,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3444976076555024,
+            "confidence": 0.6889952153110048
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "Tập thể dục cường độ cao (trên 90 phút mỗi ngày) làm giảm 28% nguy cơ mắc đái tháo đường. Các thay đổi trong chế độ ăn đã được biết đến là hiệu quả trong việc ngăn ngừa đái tháo đường bao gồm duy trì một chế độ ăn giàu ngũ cốc nguyên cám và chất xơ, cũng như lựa chọn các loại chất béo lành mạnh như chất béo không bão hòa đa có trong hạt, dầu thực vật và cá. Hạn chế tiêu thụ đồ uống có đường, thịt đỏ và các nguồn chất béo bão hòa khác cũng có thể giúp ngăn ngừa đái tháo đường. Hút thuốc lá cũng làm tăng nguy cơ đái tháo đường và biến chứng của đái tháo đường, vì thế việc cai thuốc lá cũng có thể là một biện pháp ngăn ngừa quan trọng.",
+        "display_context": "Tập thể dục cường độ cao (trên 90 phút mỗi ngày) làm giảm 28% nguy cơ mắc đái tháo đường. Các thay đổi trong chế độ ăn đã được biết đến là hiệu quả trong việc ngăn ngừa đái tháo đường bao gồm duy trì một chế độ ăn giàu ngũ cốc nguyên cám và chất xơ, cũng như lựa chọn các loại chất béo lành mạnh như chất béo không bão hòa đa có trong hạt, dầu thực vật và cá. Hạn chế tiêu thụ đồ uống có đường, thịt đỏ và các nguồn chất béo bão hòa khác cũng có thể giúp ngăn ngừa đái tháo đường. Hút thuốc lá cũng làm tăng nguy cơ đái tháo đường và biến chứng của đái tháo đường, vì thế việc cai thuốc lá cũng có thể là một biện pháp ngăn ngừa quan trọng.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 591.9468994140625,
+            "right": 576.7568359375,
+            "bottom": 705.380859375,
+            "width": 540.7568359375,
+            "height": 113.4339599609375
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 109,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.32987551867219916,
+            "confidence": 0.6597510373443983
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "Ngăn ngừa",
+        "display_context": "Ngăn ngừa",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 509.103515625,
+            "right": 127.2239990234375,
+            "bottom": 533.3876953125,
+            "width": 91.2239990234375,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 5,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 6,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "Giữa các khu vực khác nhau trên thế giới không có sự khác nhau trong mối quan hệ giữa đái tháo đường loại 2 và các yếu tố nguy cơ có thể thay đổi chính (thừa cân, chế độ ăn không lành mạnh, không tập thể dục và hút thuốc). Ngày càng có nhiều bằng chứng cho thấy các tác nhân tiềm ẩn gây đái tháo đường là sự phản ánh các nguồn ảnh hưởng đang thúc đẩy những thay đổi về xã hội, kinh tế và văn hóa: toàn cầu hóa, đô thị hóa, già hóa dân số, cũng như môi trường chính sách y tế nói chung.",
+        "display_context": "Giữa các khu vực khác nhau trên thế giới không có sự khác nhau trong mối quan hệ giữa đái tháo đường loại 2 và các yếu tố nguy cơ có thể thay đổi chính (thừa cân, chế độ ăn không lành mạnh, không tập thể dục và hút thuốc). Ngày càng có nhiều bằng chứng cho thấy các tác nhân tiềm ẩn gây đái tháo đường là sự phản ánh các nguồn ảnh hưởng đang thúc đẩy những thay đổi về xã hội, kinh tế và văn hóa: toàn cầu hóa, đô thị hóa, già hóa dân số, cũng như môi trường chính sách y tế nói chung.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 29.49609375,
+            "right": 576.7573852539062,
+            "bottom": 123.626953125,
+            "width": 540.7573852539062,
+            "height": 94.130859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 6,
+          "num_spans": 69,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.29863013698630136,
+            "confidence": 0.5972602739726027
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "Các biện pháp kiểm soát đái tháo đường tập trung vào việc giữ đường huyết ở gần mức bình thường nhất có thể mà không làm hạ đường huyết. Có thể đạt được điều này bằng cách thay đổi chế độ ăn, tập thể dục, giảm cân và sử dụng các loại thuốc phù hợp bao gồm insulin và thuốc uống.",
+        "display_context": "Các biện pháp kiểm soát đái tháo đường tập trung vào việc giữ đường huyết ở gần mức bình thường nhất có thể mà không làm hạ đường huyết. Có thể đạt được điều này bằng cách thay đổi chế độ ăn, tập thể dục, giảm cân và sử dụng các loại thuốc phù hợp bao gồm insulin và thuốc uống.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 188.49609375,
+            "right": 576.75,
+            "bottom": 234.380859375,
+            "width": 540.75,
+            "height": 45.884765625
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 54,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3317757009345794,
+            "confidence": 0.6635514018691588
+          }
+        }
+      },
+      {
+        "block_id": 2,
+        "context": "Việc người bệnh tìm hiểu về đái tháo đường và tích cực tham gia vào quá trình điều trị đóng vai trò rất quan trọng bởi những người bệnh kiểm soát tốt đường huyết của mình ít gặp biến chứng và gặp biến chứng ít nghiêm trọng hơn nhiều. Theo Hiệp hội Bác sĩ Hoa Kỳ, mục tiêu của quá trình điều trị là giữ HbA1C ở mức 7-8%. Việc điều trị cũng quan tâm đến những vấn đề sức khỏe khác có khả năng đẩy nhanh tác động tiêu cực của đái tháo đường, bao gồm hút thuốc, cao huyết áp, hội chứng chuyển hóa, béo phì và không tập thể dục thường xuyên. Dụng cụ chỉnh hình được sử dụng rộng rãi nhằm làm giảm nguy cơ lót chân ở bệnh nhân đái tháo đường, tuy hiệu quả của biện pháp này vẫn chưa được chứng minh rõ ràng.",
+        "display_context": "Việc người bệnh tìm hiểu về đái tháo đường và tích cực tham gia vào quá trình điều trị đóng vai trò rất quan trọng bởi những người bệnh kiểm soát tốt đường huyết của mình ít gặp biến chứng và gặp biến chứng ít nghiêm trọng hơn nhiều. Theo Hiệp hội Bác sĩ Hoa Kỳ, mục tiêu của quá trình điều trị là giữ HbA1C ở mức 7-8%. Việc điều trị cũng quan tâm đến những vấn đề sức khỏe khác có khả năng đẩy nhanh tác động tiêu cực của đái tháo đường, bao gồm hút thuốc, cao huyết áp, hội chứng chuyển hóa, béo phì và không tập thể dục thường xuyên. Dụng cụ chỉnh hình được sử dụng rộng rãi nhằm làm giảm nguy cơ lót chân ở bệnh nhân đái tháo đường, tuy hiệu quả của biện pháp này vẫn chưa được chứng minh rõ ràng.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 248.49609375,
+            "right": 576.7760620117188,
+            "bottom": 376.376953125,
+            "width": 540.7760620117188,
+            "height": 127.880859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 8,
+          "num_spans": 150,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.30223880597014924,
+            "confidence": 0.6044776119402985
+          }
+        }
+      },
+      {
+        "block_id": 3,
+        "context": "Bệnh nhân đái tháo đường nên tìm hiểu về bệnh và cách điều trị, thay đổi chế độ ăn cũng như tập thể dục nhằm giữ đường máu ở mức chấp nhận được trong cả ngắn hạn và dài hạn. Bên cạnh đó, do tiểu được có liên hệ với nguy cơ bệnh tim mạch cao, người bệnh cũng cần thay đổi lối sống để kiểm soát huyết áp.",
+        "display_context": "Bệnh nhân đái tháo đường nên tìm hiểu về bệnh và cách điều trị, thay đổi chế độ ăn cũng như tập thể dục nhằm giữ đường máu ở mức chấp nhận được trong cả ngắn hạn và dài hạn. Bên cạnh đó, do tiểu được có liên hệ với nguy cơ bệnh tim mạch cao, người bệnh cũng cần thay đổi lối sống để kiểm soát huyết áp.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 424.74609375,
+            "right": 576.7465209960938,
+            "bottom": 486.626953125,
+            "width": 540.7465209960938,
+            "height": 61.880859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 71,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3406113537117904,
+            "confidence": 0.6812227074235808
+          }
+        }
+      },
+      {
+        "block_id": 4,
+        "context": "Việc giảm cân có thể ngăn chặn tiền đái tháo đường tiến triển thành đái tháo đường loại 2, giảm thiểu nguy cơ hình thành bệnh tim mạch, hoặc khiến bệnh thuyên giảm một phần. Không có chế độ ăn nào phù hợp với tất cả người mắc đái tháo đường. Người bệnh thường được khuyến khích áp dụng các chế độ ăn lành mạnh như chế độ ăn Địa Trung Hải, chế độ ăn low-carb hay chế độ ăn DASH. Chưa có bằng chứng nào cho thấy chế độ ăn nào là hiệu quả hơn cả trong số 3 chế độ ăn này. Theo ADA, biện pháp cải thiện đường huyết được nhiều bằng chứng chứng minh nhất là giảm tổng lượng cacbohydrat tiêu thụ. Bệnh nhân đái tháo đường loại 2 không thể đạt được mức đường huyết yêu cầu hoặc cần phải giảm việc sử dụng thuốc giảm đường huyết có thể lựa chọn các chế độ ăn ít hoặc rất ít cacbohydrat. Đối với bệnh nhân đái tháo đường loại 2 thừa cân, bất cứ chế độ ăn nào giúp họ giảm cân đều có lợi.",
+        "display_context": "Việc giảm cân có thể ngăn chặn tiền đái tháo đường tiến triển thành đái tháo đường loại 2, giảm thiểu nguy cơ hình thành bệnh tim mạch, hoặc khiến bệnh thuyên giảm một phần. Không có chế độ ăn nào phù hợp với tất cả người mắc đái tháo đường. Người bệnh thường được khuyến khích áp dụng các chế độ ăn lành mạnh như chế độ ăn Địa Trung Hải, chế độ ăn low-carb hay chế độ ăn DASH. Chưa có bằng chứng nào cho thấy chế độ ăn nào là hiệu quả hơn cả trong số 3 chế độ ăn này. Theo ADA, biện pháp cải thiện đường huyết được nhiều bằng chứng chứng minh nhất là giảm tổng lượng cacbohydrat tiêu thụ. Bệnh nhân đái tháo đường loại 2 không thể đạt được mức đường huyết yêu cầu hoặc cần phải giảm việc sử dụng thuốc giảm đường huyết có thể lựa chọn các chế độ ăn ít hoặc rất ít cacbohydrat. Đối với bệnh nhân đái tháo đường loại 2 thừa cân, bất cứ chế độ ăn nào giúp họ giảm cân đều có lợi.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 501.24609375,
+            "right": 576.8013305664062,
+            "bottom": 659.876953125,
+            "width": 540.8013305664062,
+            "height": 158.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 10,
+          "num_spans": 190,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.323397913561848,
+            "confidence": 0.646795827123696
+          }
+        }
+      },
+      {
+        "block_id": 5,
+        "context": "Kiểm soát",
+        "display_context": "Kiểm soát",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 151.353515625,
+            "right": 118.35000610351562,
+            "bottom": 175.6376953125,
+            "width": 82.35000610351562,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 6,
+        "context": "Lối sống",
+        "display_context": "Lối sống",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 402.0806884765625,
+            "right": 94.30561828613281,
+            "bottom": 417.7157287597656,
+            "width": 58.30561828613281,
+            "height": 15.635040283203125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2857142857142857,
+            "confidence": 0.5714285714285714
+          }
+        }
+      },
+      {
+        "block_id": 7,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 6,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 7,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "Hầu hết các loại thuốc trị đái tháo đường có tác dụng làm giảm đường huyết bằng những cơ chế khác nhau. Những người bệnh kiểm soát được đường huyết một cách chặt chẽ – cụ thể là giữ hàm lượng glucose trong máu ở mức bình thường – sẽ gặp ít biến chứng như bệnh thận hay tổn thương mắt hơn. Tuy nhiên, vẫn tồn tại tranh luận về việc các biện pháp này có còn phù hợp hay hiệu quả về kinh tế không khi người bệnh có thể gặp nguy cơ hạ đường huyết đáng kể.",
+        "display_context": "Hầu hết các loại thuốc trị đái tháo đường có tác dụng làm giảm đường huyết bằng những cơ chế khác nhau. Những người bệnh kiểm soát được đường huyết một cách chặt chẽ – cụ thể là giữ hàm lượng glucose trong máu ở mức bình thường – sẽ gặp ít biến chứng như bệnh thận hay tổn thương mắt hơn. Tuy nhiên, vẫn tồn tại tranh luận về việc các biện pháp này có còn phù hợp hay hiệu quả về kinh tế không khi người bệnh có thể gặp nguy cơ hạ đường huyết đáng kể.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 91.74609375,
+            "right": 576.7669067382812,
+            "bottom": 170.126953125,
+            "width": 540.7669067382812,
+            "height": 78.380859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 106,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.29971181556195964,
+            "confidence": 0.5994236311239193
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "Thuốc trị đái tháo đường được được chia thành một số loại khác nhau. Người bệnh đái tháo đường loại 1 phải được điều trị bằng insulin, mà lý tưởng nhất là theo phác đồ \"basal bolus\" được xây dựng để mô phỏng việc giải phóng insulin ở người bình thường. Người bệnh đái tháo đường loại phần lớn sử dụng thuốc uống (ví dụ như metformin), tuy nhiên một bộ phận dần dần sẽ cần phải được tiêm insulin hoặc các chất chủ vận GLP-1.",
+        "display_context": "Thuốc trị đái tháo đường được được chia thành một số loại khác nhau. Người bệnh đái tháo đường loại 1 phải được điều trị bằng insulin, mà lý tưởng nhất là theo phác đồ \"basal bolus\" được xây dựng để mô phỏng việc giải phóng insulin ở người bình thường. Người bệnh đái tháo đường loại phần lớn sử dụng thuốc uống (ví dụ như metformin), tuy nhiên một bộ phận dần dần sẽ cần phải được tiêm insulin hoặc các chất chủ vận GLP-1.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 183.99609375,
+            "right": 576.76025390625,
+            "bottom": 262.376953125,
+            "width": 540.76025390625,
+            "height": 78.380859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 90,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.3098159509202454,
+            "confidence": 0.6196319018404908
+          }
+        }
+      },
+      {
+        "block_id": 2,
+        "context": "Metformin thường là thuốc được ưu tiên sử dụng hàng đầu để điều trị đái tháo đường loại 2 bởi nó đã được chứng minh là có khả năng làm giảm nguy cơ tử vong. Loại thuốc này hoạt động bằng cách làm giảm sự sản xuất glucose ở thận. Một vài nhóm thuốc khác, phần lớn là thuốc uống, cũng có thể làm giảm đường huyết ở bệnh nhân đái tháo đường loại 2. Chúng bao gồm thuốc làm giảm tiết insulin (sulfonylurea), thuốc làm giảm sự hấp thu đường ở ruột (acarbose), thuốc ức chế enzyme dipeptidyl peptidase-4 (DPP-4) có tác dụng bất hoạt các incretin như GLP-1 và GIP (sitagliptin), thuốc làm cơ thể nhạy cảm hơn với insulin (thiazolidinedione) và thuốc làm tăng bài tiết glucose qua nước tiểu (chất ức chế SGLT2). Khi sử dụng insulin ở bệnh nhân đái tháo đường loại 2 When insulin is used in type 2 diabetes, a long-acting formulation is usually added initially, while continuing oral medications. Sau đó, liều lượng insulin được tăng dần lên đến khi đạt được mức glucose mong muốn.",
+        "display_context": "Metformin thường là thuốc được ưu tiên sử dụng hàng đầu để điều trị đái tháo đường loại 2 bởi nó đã được chứng minh là có khả năng làm giảm nguy cơ tử vong. Loại thuốc này hoạt động bằng cách làm giảm sự sản xuất glucose ở thận. Một vài nhóm thuốc khác, phần lớn là thuốc uống, cũng có thể làm giảm đường huyết ở bệnh nhân đái tháo đường loại 2. Chúng bao gồm thuốc làm giảm tiết insulin (sulfonylurea), thuốc làm giảm sự hấp thu đường ở ruột (acarbose), thuốc ức chế enzyme dipeptidyl peptidase-4 (DPP-4) có tác dụng bất hoạt các incretin như GLP-1 và GIP (sitagliptin), thuốc làm cơ thể nhạy cảm hơn với insulin (thiazolidinedione) và thuốc làm tăng bài tiết glucose qua nước tiểu (chất ức chế SGLT2). Khi sử dụng insulin ở bệnh nhân đái tháo đường loại 2 When insulin is used in type 2 diabetes, a long-acting formulation is usually added initially, while continuing oral medications. Sau đó, liều lượng insulin được tăng dần lên đến khi đạt được mức glucose mong muốn.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 276.99609375,
+            "right": 576.7520141601562,
+            "bottom": 451.376953125,
+            "width": 540.7520141601562,
+            "height": 174.380859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 11,
+          "num_spans": 146,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.22,
+            "confidence": 0.44
+          }
+        }
+      },
+      {
+        "block_id": 3,
+        "context": "Bệnh tim mạch là một biến chứng nghiêm trọng của đái tháo đường. Nhiều hướng dẫn quốc tế khuyến nghị rằng việc điều trị đái tháo đường đặt mục tiêu giữ huyết áp của bệnh nhân dưới mức mmHg. Tuy nhiên, chưa có nhiều bằng chứng về nên tiếp tục giảm huyết áp xuống mức bao nhiêu. Một nghiên cứu hệ thống được thực hiện vào năm 2016 cho thấy việc giảm huyết áp của người bệnh xuống thấp hơn 140 mmHg có thể gây tác hại. Một nghiên cứu hệ thống khác được thực hiện vào năm 2019 không tìm thấy bằng chứng nào cho thấy việc giảm huyết áp xuống 130–140mmHg mang lại lợi ích gì; ngược lại, nguy cơ biến cố tiêu cực lại tăng lên.",
+        "display_context": "Bệnh tim mạch là một biến chứng nghiêm trọng của đái tháo đường. Nhiều hướng dẫn quốc tế khuyến nghị rằng việc điều trị đái tháo đường đặt mục tiêu giữ huyết áp của bệnh nhân dưới mức mmHg. Tuy nhiên, chưa có nhiều bằng chứng về nên tiếp tục giảm huyết áp xuống mức bao nhiêu. Một nghiên cứu hệ thống được thực hiện vào năm 2016 cho thấy việc giảm huyết áp của người bệnh xuống thấp hơn 140 mmHg có thể gây tác hại. Một nghiên cứu hệ thống khác được thực hiện vào năm 2019 không tìm thấy bằng chứng nào cho thấy việc giảm huyết áp xuống 130–140mmHg mang lại lợi ích gì; ngược lại, nguy cơ biến cố tiêu cực lại tăng lên.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 495.99609375,
+            "right": 576.7518920898438,
+            "bottom": 606.626953125,
+            "width": 540.7518920898438,
+            "height": 110.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 122,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2838709677419355,
+            "confidence": 0.567741935483871
+          }
+        }
+      },
+      {
+        "block_id": 4,
+        "context": "Tính đến năm 2015, ADA khuyến nghị rằng người mắc đái tháo đường cần sử dụng thuốc ức chế hệ renin-angiotensin nhằm giảm nguy cơ bệnh thận giai đoạn cuối, các biến cố tim mạch và tử vong. Một số bằng chứng cho thấy thuốc ức chế enzyme chuyển angiotensin (tiếng Anh: angiotensin converting enzyme inhibitor hay ACEI) có hiệu quả cao hơn các loại thuốc ức chế hệ renin-angiotensin khác như thuốc đối kháng thụ thể angiotensin II (tiếng Anh: angiotensin receptor blocker hay ARB), và aliskiren trong việc ngăn ngừa bệnh tim mạch. Tuy nhiên, một",
+        "display_context": "Tính đến năm 2015, ADA khuyến nghị rằng người mắc đái tháo đường cần sử dụng thuốc ức chế hệ renin-angiotensin nhằm giảm nguy cơ bệnh thận giai đoạn cuối, các biến cố tim mạch và tử vong. Một số bằng chứng cho thấy thuốc ức chế enzyme chuyển angiotensin (tiếng Anh: angiotensin converting enzyme inhibitor hay ACEI) có hiệu quả cao hơn các loại thuốc ức chế hệ renin-angiotensin khác như thuốc đối kháng thụ thể angiotensin II (tiếng Anh: angiotensin receptor blocker hay ARB), và aliskiren trong việc ngăn ngừa bệnh tim mạch. Tuy nhiên, một",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 620.49609375,
+            "right": 576.7568359375,
+            "bottom": 715.130859375,
+            "width": 540.7568359375,
+            "height": 94.634765625
+          },
+          "block_type": "paragraph",
+          "num_lines": 6,
+          "num_spans": 75,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.17370892018779344,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": "5_merged",
+        "context": "Thuốc Kiểm soát đường huyết",
+        "display_context": "Thuốc Kiểm soát đường huyết",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 30.080698013305664,
+            "right": 171.24000549316406,
+            "bottom": 85.79296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.2,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 7,
+        "context": "Giảm huyết áp",
+        "display_context": "Giảm huyết áp",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 476.63671875,
+            "right": 118.6920166015625,
+            "bottom": 490.04296875,
+            "width": 82.6920166015625,
+            "height": 13.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2727272727272727,
+            "confidence": 0.5454545454545454
+          }
+        }
+      },
+      {
+        "block_id": 8,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 7,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 8,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "nghiên cứu gần đây hơn cho thấy ACEI và ARB có hiệu quả tương tự nhau đối với các bệnh tim mạch và thận. Không có bằng chứng nào cho thấy việc kết hợp ACEI và ARB có mang lại hiệu quả cao hơn hay không.",
+        "display_context": "nghiên cứu gần đây hơn cho thấy ACEI và ARB có hiệu quả tương tự nhau đối với các bệnh tim mạch và thận. Không có bằng chứng nào cho thấy việc kết hợp ACEI và ARB có mang lại hiệu quả cao hơn hay không.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 29.49609375,
+            "right": 576.749267578125,
+            "bottom": 75.626953125,
+            "width": 540.749267578125,
+            "height": 46.130859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 40,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.24516129032258063,
+            "confidence": 0.49032258064516127
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "Việc sử dụng aspirin để ngăn ngừa bệnh tim mạch là một vấn đề còn gây tranh cãi. Aspirin được khuyên dùng ở một số người có nguy mắc bệnh tim mạch cao, nhưng chưa có bằng chứng nào cho thấy việc sử dụng aspirin thường xuyên có thể cải thiện tình trạng bệnh ở các trường hợp đái tháo đường chưa có biến chứng. Theo khuyến nghị của ADA về việc sử dụng aspirin (dựa trên ý kiến thống nhất của các chuyên gia và kinh nghiệm lâm sàng), người trưởng thành mắc đái tháo đường có nguy cơ bệnh tim mạch ở mức trung bình (5–10% trong vòng 10 năm) có thể sử dụng aspirin liều thấp. Theo hướng dẫn của Anh và xứ Wales do Viện Chăm sóc Sức khỏe Quốc gia (NICE) ban hành, không nên chỉ định aspirin với người bệnh đái tháo đường loại 1 và loại 2 chưa được chẩn đoán là mắc bệnh tim mạch.",
+        "display_context": "Việc sử dụng aspirin để ngăn ngừa bệnh tim mạch là một vấn đề còn gây tranh cãi. Aspirin được khuyên dùng ở một số người có nguy mắc bệnh tim mạch cao, nhưng chưa có bằng chứng nào cho thấy việc sử dụng aspirin thường xuyên có thể cải thiện tình trạng bệnh ở các trường hợp đái tháo đường chưa có biến chứng. Theo khuyến nghị của ADA về việc sử dụng aspirin (dựa trên ý kiến thống nhất của các chuyên gia và kinh nghiệm lâm sàng), người trưởng thành mắc đái tháo đường có nguy cơ bệnh tim mạch ở mức trung bình (5–10% trong vòng 10 năm) có thể sử dụng aspirin liều thấp. Theo hướng dẫn của Anh và xứ Wales do Viện Chăm sóc Sức khỏe Quốc gia (NICE) ban hành, không nên chỉ định aspirin với người bệnh đái tháo đường loại 1 và loại 2 chưa được chẩn đoán là mắc bệnh tim mạch.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 117.9468765258789,
+            "right": 576.7590942382812,
+            "bottom": 263.126953125,
+            "width": 540.7590942382812,
+            "height": 145.1800765991211
+          },
+          "block_type": "paragraph",
+          "num_lines": 9,
+          "num_spans": 158,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2631578947368421,
+            "confidence": 0.5263157894736842
+          }
+        }
+      },
+      {
+        "block_id": 2,
+        "context": "Ở bệnh nhân đái tháo đường loại 2 béo phì, phẫu thuật giảm cân thường là một biện pháp điều trị hiệu quả. Sau khi phẫu thuật, nhiều bệnh nhân có thể duy trì đường huyết ở mức bình thường mà không cần hoặc chỉ cần ít thuốc, và tỉ lệ tử vong dài hạn cũng giảm xuống. Tuy nhiên, phẫu thuật này có nguy cơ tử vong ngắn hạn, dù chỉ ở mức dưới 1%. Chưa rõ ở chỉ số khối cơ thể là bao nhiêu thì người bệnh nên tiến hành phẫu thuật. Nên xem xét biện pháp này đối với những người không thể kiểm soát được cả cân nặng và đường huyết của mình.",
+        "display_context": "Ở bệnh nhân đái tháo đường loại 2 béo phì, phẫu thuật giảm cân thường là một biện pháp điều trị hiệu quả. Sau khi phẫu thuật, nhiều bệnh nhân có thể duy trì đường huyết ở mức bình thường mà không cần hoặc chỉ cần ít thuốc, và tỉ lệ tử vong dài hạn cũng giảm xuống. Tuy nhiên, phẫu thuật này có nguy cơ tử vong ngắn hạn, dù chỉ ở mức dưới 1%. Chưa rõ ở chỉ số khối cơ thể là bao nhiêu thì người bệnh nên tiến hành phẫu thuật. Nên xem xét biện pháp này đối với những người không thể kiểm soát được cả cân nặng và đường huyết của mình.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 311.49609375,
+            "right": 576.7588500976562,
+            "bottom": 406.376953125,
+            "width": 540.7588500976562,
+            "height": 94.880859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 6,
+          "num_spans": 130,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.30673316708229426,
+            "confidence": 0.6134663341645885
+          }
+        }
+      },
+      {
+        "block_id": 3,
+        "context": "Có thể xem xét phẫu thuật cấy ghép tụy ở những bệnh nhân đái tháo đường loại 1 gặp phải các biến chứng nghiêm trọng, trong đó có người bị bệnh thận giai đoạn cuối cần phải được cấy ghép thận.",
+        "display_context": "Có thể xem xét phẫu thuật cấy ghép tụy ở những bệnh nhân đái tháo đường loại 1 gặp phải các biến chứng nghiêm trọng, trong đó có người bị bệnh thận giai đoạn cuối cần phải được cấy ghép thận.",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 420.99609375,
+            "right": 576.7621459960938,
+            "bottom": 450.626953125,
+            "width": 540.7621459960938,
+            "height": 29.630859375
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 45,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.30405405405405406,
+            "confidence": 0.6081081081081081
+          }
+        }
+      },
+      {
+        "block_id": 4,
+        "context": "1. ^ \"Diabetes Blue Circle Symbol\". International Diabetes Federation. ngày 17 tháng 3 năm 2006.",
+        "display_context": "1. ^ \"Diabetes Blue Circle Symbol\". International Diabetes Federation. ngày 17 tháng 3 năm 2006.",
+        "metadata": {
+          "bbox": {
+            "left": 41.84765625,
+            "top": 523.13671875,
+            "right": 562.9888916015625,
+            "bottom": 536.54296875,
+            "width": 521.1412353515625,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.04477611940298507,
+            "confidence": 0.9552238805970149
+          }
+        }
+      },
+      {
+        "block_id": 5,
+        "context": "Bản gốc lưu trữ ngày 5 tháng 8 năm 2007.",
+        "display_context": "Bản gốc lưu trữ ngày 5 tháng 8 năm 2007.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 536.63671875,
+            "right": 281.39434814453125,
+            "bottom": 550.04296875,
+            "width": 226.19903564453125,
+            "height": 13.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2916666666666667,
+            "confidence": 0.5833333333333334
+          }
+        }
+      },
+      {
+        "block_id": 6,
+        "context": "2. ^ a b c d e f g h i j k l m n o p q r s t u v w x \"Diabetes Fact sheet N°312\". WHO. tháng 10 năm 2013.",
+        "display_context": "2. ^ a b c d e f g h i j k l m n o p q r s t u v w x \"Diabetes Fact sheet N°312\". WHO. tháng 10 năm 2013.",
+        "metadata": {
+          "bbox": {
+            "left": 41.84765625,
+            "top": 552.8132934570312,
+            "right": 570.2088012695312,
+            "bottom": 568.79296875,
+            "width": 528.3611450195312,
+            "height": 15.97967529296875
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 51,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.03773584905660377,
+            "confidence": 0.9622641509433962
+          }
+        }
+      },
+      {
+        "block_id": "7_merged",
+        "context": "Bản gốc lưu trữ ngày 26 tháng 8 năm 2013. Truy cập ngày 25 tháng 3 năm 2014. 3. ^ a b Kitabchi AE, Umpierrez GE, Miles JM, Fisher JN (tháng 7 năm 2009). \"Hyperglycemic crises in adult patients with diabetes\". Diabetes Care. Quyển 32 số 7. tr. 1335–43. doi:10.2337/dc09- 9032. PMC 2699725. PMID 19564476. 4. ^ Krishnasamy S, Abell TL (tháng 7 năm 2018). \"Diabetic Gastroparesis: Principles and Current Trends in Management\". Diabetes Therapy. Quyển 9 số Suppl 1. tr. 1–42. doi:10.1007/s13300- 018-0454-9. ISSN 1869-6961. PMC 6028327. PMID 29934758. 5. ^ a b Saedi, E; Gheini, MR; Faiz, F; Arami, MA (ngày 15 tháng 9 năm 2016). \"Diabetes mellitus and cognitive impairments\". World Journal of Diabetes. Quyển 7 số 17. tr. 412–22. doi:10.4239/wjd.v7.i17.412. PMC 5027005. PMID 27660698.",
+        "display_context": "Bản gốc lưu trữ ngày 26 tháng 8 năm 2013. Truy cập ngày 25 tháng 3 năm 2014. 3. ^ a b Kitabchi AE, Umpierrez GE, Miles JM, Fisher JN (tháng 7 năm 2009). \"Hyperglycemic crises in adult patients with diabetes\". Diabetes Care. Quyển 32 số 7. tr. 1335–43. doi:10.2337/dc09- 9032. PMC 2699725. PMID 19564476. 4. ^ Krishnasamy S, Abell TL (tháng 7 năm 2018). \"Diabetic Gastroparesis: Principles and Current Trends in Management\". Diabetes Therapy. Quyển 9 số Suppl 1. tr. 1–42. doi:10.1007/s13300- 018-0454-9. ISSN 1869-6961. PMC 6028327. PMID 29934758. 5. ^ a b Saedi, E; Gheini, MR; Faiz, F; Arami, MA (ngày 15 tháng 9 năm 2016). \"Diabetes mellitus and cognitive impairments\". World Journal of Diabetes. Quyển 7 số 17. tr. 412–22. doi:10.4239/wjd.v7.i17.412. PMC 5027005. PMID 27660698.",
+        "metadata": {
+          "bbox": {
+            "left": 41.84765625,
+            "top": 568.88671875,
+            "right": 570.4593505859375,
+            "bottom": 715.79296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 10,
+          "num_spans": 26,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.12037037037037036,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "6. ^ a b Chiang JL, Kirkman MS, Laffel LM, Peters AL (tháng 7 năm 2014). \"Type 1 diabetes through",
+        "display_context": "6. ^ a b Chiang JL, Kirkman MS, Laffel LM, Peters AL (tháng 7 năm 2014). \"Type 1 diabetes through",
+        "metadata": {
+          "bbox": {
+            "left": 41.84765625,
+            "top": 718.5632934570312,
+            "right": 569.913818359375,
+            "bottom": 734.54296875,
+            "width": 528.066162109375,
+            "height": 15.97967529296875
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 5,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.03225806451612903,
+            "confidence": 0.967741935483871
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "the life span: a position statement of the American Diabetes Association\". Diabetes Care. Quyển 37 số 7. tr. 2034–54. doi:10.2337/dc14-1140. PMC 5865481. PMID 24935775.",
+        "display_context": "the life span: a position statement of the American Diabetes Association\". Diabetes Care. Quyển 37 số 7. tr. 2034–54. doi:10.2337/dc14-1140. PMC 5865481. PMID 24935775.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 734.63671875,
+            "right": 526.3906860351562,
+            "bottom": 761.54296875,
+            "width": 471.19537353515625,
+            "height": 26.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 4,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.02127659574468085,
+            "confidence": 0.9787234042553191
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "Aspirin",
+        "display_context": "Aspirin",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 100.88671875,
+            "right": 77.34000396728516,
+            "bottom": 114.29296875,
+            "width": 41.340003967285156,
+            "height": 13.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "Phẫu thuật",
+        "display_context": "Phẫu thuật",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 288.0806884765625,
+            "right": 108.30506134033203,
+            "bottom": 303.7157287597656,
+            "width": 72.30506134033203,
+            "height": 15.635040283203125
+          },
+          "block_type": "paragraph",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.2222222222222222,
+            "confidence": 0.4444444444444444
+          }
+        }
+      },
+      {
+        "block_id": 15,
+        "context": "Chú thích",
+        "display_context": "Chú thích",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 478.353515625,
+            "right": 117.4679946899414,
+            "bottom": 502.6376953125,
+            "width": 81.4679946899414,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 16,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 8,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 9,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "7. ^ \"Causes of Diabetes\". National Institute of Diabetes and Digestive and Kidney Diseases. tháng",
+        "display_context": "7. ^ \"Causes of Diabetes\". National Institute of Diabetes and Digestive and Kidney Diseases. tháng",
+        "metadata": {
+          "bbox": {
+            "left": 41.84765625,
+            "top": 29.63671875,
+            "right": 567.6959838867188,
+            "bottom": 43.04296875,
+            "width": 525.8483276367188,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 5,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.012987012987012988,
+            "confidence": 0.987012987012987
+          }
+        }
+      },
+      {
+        "block_id": "1_merged",
+        "context": "6 năm 2014. Lưu trữ bản gốc ngày 2 tháng 2 năm 2016. Truy cập ngày 10 tháng 2 năm 2016. 8. ^ a b c d Ripsin, CM; Kang, H; Urban, RJ (tháng 1 năm 2009). \"Management of blood glucose in type 2 diabetes mellitus\" (PDF). American Family Physician. Quyển 79 số 1. tr. 29–36. PMID 19145963. Lưu trữ (PDF) bản gốc ngày 5 tháng 5 năm 2013. 9. ^ Brutsaert, Erika F. (tháng 2 năm 2017). \"Drug Treatment of Diabetes Mellitus\". Anh). Bản gốc (PDF) lưu trữ ngày 1 tháng 5 năm 2020. Truy cập ngày 18 tháng 5 năm 2020. 11. ^ \"About diabetes\". World Health Organization. Bản gốc lưu trữ ngày 31 tháng 3 năm 2014. Truy cập ngày 4 tháng 4 năm 2014. 12. ^ a b Shoback DG, Gardner D, biên tập . \"Chapter 17\". Greenspan's basic & clinical endocrinology (ấn bản thứ 9). New York: McGraw-Hill Medical. ISBN 978-0-07-162243-1. 13. ^ Norman A, Henry H . Hormones. Elsevier. tr. 136–137. ISBN 9780123694447. 14. ^ RSSDI textbook of diabetes mellitus (ấn bản thứ 2). Jaypee Brothers Medical Publishers. 2012. tr. 235. ISBN 978-93-5025-489-9. Lưu trữ bản gốc ngày 14 tháng 10 năm 2015. 15. ^ \"The top 10 causes of death Fact sheet N°310\". World Health Organization. tháng 10 năm 2013. Lưu trữ bản gốc ngày 30 tháng 5 năm 2017. 16. ^ Rippe RS, Irwin JM, biên tập . Manual of intensive care medicine (ấn bản thứ 5). Wolters Kluwer Health/Lippincott Williams & Wilkins. tr. 549. ISBN 978-0-7817-9992-8. 17. ^ a b Picot J, Jones J, Colquitt JL, Gospodarevskaya E, Loveman E, Baxter L, Clegg AJ (tháng",
+        "display_context": "6 năm 2014. Lưu trữ bản gốc ngày 2 tháng 2 năm 2016. Truy cập ngày 10 tháng 2 năm 2016. 8. ^ a b c d Ripsin, CM; Kang, H; Urban, RJ (tháng 1 năm 2009). \"Management of blood glucose in type 2 diabetes mellitus\" (PDF). American Family Physician. Quyển 79 số 1. tr. 29–36. PMID 19145963. Lưu trữ (PDF) bản gốc ngày 5 tháng 5 năm 2013. 9. ^ Brutsaert, Erika F. (tháng 2 năm 2017). \"Drug Treatment of Diabetes Mellitus\". Anh). Bản gốc (PDF) lưu trữ ngày 1 tháng 5 năm 2020. Truy cập ngày 18 tháng 5 năm 2020. 11. ^ \"About diabetes\". World Health Organization. Bản gốc lưu trữ ngày 31 tháng 3 năm 2014. Truy cập ngày 4 tháng 4 năm 2014. 12. ^ a b Shoback DG, Gardner D, biên tập . \"Chapter 17\". Greenspan's basic & clinical endocrinology (ấn bản thứ 9). New York: McGraw-Hill Medical. ISBN 978-0-07-162243-1. 13. ^ Norman A, Henry H . Hormones. Elsevier. tr. 136–137. ISBN 9780123694447. 14. ^ RSSDI textbook of diabetes mellitus (ấn bản thứ 2). Jaypee Brothers Medical Publishers. 2012. tr. 235. ISBN 978-93-5025-489-9. Lưu trữ bản gốc ngày 14 tháng 10 năm 2015. 15. ^ \"The top 10 causes of death Fact sheet N°310\". World Health Organization. tháng 10 năm 2013. Lưu trữ bản gốc ngày 30 tháng 5 năm 2017. 16. ^ Rippe RS, Irwin JM, biên tập . Manual of intensive care medicine (ấn bản thứ 5). Wolters Kluwer Health/Lippincott Williams & Wilkins. tr. 549. ISBN 978-0-7817-9992-8. 17. ^ a b Picot J, Jones J, Colquitt JL, Gospodarevskaya E, Loveman E, Baxter L, Clegg AJ (tháng",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 43.13671875,
+            "right": 576.2529907226562,
+            "bottom": 350.0390625
+          },
+          "block_type": "paragraph",
+          "num_lines": 18,
+          "num_spans": 56,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.1346153846153846,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "năm 2009). \"The clinical effectiveness and cost-effectiveness of bariatric (weight loss) surgery for obesity: a systematic review and economic evaluation\". Health Technology Assessment. Quyển 13 số 41. tr. 1–190, 215–357, iii–iv. doi:10.3310/hta13410. hdl:10536/DRO/DU:30064294. PMID 19726018. 18. ^ Cash, Jill . Family Practice Guidelines (ấn bản thứ 3). Springer. tr. 396. ISBN 978-0-8261-",
+        "display_context": "năm 2009). \"The clinical effectiveness and cost-effectiveness of bariatric (weight loss) surgery for obesity: a systematic review and economic evaluation\". Health Technology Assessment. Quyển 13 số 41. tr. 1–190, 215–357, iii–iv. doi:10.3310/hta13410. hdl:10536/DRO/DU:30064294. PMID 19726018. 18. ^ Cash, Jill . Family Practice Guidelines (ấn bản thứ 3). Springer. tr. 396. ISBN 978-0-8261-",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 349.88671875,
+            "right": 575.1530151367188,
+            "bottom": 420.29296875,
+            "width": 539.9733276367188,
+            "height": 70.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 11,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.02553191489361702,
+            "confidence": 0.9744680851063829
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "6875-7. Lưu trữ bản gốc ngày 31 tháng 10 năm 2015. 19. ^ Lỗi chú thích: Thẻ <ref> sai; không có nội dung trong thẻ ref có tên Vos2012 20. ^ \"What is Diabetes?\". Centers for Disease Control and Prevention (bằng tiếng Anh). ngày",
+        "display_context": "6875-7. Lưu trữ bản gốc ngày 31 tháng 10 năm 2015. 19. ^ Lỗi chú thích: Thẻ <ref> sai; không có nội dung trong thẻ ref có tên Vos2012 20. ^ \"What is Diabetes?\". Centers for Disease Control and Prevention (bằng tiếng Anh). ngày",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 420.38671875,
+            "right": 550.1173095703125,
+            "bottom": 467.54296875,
+            "width": 514.9376220703125,
+            "height": 47.15625
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 13,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.1388888888888889,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "2020. 22. ^ American Diabetes Association (ngày 22 tháng 3 năm 2018). \"Economic Costs of Diabetes in",
+        "display_context": "2020. 22. ^ American Diabetes Association (ngày 22 tháng 3 năm 2018). \"Economic Costs of Diabetes in",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 497.63671875,
+            "right": 558.6976928710938,
+            "bottom": 527.54296875,
+            "width": 523.5180053710938,
+            "height": 29.90625
+          },
+          "block_type": "list",
+          "num_lines": 2,
+          "num_spans": 4,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.046875,
+            "confidence": 0.953125
+          }
+        }
+      },
+      {
+        "block_id": "16_merged",
+        "context": "2 năm 2019. Truy cập ngày 2 tháng 7 năm 2019. 24. ^ Cooke DW, Plotnick L (tháng 11 năm 2008). \"Type 1 diabetes mellitus in pediatrics\". Pediatrics in Review. Quyển 29 số 11. tr. 374–84, quiz 385. doi:10.1542/pir.29-11-374. PMID 18977856. S2CID 20528207. 25. ^ \"WHO | Diabetes mellitus\". WHO. Truy cập ngày 23 tháng 3 năm 2019. 26. ^ Rockefeller, J.D. . Diabetes: Symptoms, Causes, Treatment and Prevention (bằng tiếng 6 năm 2010). \"Diabetes mellitus, fasting blood glucose concentration, and risk of vascular disease: a collaborative meta-analysis of 102 prospective studies\". Lancet. Quyển 375 số 9733. tr. 2215–2222. doi:10.1016/S0140-673660484-9. PMC 2904878. PMID 20609967.",
+        "display_context": "2 năm 2019. Truy cập ngày 2 tháng 7 năm 2019. 24. ^ Cooke DW, Plotnick L (tháng 11 năm 2008). \"Type 1 diabetes mellitus in pediatrics\". Pediatrics in Review. Quyển 29 số 11. tr. 374–84, quiz 385. doi:10.1542/pir.29-11-374. PMID 18977856. S2CID 20528207. 25. ^ \"WHO | Diabetes mellitus\". WHO. Truy cập ngày 23 tháng 3 năm 2019. 26. ^ Rockefeller, J.D. . Diabetes: Symptoms, Causes, Treatment and Prevention (bằng tiếng 6 năm 2010). \"Diabetes mellitus, fasting blood glucose concentration, and risk of vascular disease: a collaborative meta-analysis of 102 prospective studies\". Lancet. Quyển 375 số 9733. tr. 2215–2222. doi:10.1016/S0140-673660484-9. PMC 2904878. PMID 20609967.",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 571.13671875,
+            "right": 565.6331176757812,
+            "bottom": 748.04296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 9,
+          "num_spans": 23,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.07954545454545454,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 20,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 9,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 10,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "29. ^ O'Gara PT, Kushner FG, Ascheim DD, Casey DE, Chung MK, de Lemos JA, và đồng nghiệp",
+        "display_context": "29. ^ O'Gara PT, Kushner FG, Ascheim DD, Casey DE, Chung MK, de Lemos JA, và đồng nghiệp",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 29.63671875,
+            "right": 554.69873046875,
+            "bottom": 43.04296875,
+            "width": 519.51904296875,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.06666666666666667,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "(tháng 1 năm 2013). \"2013 ACCF/AHA guideline for the management of ST-elevation myocardial infarction: a report of the American College of Cardiology Foundation/American Heart Association Task Force on Practice Guidelines\". Circulation. Quyển 127 số 4. tr. e362 – e425. doi:10.1161/CIR.0b013e3182742cf6. PMID 23247304. 30. ^ Papatheodorou K, Banach M, Bekiari E, Rizzo M, Edmonds M (ngày 11 tháng 3 năm 2018).",
+        "display_context": "(tháng 1 năm 2013). \"2013 ACCF/AHA guideline for the management of ST-elevation myocardial infarction: a report of the American College of Cardiology Foundation/American Heart Association Task Force on Practice Guidelines\". Circulation. Quyển 127 số 4. tr. e362 – e425. doi:10.1161/CIR.0b013e3182742cf6. PMID 23247304. 30. ^ Papatheodorou K, Banach M, Bekiari E, Rizzo M, Edmonds M (ngày 11 tháng 3 năm 2018).",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 43.13671875,
+            "right": 570.79345703125,
+            "bottom": 113.54296875,
+            "width": 535.61376953125,
+            "height": 70.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 9,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.02631578947368421,
+            "confidence": 0.9736842105263158
+          }
+        }
+      },
+      {
+        "block_id": 2,
+        "context": "\"Complications of Diabetes 2017\". Journal of Diabetes Research. Quyển 2018. tr. 3086167. doi:10./3086167. PMC 5866895. PMID 29713648. 31. ^ Kompaniyets L, Pennington AF, Goodman AB, Rosenblum HG, Belay B, Ko JY, và đồng nghiệp",
+        "display_context": "\"Complications of Diabetes 2017\". Journal of Diabetes Research. Quyển 2018. tr. 3086167. doi:10./3086167. PMC 5866895. PMID 29713648. 31. ^ Kompaniyets L, Pennington AF, Goodman AB, Rosenblum HG, Belay B, Ko JY, và đồng nghiệp",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 113.63671875,
+            "right": 569.6185913085938,
+            "bottom": 157.04296875,
+            "width": 534.4389038085938,
+            "height": 43.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 7,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.03816793893129771,
+            "confidence": 0.9618320610687023
+          }
+        }
+      },
+      {
+        "block_id": 3,
+        "context": "(tháng 7 năm 2021). \"Underlying Medical Conditions and Severe Illness Among 540,667 Adults Hospitalized With COVID-19, March 2020-March 2021\". Preventing Chronic Disease. Quyển 18. Centers for Disease Control and Prevention. tr. E66. doi:10.5888/pcd18.210123. PMC 8269743. PMID 34197283. 32. ^ a b c d \"Diabetes Programme\". World Health Organization. Lưu trữ bản gốc ngày 26 tháng",
+        "display_context": "(tháng 7 năm 2021). \"Underlying Medical Conditions and Severe Illness Among 540,667 Adults Hospitalized With COVID-19, March 2020-March 2021\". Preventing Chronic Disease. Quyển 18. Centers for Disease Control and Prevention. tr. E66. doi:10.5888/pcd18.210123. PMC 8269743. PMID 34197283. 32. ^ a b c d \"Diabetes Programme\". World Health Organization. Lưu trữ bản gốc ngày 26 tháng",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 157.13671875,
+            "right": 565.7001342773438,
+            "bottom": 229.2890625,
+            "width": 530.5204467773438,
+            "height": 72.15234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 15,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0375,
+            "confidence": 0.9625
+          }
+        }
+      },
+      {
+        "block_id": "5_merged",
+        "context": "Truy cập ngày 27 tháng 3 năm 2018. 34. ^ Cukierman T, Gerstein HC, Williamson JD (tháng 12 năm 2005). \"Cognitive decline and dementia in diabetes--systematic overview of prospective observational studies\". Diabetologia. Quyển 48 số 12. tr. 2460–2469. doi:10.1007/s00125-005-0023-4. PMID 16283246. 35. ^ Yang Y, Hu X, Zhang Q, Zou R (tháng 11 năm 2016). \"Diabetes mellitus and risk of falls in older adults: a systematic review and meta-analysis\". Age and Ageing. Quyển 45 số 6. tr. 761–767. doi:10.1093/ageing/afw140. PMID 27515679. 36. ^ Williams textbook of endocrinology (ấn bản thứ 12). Elsevier/Saunders. 2011. tr. 1371–1435. ISBN 978-1-4377-0324-5. 37. ^ Lambert P, Bingley PJ . \"What is Type 1 Diabetes?\". Medicine. Quyển 30. tr. 1–5. doi:10.1383/medc.30.1.1.28264. 38. ^ \"Classification of Diabetes mellitus 2019\". WHO (bằng tiếng Anh). Truy cập ngày 9 tháng năm 2020. 39. ^ Tuomi T, Santoro N, Caprio S, Cai M, Weng J, Groop L (tháng 3 năm 2014). \"The many faces of diabetes: a disease with increasing heterogeneity\". Lancet. Quyển 383 số 9922. tr. 1084–94. doi:10.1016/S0140-673662219-9. PMID 24315621. S2CID 12679248. 40. ^ Rother KI (tháng 4 năm 2007). \"Diabetes treatment—bridging the divide\". The New England Journal of Medicine. Quyển 356 số 15. tr. 1499–501. doi:10.1056/NEJMp078030. PMC 4152979. PMID 17429082. 41. ^ American Diabetes Association (tháng 1 năm 2017). \"2. Classification and Diagnosis of Diabetes\". Diabetes Care. Quyển 40 số Suppl 1. tr. S11 – S24. doi:10.2337/dc17-S005. PMID 27979889. 42. ^ Carris NW, Magness RR, Labovitz AJ (tháng 2 năm 2019). \"Prevention of Diabetes Mellitus in Patients With Prediabetes\". The American Journal of Cardiology. Quyển 123 số 3. tr. 507–512. doi:10.1016/j.amjcard.2018.10.032. PMC 6350898. PMID 30528418.",
+        "display_context": "Truy cập ngày 27 tháng 3 năm 2018. 34. ^ Cukierman T, Gerstein HC, Williamson JD (tháng 12 năm 2005). \"Cognitive decline and dementia in diabetes--systematic overview of prospective observational studies\". Diabetologia. Quyển 48 số 12. tr. 2460–2469. doi:10.1007/s00125-005-0023-4. PMID 16283246. 35. ^ Yang Y, Hu X, Zhang Q, Zou R (tháng 11 năm 2016). \"Diabetes mellitus and risk of falls in older adults: a systematic review and meta-analysis\". Age and Ageing. Quyển 45 số 6. tr. 761–767. doi:10.1093/ageing/afw140. PMID 27515679. 36. ^ Williams textbook of endocrinology (ấn bản thứ 12). Elsevier/Saunders. 2011. tr. 1371–1435. ISBN 978-1-4377-0324-5. 37. ^ Lambert P, Bingley PJ . \"What is Type 1 Diabetes?\". Medicine. Quyển 30. tr. 1–5. doi:10.1383/medc.30.1.1.28264. 38. ^ \"Classification of Diabetes mellitus 2019\". WHO (bằng tiếng Anh). Truy cập ngày 9 tháng năm 2020. 39. ^ Tuomi T, Santoro N, Caprio S, Cai M, Weng J, Groop L (tháng 3 năm 2014). \"The many faces of diabetes: a disease with increasing heterogeneity\". Lancet. Quyển 383 số 9922. tr. 1084–94. doi:10.1016/S0140-673662219-9. PMID 24315621. S2CID 12679248. 40. ^ Rother KI (tháng 4 năm 2007). \"Diabetes treatment—bridging the divide\". The New England Journal of Medicine. Quyển 356 số 15. tr. 1499–501. doi:10.1056/NEJMp078030. PMC 4152979. PMID 17429082. 41. ^ American Diabetes Association (tháng 1 năm 2017). \"2. Classification and Diagnosis of Diabetes\". Diabetes Care. Quyển 40 số Suppl 1. tr. S11 – S24. doi:10.2337/dc17-S005. PMID 27979889. 42. ^ Carris NW, Magness RR, Labovitz AJ (tháng 2 năm 2019). \"Prevention of Diabetes Mellitus in Patients With Prediabetes\". The American Journal of Cardiology. Quyển 123 số 3. tr. 507–512. doi:10.1016/j.amjcard.2018.10.032. PMC 6350898. PMID 30528418.",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 259.13671875,
+            "right": 573.8074340820312,
+            "bottom": 623.54296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 25,
+          "num_spans": 61,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.07692307692307693,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 15,
+        "context": "43. ^ a b \"National Diabetes Clearinghouse (NDIC): National Diabetes Statistics 2011\". U.S.",
+        "display_context": "43. ^ a b \"National Diabetes Clearinghouse (NDIC): National Diabetes Statistics 2011\". U.S.",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 626.3132934570312,
+            "right": 518.5667114257812,
+            "bottom": 642.29296875,
+            "width": 483.38702392578125,
+            "height": 15.97967529296875
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 5,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": "16_merged",
+        "context": "Department of Health and Human Services. Bản gốc lưu trữ ngày 17 tháng 4 năm 2014. Truy cập ngày 22 tháng 4 năm 2014. 44. ^ a b Soldavini, Jessica (tháng 11 năm 2019). \"Krause's Food & The Nutrition Care Process\". Journal of Nutrition Education and Behavior. Quyển 51 số 10. tr. 1225. doi:10.1016/j.jneb.2019.06.022. ISSN 1499-4046. 45. ^ \"Managing & Treating Gestational Diabetes | NIDDK\". National Institute of Diabetes and Digestive and Kidney Diseases (bằng tiếng Anh). Truy cập ngày 6 tháng 5 năm 2019.",
+        "display_context": "Department of Health and Human Services. Bản gốc lưu trữ ngày 17 tháng 4 năm 2014. Truy cập ngày 22 tháng 4 năm 2014. 44. ^ a b Soldavini, Jessica (tháng 11 năm 2019). \"Krause's Food & The Nutrition Care Process\". Journal of Nutrition Education and Behavior. Quyển 51 số 10. tr. 1225. doi:10.1016/j.jneb.2019.06.022. ISSN 1499-4046. 45. ^ \"Managing & Treating Gestational Diabetes | NIDDK\". National Institute of Diabetes and Digestive and Kidney Diseases (bằng tiếng Anh). Truy cập ngày 6 tháng 5 năm 2019.",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 642.38671875,
+            "right": 572.8909912109375,
+            "bottom": 744.29296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 16,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.0948905109489051,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 19,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 10,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 11,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "46. ^ \"Monogenic Forms of Diabetes\". National institute of diabetes and digestive and kidney",
+        "display_context": "46. ^ \"Monogenic Forms of Diabetes\". National institute of diabetes and digestive and kidney",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 29.63671875,
+            "right": 526.9605102539062,
+            "bottom": 43.04296875,
+            "width": 491.78082275390625,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 4,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": "1_merged",
+        "context": "diseases. US NIH. Lưu trữ bản gốc ngày 12 tháng 3 năm 2017. Truy cập ngày 12 tháng 3 năm 2017. 47. ^ Thanabalasingham G, Owen KR (tháng 10 năm 2011). \"Diagnosis and management of maturity onset diabetes of the young (MODY)\". BMJ. Quyển 343 số oct19 3. tr. d6044. doi:10.1136/bmj.d6044. PMID 22012810. S2CID 44891167. 48. ^ a b \"Definition, Diagnosis and Classification of Diabetes Mellitus and its Complications\" (PDF). World Health Organization. 1999. Lưu trữ (PDF) bản gốc ngày 8 tháng 3 năm 2003. 49. ^ Cleland, S. J.; Fisher, B. M.; Colhoun, H. M.; Sattar, N.; Petrie, J. R. . \"Insulin Resistance in Type 1 Diabetes\". Diabetologia. Quyển 56 số 7. National Library of Medicine. tr. 1462–1470. doi:10.1007/s00125-013-2904-2. PMC 3671104. PMID 23613085. 50. ^ Unless otherwise specified, reference is: Table 20-5 in Mitchell, Richard Sheppard; Kumar, Vinay; Abbas, Abul K.; Fausto, Nelson . Robbins Basic Pathology (ấn bản thứ 8). Philadelphia: Saunders. ISBN 978-1-4160-2973-1. 51. ^ Sattar N, Preiss D, Murray HM, Welsh P, Buckley BM, de Craen AJ, Seshasai SR, McMurray JJ,",
+        "display_context": "diseases. US NIH. Lưu trữ bản gốc ngày 12 tháng 3 năm 2017. Truy cập ngày 12 tháng 3 năm 2017. 47. ^ Thanabalasingham G, Owen KR (tháng 10 năm 2011). \"Diagnosis and management of maturity onset diabetes of the young (MODY)\". BMJ. Quyển 343 số oct19 3. tr. d6044. doi:10.1136/bmj.d6044. PMID 22012810. S2CID 44891167. 48. ^ a b \"Definition, Diagnosis and Classification of Diabetes Mellitus and its Complications\" (PDF). World Health Organization. 1999. Lưu trữ (PDF) bản gốc ngày 8 tháng 3 năm 2003. 49. ^ Cleland, S. J.; Fisher, B. M.; Colhoun, H. M.; Sattar, N.; Petrie, J. R. . \"Insulin Resistance in Type 1 Diabetes\". Diabetologia. Quyển 56 số 7. National Library of Medicine. tr. 1462–1470. doi:10.1007/s00125-013-2904-2. PMC 3671104. PMID 23613085. 50. ^ Unless otherwise specified, reference is: Table 20-5 in Mitchell, Richard Sheppard; Kumar, Vinay; Abbas, Abul K.; Fausto, Nelson . Robbins Basic Pathology (ấn bản thứ 8). Philadelphia: Saunders. ISBN 978-1-4160-2973-1. 51. ^ Sattar N, Preiss D, Murray HM, Welsh P, Buckley BM, de Craen AJ, Seshasai SR, McMurray JJ,",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 43.13671875,
+            "right": 574.5809936523438,
+            "bottom": 248.54296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 14,
+          "num_spans": 33,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.1092436974789916,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 6,
+        "context": "Freeman DJ, Jukema JW, Macfarlane PW, Packard CJ, Stott DJ, Westendorp RG, Shepherd J, Davis BR, Pressel SL, Marchioli R, Marfisi RM, Maggioni AP, Tavazzi L, Tognoni G, Kjekshus J, Pedersen TR, Cook TJ, Gotto AM, Clearfield MB, Downs JR, Nakamura H, Ohashi Y, Mizuno K, Ray KK, Ford I (tháng 2 năm 2010). \"Statins and risk of incident diabetes: a collaborative meta- analysis of randomised statin trials\". Lancet. Quyển 375 số 9716. tr. 735–42. doi:10.1016/S0140- 673661965-6. PMID 20167359. S2CID 11544414. 52. ^ \" \"Diabetes Care\" January 2010\". Diabetes Care. Quyển 33. 2009. tr. S3. doi:10.2337/dc10-",
+        "display_context": "Freeman DJ, Jukema JW, Macfarlane PW, Packard CJ, Stott DJ, Westendorp RG, Shepherd J, Davis BR, Pressel SL, Marchioli R, Marfisi RM, Maggioni AP, Tavazzi L, Tognoni G, Kjekshus J, Pedersen TR, Cook TJ, Gotto AM, Clearfield MB, Downs JR, Nakamura H, Ohashi Y, Mizuno K, Ray KK, Ford I (tháng 2 năm 2010). \"Statins and risk of incident diabetes: a collaborative meta- analysis of randomised statin trials\". Lancet. Quyển 375 số 9716. tr. 735–42. doi:10.1016/S0140- 673661965-6. PMID 20167359. S2CID 11544414. 52. ^ \" \"Diabetes Care\" January 2010\". Diabetes Care. Quyển 33. 2009. tr. S3. doi:10.2337/dc10-",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 248.63671875,
+            "right": 568.4622802734375,
+            "bottom": 346.04296875,
+            "width": 533.2825927734375,
+            "height": 97.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 13,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.013440860215053764,
+            "confidence": 0.9865591397849462
+          }
+        }
+      },
+      {
+        "block_id": "7_merged",
+        "context": "S003. PMC 2797388. PMID 20042773. Lưu trữ bản gốc ngày 13 tháng 1 năm 2010. Truy cập ngày 29 tháng 1 năm 2010. 53. ^ Definition and diagnosis of diabetes mellitus and intermediate hyperglycemia: Report of a WHO/IDF consultation (PDF). Geneva: World Health Organization. 2006. tr. 21. ISBN 978-92-4- 159493-6. 54. ^ Vijan, S (tháng 3 năm 2010). \"Type 2 diabetes\". Annals of Internal Medicine. 152 : ITC31-15. doi:10.-4819-152-5-201003020-01003. PMID 20194231. 55. ^ Saydah SH, Miret M, Sung J, Varas C, Gause D, Brancati FL (tháng 8 năm 2001). \"Post- challenge hyperglycemia and mortality in a national sample of U.S. adults\". Diabetes Care. Quyển 24 số 8. tr. 1397–402. doi:10.2337/diacare.24.8.1397. PMID 11473076. 56. ^ Definition and diagnosis of diabetes mellitus and intermediate hyperglycemia : report of a WHO/IDF consultation (PDF). World Health Organization. 2006. tr. 21. ISBN 978-92-4-159493-6. Lưu trữ (PDF) bản gốc ngày 11 tháng 5 năm 2012. 57. ^ Santaguida PL, Balion C, Hunt D, Morrison K, Gerstein H, Raina P, Booker L, Yazdi H .",
+        "display_context": "S003. PMC 2797388. PMID 20042773. Lưu trữ bản gốc ngày 13 tháng 1 năm 2010. Truy cập ngày 29 tháng 1 năm 2010. 53. ^ Definition and diagnosis of diabetes mellitus and intermediate hyperglycemia: Report of a WHO/IDF consultation (PDF). Geneva: World Health Organization. 2006. tr. 21. ISBN 978-92-4- 159493-6. 54. ^ Vijan, S (tháng 3 năm 2010). \"Type 2 diabetes\". Annals of Internal Medicine. 152 : ITC31-15. doi:10.-4819-152-5-201003020-01003. PMID 20194231. 55. ^ Saydah SH, Miret M, Sung J, Varas C, Gause D, Brancati FL (tháng 8 năm 2001). \"Post- challenge hyperglycemia and mortality in a national sample of U.S. adults\". Diabetes Care. Quyển 24 số 8. tr. 1397–402. doi:10.2337/diacare.24.8.1397. PMID 11473076. 56. ^ Definition and diagnosis of diabetes mellitus and intermediate hyperglycemia : report of a WHO/IDF consultation (PDF). World Health Organization. 2006. tr. 21. ISBN 978-92-4-159493-6. Lưu trữ (PDF) bản gốc ngày 11 tháng 5 năm 2012. 57. ^ Santaguida PL, Balion C, Hunt D, Morrison K, Gerstein H, Raina P, Booker L, Yazdi H .",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 346.13671875,
+            "right": 570.8091430664062,
+            "bottom": 550.04296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 14,
+          "num_spans": 34,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.0859375,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "\"Diagnosis, Prognosis, and Treatment of Impaired Glucose Tolerance and Impaired Fasting Glucose\". Evidence Report/Technology Assessment (Summary). Số 128. Agency for Healthcare Research and Quality. tr. 1–11. PMC 4780988. PMID 16194123. Lưu trữ bản gốc ngày 16 tháng năm 2008. Truy cập ngày 20 tháng 7 năm 2008. 58. ^ Bartoli E, Fra GP, Carnevale Schianca GP (tháng 2 năm 2011). \"The oral glucose tolerance test",
+        "display_context": "\"Diagnosis, Prognosis, and Treatment of Impaired Glucose Tolerance and Impaired Fasting Glucose\". Evidence Report/Technology Assessment (Summary). Số 128. Agency for Healthcare Research and Quality. tr. 1–11. PMC 4780988. PMID 16194123. Lưu trữ bản gốc ngày 16 tháng năm 2008. Truy cập ngày 20 tháng 7 năm 2008. 58. ^ Bartoli E, Fra GP, Carnevale Schianca GP (tháng 2 năm 2011). \"The oral glucose tolerance test",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 550.13671875,
+            "right": 574.4866333007812,
+            "bottom": 620.54296875,
+            "width": 539.3069458007812,
+            "height": 70.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 9,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.05,
+            "confidence": 0.95
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "(OGTT) revisited\". European Journal of Internal Medicine. Quyển 22 số 1. tr. 8–12. doi:10.1016/j.ejim.2010.07.008. PMID 21238885. 59. ^ Selvin E, Steffes MW, Zhu H, Matsushita K, Wagenknecht L, Pankow J, Coresh J, Brancati FL",
+        "display_context": "(OGTT) revisited\". European Journal of Internal Medicine. Quyển 22 số 1. tr. 8–12. doi:10.1016/j.ejim.2010.07.008. PMID 21238885. 59. ^ Selvin E, Steffes MW, Zhu H, Matsushita K, Wagenknecht L, Pankow J, Coresh J, Brancati FL",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 620.63671875,
+            "right": 563.740966796875,
+            "bottom": 664.04296875,
+            "width": 528.561279296875,
+            "height": 43.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 7,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.014925373134328358,
+            "confidence": 0.9850746268656716
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "(tháng 3 năm 2010). \"Glycated hemoglobin, diabetes, and cardiovascular risk in nondiabetic adults\". The New England Journal of Medicine. Quyển 362 số 9. tr. 800–11. CiteSeerX 10.1.1.589.1658. doi:10.1056/NEJMoa0908359. PMC 2872990. PMID 20200384. 60. ^ Alustiza, Elena . \"Tackling risk factors for type 2 diabetes in adolescents: PRE-STARt",
+        "display_context": "(tháng 3 năm 2010). \"Glycated hemoglobin, diabetes, and cardiovascular risk in nondiabetic adults\". The New England Journal of Medicine. Quyển 362 số 9. tr. 800–11. CiteSeerX 10.1.1.589.1658. doi:10.1056/NEJMoa0908359. PMC 2872990. PMID 20200384. 60. ^ Alustiza, Elena . \"Tackling risk factors for type 2 diabetes in adolescents: PRE-STARt",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 664.13671875,
+            "right": 549.7969360351562,
+            "bottom": 721.04296875,
+            "width": 514.6172485351562,
+            "height": 56.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 8,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.019417475728155338,
+            "confidence": 0.9805825242718447
+          }
+        }
+      },
+      {
+        "block_id": 15,
+        "context": "study in Euskadi\". Anales de Pediatria (Barcelona, Spain : 2003). Madrid: Anales de Pediatría. doi:10.1016/j.anpedi.2020.11.001. PMID 33388268.",
+        "display_context": "study in Euskadi\". Anales de Pediatria (Barcelona, Spain : 2003). Madrid: Anales de Pediatría. doi:10.1016/j.anpedi.2020.11.001. PMID 33388268.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 721.13671875,
+            "right": 554.4096069335938,
+            "bottom": 748.04296875,
+            "width": 499.21429443359375,
+            "height": 26.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 4,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.012195121951219513,
+            "confidence": 0.9878048780487805
+          }
+        }
+      },
+      {
+        "block_id": 16,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 11,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 12,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "61. ^ Kyu HH, Bachman VF, Alexander LT, Mumford JE, Afshin A, Estep K, Veerman JL, Delwiche K,",
+        "display_context": "61. ^ Kyu HH, Bachman VF, Alexander LT, Mumford JE, Afshin A, Estep K, Veerman JL, Delwiche K,",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 29.63671875,
+            "right": 567.5380249023438,
+            "bottom": 43.04296875,
+            "width": 532.3583374023438,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "Iannarone ML, Moyer ML, Cercy K, Vos T, Murray CJ, Forouzanfar MH (tháng 8 năm 2016). \"Physical activity and risk of breast cancer, colon cancer, diabetes, ischemic heart disease, and ischemic stroke events: systematic review and dose-response meta-analysis for the Global Burden of Disease Study 2013\". BMJ. Quyển 354. tr. i3857. doi:10.1136/bmj.i3857. PMC 4979358. PMID 27510511. 62. ^ a b \"Simple Steps to Preventing Diabetes\". The Nutrition Source. Harvard T.H. Chan School of",
+        "display_context": "Iannarone ML, Moyer ML, Cercy K, Vos T, Murray CJ, Forouzanfar MH (tháng 8 năm 2016). \"Physical activity and risk of breast cancer, colon cancer, diabetes, ischemic heart disease, and ischemic stroke events: systematic review and dose-response meta-analysis for the Global Burden of Disease Study 2013\". BMJ. Quyển 354. tr. i3857. doi:10.1136/bmj.i3857. PMC 4979358. PMID 27510511. 62. ^ a b \"Simple Steps to Preventing Diabetes\". The Nutrition Source. Harvard T.H. Chan School of",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 43.13671875,
+            "right": 561.9191284179688,
+            "bottom": 128.7890625,
+            "width": 526.7394409179688,
+            "height": 85.65234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 6,
+          "num_spans": 14,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.009146341463414634,
+            "confidence": 0.9908536585365854
+          }
+        }
+      },
+      {
+        "block_id": "2_merged",
+        "context": "Public Health. Lưu trữ bản gốc ngày 25 tháng 4 năm 2014. 63. ^ Willi C, Bodenmann P, Ghali WA, Faris PD, Cornuz J (tháng 12 năm 2007). \"Active smoking and the risk of type 2 diabetes: a systematic review and meta-analysis\". JAMA. Quyển 298 số 22. tr. 2654–64. doi:10.1001/jama.298.22.2654. PMID 18073361. 64. ^ \"Chronic diseases and their common risk factors\" (PDF). World Health Organization. 2005. Lưu trữ (PDF) bản gốc ngày 17 tháng 10 năm 2016. Truy cập ngày 30 tháng 8 năm 2016. 65. ^ Nathan DM, Cleary PA, Backlund JY, Genuth SM, Lachin JM, Orchard TJ, Raskin P, Zinman B",
+        "display_context": "Public Health. Lưu trữ bản gốc ngày 25 tháng 4 năm 2014. 63. ^ Willi C, Bodenmann P, Ghali WA, Faris PD, Cornuz J (tháng 12 năm 2007). \"Active smoking and the risk of type 2 diabetes: a systematic review and meta-analysis\". JAMA. Quyển 298 số 22. tr. 2654–64. doi:10.1001/jama.298.22.2654. PMID 18073361. 64. ^ \"Chronic diseases and their common risk factors\" (PDF). World Health Organization. 2005. Lưu trữ (PDF) bản gốc ngày 17 tháng 10 năm 2016. Truy cập ngày 30 tháng 8 năm 2016. 65. ^ Nathan DM, Cleary PA, Backlund JY, Genuth SM, Lachin JM, Orchard TJ, Raskin P, Zinman B",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 128.63671875,
+            "right": 575.33740234375,
+            "bottom": 232.04296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 15,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "mixed",
+            "vietnamese_ratio": 0.09278350515463918,
+            "confidence": 0.7
+          }
+        }
+      },
+      {
+        "block_id": 5,
+        "context": "(tháng 12 năm 2005). \"Intensive diabetes treatment and cardiovascular disease in patients with type 1 diabetes\". The New England Journal of Medicine. Quyển 353 số 25. tr. 2643–53. doi:10.1056/NEJMoa052187. PMC 2637991. PMID 16371630. 66. ^ \"The effect of intensive diabetes therapy on the development and progression of neuropathy.",
+        "display_context": "(tháng 12 năm 2005). \"Intensive diabetes treatment and cardiovascular disease in patients with type 1 diabetes\". The New England Journal of Medicine. Quyển 353 số 25. tr. 2643–53. doi:10.1056/NEJMoa052187. PMC 2637991. PMID 16371630. 66. ^ \"The effect of intensive diabetes therapy on the development and progression of neuropathy.",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 232.13671875,
+            "right": 559.69921875,
+            "bottom": 289.04296875,
+            "width": 524.51953125,
+            "height": 56.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 8,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.018518518518518517,
+            "confidence": 0.9814814814814815
+          }
+        }
+      },
+      {
+        "block_id": 6,
+        "context": "The Diabetes Control and Complications Trial Research Group\". Annals of Internal Medicine. Quyển 122 số 8. tháng 4 năm 1995. tr. 561–68. doi:10.-4819-122-8-199504150-00001. PMID 7887548. S2CID 24754081. 67. ^ Qaseem A, Wilt TJ, Kansagara D, Horwitch C, Barry MJ, Forciea MA (tháng 4 năm 2018).",
+        "display_context": "The Diabetes Control and Complications Trial Research Group\". Annals of Internal Medicine. Quyển 122 số 8. tháng 4 năm 1995. tr. 561–68. doi:10.-4819-122-8-199504150-00001. PMID 7887548. S2CID 24754081. 67. ^ Qaseem A, Wilt TJ, Kansagara D, Horwitch C, Barry MJ, Forciea MA (tháng 4 năm 2018).",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 289.13671875,
+            "right": 572.9609985351562,
+            "bottom": 346.04296875,
+            "width": 537.7813110351562,
+            "height": 56.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 8,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0375,
+            "confidence": 0.9625
+          }
+        }
+      },
+      {
+        "block_id": 7,
+        "context": "\"Hemoglobin A1c Targets for Glycemic Control With Pharmacologic Therapy for Nonpregnant Adults With Type 2 Diabetes Mellitus: A Guidance Statement Update From the American College of Physicians\". Annals of Internal Medicine. Quyển 168 số 8. tr. 569–576. doi:10.7326/M17-0939. PMID 29507945. 68. ^ National Institute for Health and Clinical Excellence. Clinical guideline 66: Type 2 diabetes (http",
+        "display_context": "\"Hemoglobin A1c Targets for Glycemic Control With Pharmacologic Therapy for Nonpregnant Adults With Type 2 Diabetes Mellitus: A Guidance Statement Update From the American College of Physicians\". Annals of Internal Medicine. Quyển 168 số 8. tr. 569–576. doi:10.7326/M17-0939. PMID 29507945. 68. ^ National Institute for Health and Clinical Excellence. Clinical guideline 66: Type 2 diabetes (http",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 346.13671875,
+            "right": 569.8086547851562,
+            "bottom": 416.54296875,
+            "width": 534.6289672851562,
+            "height": 70.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 10,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.007042253521126761,
+            "confidence": 0.9929577464788732
+          }
+        }
+      },
+      {
+        "block_id": 9,
+        "context": "Research and Reviews. Quyển 20 Suppl 1 số Suppl 1. tr. S51–55. doi:10.1002/dmrr.435. PMID 15150815. S2CID 33268734. 70. ^ Haw JS, Galaviz KI, Straus AN, Kowalski AJ, Magee MJ, Weber MB, Wei J, Narayan KM, Ali MK",
+        "display_context": "Research and Reviews. Quyển 20 Suppl 1 số Suppl 1. tr. S51–55. doi:10.1002/dmrr.435. PMID 15150815. S2CID 33268734. 70. ^ Haw JS, Galaviz KI, Straus AN, Kowalski AJ, Magee MJ, Weber MB, Wei J, Narayan KM, Ali MK",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 446.63671875,
+            "right": 575.9277954101562,
+            "bottom": 490.04296875,
+            "width": 540.7481079101562,
+            "height": 43.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 6,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.017094017094017096,
+            "confidence": 0.9829059829059829
+          }
+        }
+      },
+      {
+        "block_id": 10,
+        "context": "(tháng 12 năm 2017). \"Long-term Sustainability of Diabetes Prevention Approaches: A Systematic Review and Meta-analysis of Randomized Clinical Trials\". JAMA Internal Medicine. Quyển số 12. tr. 1808–17. doi:10.1001/jamainternmed.2017.6040. PMC 5820728. PMID 29114778. 71. ^ Mottalib A, Kasetty M, Mar JY, Elseaidy T, Ashrafzadeh S, Hamdy O (tháng 8 năm 2017).",
+        "display_context": "(tháng 12 năm 2017). \"Long-term Sustainability of Diabetes Prevention Approaches: A Systematic Review and Meta-analysis of Randomized Clinical Trials\". JAMA Internal Medicine. Quyển số 12. tr. 1808–17. doi:10.1001/jamainternmed.2017.6040. PMC 5820728. PMID 29114778. 71. ^ Mottalib A, Kasetty M, Mar JY, Elseaidy T, Ashrafzadeh S, Hamdy O (tháng 8 năm 2017).",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 490.13671875,
+            "right": 573.0823974609375,
+            "bottom": 547.04296875,
+            "width": 537.9027099609375,
+            "height": 56.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 8,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.02643171806167401,
+            "confidence": 0.973568281938326
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "\"Weight Management in Patients with Type 1 Diabetes and Obesity\". Current Diabetes Reports. Quyển 17 số 10. tr. 92. doi:10.1007/s11892-017-0918-8. PMC 5569154. PMID 28836234.",
+        "display_context": "\"Weight Management in Patients with Type 1 Diabetes and Obesity\". Current Diabetes Reports. Quyển 17 số 10. tr. 92. doi:10.1007/s11892-017-0918-8. PMC 5569154. PMID 28836234.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 547.13671875,
+            "right": 561.5469360351562,
+            "bottom": 574.04296875,
+            "width": 506.35162353515625,
+            "height": 26.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 4,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.02127659574468085,
+            "confidence": 0.9787234042553191
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "72. ^ a b American Diabetes, Association. (tháng 1 năm 2019). \"5. Lifestyle Management: Standards",
+        "display_context": "72. ^ a b American Diabetes, Association. (tháng 1 năm 2019). \"5. Lifestyle Management: Standards",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 576.8132934570312,
+            "right": 564.5787963867188,
+            "bottom": 592.79296875,
+            "width": 529.3991088867188,
+            "height": 15.97967529296875
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 6,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.03076923076923077,
+            "confidence": 0.9692307692307692
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "of Medical Care in Diabetes-2019\". Diabetes Care. Quyển 42 số Suppl 1. tr. S46 – S60. doi:10.2337/dc19-S005. PMID 30559231. 73. ^ a b c Evert AB, Dennison M, Gardner CD, Garvey WT, Lau KH, MacLeod J, và đồng nghiệp",
+        "display_context": "of Medical Care in Diabetes-2019\". Diabetes Care. Quyển 42 số Suppl 1. tr. S46 – S60. doi:10.2337/dc19-S005. PMID 30559231. 73. ^ a b c Evert AB, Dennison M, Gardner CD, Garvey WT, Lau KH, MacLeod J, và đồng nghiệp",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 592.88671875,
+            "right": 546.270263671875,
+            "bottom": 638.0390625,
+            "width": 511.090576171875,
+            "height": 45.15234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 12,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.04918032786885246,
+            "confidence": 0.9508196721311475
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "(tháng 5 năm 2019). \"Nutrition Therapy for Adults With Diabetes or Prediabetes: A Consensus Report\". Diabetes Care (Professional society guidelines). Quyển 42 số 5. tr. 731–754. doi:10.2337/dci19-0014. PMC 7011201. PMID 31000505. 74. ^ a b Emadian A, Andrews RC, England CY, Wallace V, Thompson JL (tháng 11 năm 2015). \"The",
+        "display_context": "(tháng 5 năm 2019). \"Nutrition Therapy for Adults With Diabetes or Prediabetes: A Consensus Report\". Diabetes Care (Professional society guidelines). Quyển 42 số 5. tr. 731–754. doi:10.2337/dci19-0014. PMC 7011201. PMID 31000505. 74. ^ a b Emadian A, Andrews RC, England CY, Wallace V, Thompson JL (tháng 11 năm 2015). \"The",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 637.88671875,
+            "right": 565.9154052734375,
+            "bottom": 696.5390625,
+            "width": 530.7357177734375,
+            "height": 58.65234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 10,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.030927835051546393,
+            "confidence": 0.9690721649484536
+          }
+        }
+      },
+      {
+        "block_id": 15,
+        "context": "effect of macronutrients on glycaemic control: a systematic review of dietary randomised controlled trials in overweight and obese adults with type 2 diabetes in which there was no difference in weight loss between treatment groups\". The British Journal of Nutrition. Quyển số 10. tr. 1656–66. doi:10.1017/S0007114515003475. PMC 4657029. PMID 26411958.",
+        "display_context": "effect of macronutrients on glycaemic control: a systematic review of dietary randomised controlled trials in overweight and obese adults with type 2 diabetes in which there was no difference in weight loss between treatment groups\". The British Journal of Nutrition. Quyển số 10. tr. 1656–66. doi:10.1017/S0007114515003475. PMC 4657029. PMID 26411958.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 696.38671875,
+            "right": 562.613525390625,
+            "bottom": 750.29296875,
+            "width": 507.418212890625,
+            "height": 53.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 6,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.00823045267489712,
+            "confidence": 0.9917695473251029
+          }
+        }
+      },
+      {
+        "block_id": 16,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 12,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 13,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "75. ^ Grams J, Garvey WT (tháng 6 năm 2015). \"Weight Loss and the Prevention and Treatment of",
+        "display_context": "75. ^ Grams J, Garvey WT (tháng 6 năm 2015). \"Weight Loss and the Prevention and Treatment of",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 29.63671875,
+            "right": 560.9342651367188,
+            "bottom": 43.04296875,
+            "width": 525.7545776367188,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.03225806451612903,
+            "confidence": 0.967741935483871
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "Type 2 Diabetes Using Lifestyle Therapy, Pharmacotherapy, and Bariatric Surgery: Mechanisms of Action\". Current Obesity Reports. Quyển 4 số 2. tr. 287–302. doi:10.1007/s13679-015-0155-x. PMID 26627223. S2CID 207474124. 76. ^ Rosberger, DF (tháng 12 năm 2013). \"Diabetic retinopathy: current concepts and emerging",
+        "display_context": "Type 2 Diabetes Using Lifestyle Therapy, Pharmacotherapy, and Bariatric Surgery: Mechanisms of Action\". Current Obesity Reports. Quyển 4 số 2. tr. 287–302. doi:10.1007/s13679-015-0155-x. PMID 26627223. S2CID 207474124. 76. ^ Rosberger, DF (tháng 12 năm 2013). \"Diabetic retinopathy: current concepts and emerging",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 43.13671875,
+            "right": 566.4688110351562,
+            "bottom": 100.04296875,
+            "width": 531.2891235351562,
+            "height": 56.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 8,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.020833333333333332,
+            "confidence": 0.9791666666666666
+          }
+        }
+      },
+      {
+        "block_id": "2_merged",
+        "context": "therapy\". Endocrinology and Metabolism Clinics of North America. Quyển 42 số 4. tr. 721–45. doi:10.1016/j.ecl.2013.08.001. PMID 24286948. 77. ^ MacIsaac, RJ; Jerums, G; Ekinci, EI (tháng 3 năm 2018). \"Glycemic Control as Primary Prevention for Diabetic Kidney Disease\". Advances in Chronic Kidney Disease. Quyển 25 số 2. tr. 141–148. doi:10.1053/j.ackd.2017.11.003. PMID 29580578. 78. ^ Pozzilli, P; Strollo, R; Bonora, E (tháng 3 năm 2014). \"One size does not fit all glycemic targets for Health and Care Excellence. ngày 26 tháng 8 năm 2015. Truy cập ngày 25 tháng 12 năm 2020. Care Excellence. ngày 2 tháng 12 năm 2015. Truy cập ngày 25 tháng 12 năm 2020. 81. ^ a b Krentz, AJ; Bailey, CJ . \"Oral antidiabetic agents: current role in type 2 diabetes mellitus\". Drugs. Quyển 65 số 3. tr. 385–411. doi:10.-200565030-00005. PMID 15669880. S2CID 29670619. 82. ^ Consumer Reports; American College of Physicians (tháng 4 năm 2012), \"Choosing a type diabetes drug – Why the best first choice is often the oldest drug\" (PDF), High Value Care, Consumer Reports, lưu trữ (PDF) bản gốc ngày 2 tháng 7 năm 2014, truy cập ngày 14 tháng năm 83. ^ Mitchell, Sharon; Malanda, Belma; Damasceno, Albertino; Eckel, Robert H.; Gaita, Dan;",
+        "display_context": "therapy\". Endocrinology and Metabolism Clinics of North America. Quyển 42 số 4. tr. 721–45. doi:10.1016/j.ecl.2013.08.001. PMID 24286948. 77. ^ MacIsaac, RJ; Jerums, G; Ekinci, EI (tháng 3 năm 2018). \"Glycemic Control as Primary Prevention for Diabetic Kidney Disease\". Advances in Chronic Kidney Disease. Quyển 25 số 2. tr. 141–148. doi:10.1053/j.ackd.2017.11.003. PMID 29580578. 78. ^ Pozzilli, P; Strollo, R; Bonora, E (tháng 3 năm 2014). \"One size does not fit all glycemic targets for Health and Care Excellence. ngày 26 tháng 8 năm 2015. Truy cập ngày 25 tháng 12 năm 2020. Care Excellence. ngày 2 tháng 12 năm 2015. Truy cập ngày 25 tháng 12 năm 2020. 81. ^ a b Krentz, AJ; Bailey, CJ . \"Oral antidiabetic agents: current role in type 2 diabetes mellitus\". Drugs. Quyển 65 số 3. tr. 385–411. doi:10.-200565030-00005. PMID 15669880. S2CID 29670619. 82. ^ Consumer Reports; American College of Physicians (tháng 4 năm 2012), \"Choosing a type diabetes drug – Why the best first choice is often the oldest drug\" (PDF), High Value Care, Consumer Reports, lưu trữ (PDF) bản gốc ngày 2 tháng 7 năm 2014, truy cập ngày 14 tháng năm 83. ^ Mitchell, Sharon; Malanda, Belma; Damasceno, Albertino; Eckel, Robert H.; Gaita, Dan;",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 100.13671875,
+            "right": 567.346923828125,
+            "bottom": 409.79296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 17,
+          "num_spans": 37,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.030534351145038167,
+            "confidence": 0.9694656488549618
+          }
+        }
+      },
+      {
+        "block_id": 10,
+        "context": "Kotseva, Kornelia; Januzzi, James L.; Mensah, George; Plutzky, Jorge; Prystupiuk, Maksym; Ryden, Lars (tháng 9 năm 2019). \"A Roadmap on the Prevention of Cardiovascular Disease Among People Living With Diabetes\". Global Heart. Quyển 14 số 3. tr. 215–240. doi:10.1016/j.gheart.2019.07.009. ISSN 2211-8179. PMID 31451236. 84. ^ Brunström M, Carlberg B (tháng 2 năm 2016). \"Effect of antihypertensive treatment at different",
+        "display_context": "Kotseva, Kornelia; Januzzi, James L.; Mensah, George; Plutzky, Jorge; Prystupiuk, Maksym; Ryden, Lars (tháng 9 năm 2019). \"A Roadmap on the Prevention of Cardiovascular Disease Among People Living With Diabetes\". Global Heart. Quyển 14 số 3. tr. 215–240. doi:10.1016/j.gheart.2019.07.009. ISSN 2211-8179. PMID 31451236. 84. ^ Brunström M, Carlberg B (tháng 2 năm 2016). \"Effect of antihypertensive treatment at different",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 409.88671875,
+            "right": 565.6098022460938,
+            "bottom": 480.29296875,
+            "width": 530.4301147460938,
+            "height": 70.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 9,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.022388059701492536,
+            "confidence": 0.9776119402985075
+          }
+        }
+      },
+      {
+        "block_id": 11,
+        "context": "blood pressure levels in patients with diabetes mellitus: systematic review and meta-analyses\". BMJ. Quyển 352. tr. i717. doi:10.1136/bmj.i717. PMC 4770818. PMID 26920333. 85. ^ Brunström, Mattias; Carlberg, Bo (ngày 30 tháng 9 năm 2019). \"Benefits and harms of lower",
+        "display_context": "blood pressure levels in patients with diabetes mellitus: systematic review and meta-analyses\". BMJ. Quyển 352. tr. i717. doi:10.1136/bmj.i717. PMC 4770818. PMID 26920333. 85. ^ Brunström, Mattias; Carlberg, Bo (ngày 30 tháng 9 năm 2019). \"Benefits and harms of lower",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 480.38671875,
+            "right": 557.63525390625,
+            "bottom": 523.79296875,
+            "width": 522.45556640625,
+            "height": 43.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 3,
+          "num_spans": 6,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.024242424242424242,
+            "confidence": 0.9757575757575757
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "blood pressure treatment targets: systematic review and meta-analysis of randomised placebo- controlled trials\". BMJ Open. Quyển 9 số 9. tr. e026686. doi:10.1136/bmjopen-2018-026686. ISSN 2044-6055. PMC 6773352. PMID 31575567. 86. ^ a b c Fox, Caroline S.; Golden, Sherita Hill; Anderson, Cheryl; Bray, George A.; Burke, Lora E.;",
+        "display_context": "blood pressure treatment targets: systematic review and meta-analysis of randomised placebo- controlled trials\". BMJ Open. Quyển 9 số 9. tr. e026686. doi:10.1136/bmjopen-2018-026686. ISSN 2044-6055. PMC 6773352. PMID 31575567. 86. ^ a b c Fox, Caroline S.; Golden, Sherita Hill; Anderson, Cheryl; Bray, George A.; Burke, Lora E.;",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 523.88671875,
+            "right": 563.4093627929688,
+            "bottom": 582.5390625,
+            "width": 528.2296752929688,
+            "height": 58.65234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 12,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.01,
+            "confidence": 0.99
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "Boer, Ian H. de; Deedwania, Prakash; Eckel, Robert H.; Ershow, Abby G.; Fradkin, Judith; Inzucchi, Silvio E. (ngày 1 tháng 9 năm 2015). \"Update on Prevention of Cardiovascular Disease in Adults With Type 2 Diabetes Mellitus in Light of Recent Evidence: A Scientific Statement From the American Heart Association and the American Diabetes Association\". Diabetes Care (bằng tiếng Anh). Quyển 38 số 9. tr. 1777–1803. doi:10.2337/dci15-0012. ISSN 0149-5992. PMC 4876675. PMID 26246459. 87. ^ Cheng J, Zhang W, Zhang X, Han F, Li X, He X, Li Q, Chen J (tháng 5 năm 2014). \"Effect of",
+        "display_context": "Boer, Ian H. de; Deedwania, Prakash; Eckel, Robert H.; Ershow, Abby G.; Fradkin, Judith; Inzucchi, Silvio E. (ngày 1 tháng 9 năm 2015). \"Update on Prevention of Cardiovascular Disease in Adults With Type 2 Diabetes Mellitus in Light of Recent Evidence: A Scientific Statement From the American Heart Association and the American Diabetes Association\". Diabetes Care (bằng tiếng Anh). Quyển 38 số 9. tr. 1777–1803. doi:10.2337/dci15-0012. ISSN 0149-5992. PMC 4876675. PMID 26246459. 87. ^ Cheng J, Zhang W, Zhang X, Han F, Li X, He X, Li Q, Chen J (tháng 5 năm 2014). \"Effect of",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 582.38671875,
+            "right": 567.039794921875,
+            "bottom": 679.79296875,
+            "width": 531.860107421875,
+            "height": 97.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 11,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.02425876010781671,
+            "confidence": 0.9757412398921833
+          }
+        }
+      },
+      {
+        "block_id": 14,
+        "context": "angiotensin-converting enzyme inhibitors and angiotensin II receptor blockers on all-cause mortality, cardiovascular deaths, and cardiovascular events in patients with diabetes mellitus: a meta-analysis\". JAMA Internal Medicine. Quyển 174 số 5. tr. 773–85. doi:10.1001/jamainternmed.2014.348. PMID 24687000.",
+        "display_context": "angiotensin-converting enzyme inhibitors and angiotensin II receptor blockers on all-cause mortality, cardiovascular deaths, and cardiovascular events in patients with diabetes mellitus: a meta-analysis\". JAMA Internal Medicine. Quyển 174 số 5. tr. 773–85. doi:10.1001/jamainternmed.2014.348. PMID 24687000.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 679.88671875,
+            "right": 557.8404541015625,
+            "bottom": 733.79296875,
+            "width": 502.6451416015625,
+            "height": 53.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 4,
+          "num_spans": 6,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.008968609865470852,
+            "confidence": 0.9910313901345291
+          }
+        }
+      },
+      {
+        "block_id": 15,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 13,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  },
+  {
+    "page_index": 14,
+    "page_size": {
+      "width": 612.0,
+      "height": 792.0
+    },
+    "blocks": [
+      {
+        "block_id": 0,
+        "context": "88. ^ Zheng, Sean L.; Roddick, Alistair J.; Ayis, Salma (tháng 9 năm 2017). \"Effects of aliskiren on",
+        "display_context": "88. ^ Zheng, Sean L.; Roddick, Alistair J.; Ayis, Salma (tháng 9 năm 2017). \"Effects of aliskiren on",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 29.63671875,
+            "right": 554.2724609375,
+            "bottom": 43.04296875,
+            "width": 519.0927734375,
+            "height": 13.40625
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.031746031746031744,
+            "confidence": 0.9682539682539683
+          }
+        }
+      },
+      {
+        "block_id": 1,
+        "context": "mortality, cardiovascular outcomes and adverse events in patients with diabetes and cardiovascular disease or risk: A systematic review and meta-analysis of 13,395 patients\". Diabetes & Vascular Disease Research. Quyển 14 số 5. tr. 400–406. doi:10.. ISSN 1752-8984. PMC 5600262. PMID 28844155. 89. ^ a b Catalá-López, Ferrán; Macías Saint-Gerons, Diego; González-Bermejo, Diana; Rosano,",
+        "display_context": "mortality, cardiovascular outcomes and adverse events in patients with diabetes and cardiovascular disease or risk: A systematic review and meta-analysis of 13,395 patients\". Diabetes & Vascular Disease Research. Quyển 14 số 5. tr. 400–406. doi:10.. ISSN 1752-8984. PMC 5600262. PMID 28844155. 89. ^ a b Catalá-López, Ferrán; Macías Saint-Gerons, Diego; González-Bermejo, Diana; Rosano,",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 43.13671875,
+            "right": 548.2305908203125,
+            "bottom": 115.2890625,
+            "width": 513.0509033203125,
+            "height": 72.15234375
+          },
+          "block_type": "paragraph",
+          "num_lines": 5,
+          "num_spans": 10,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.026717557251908396,
+            "confidence": 0.9732824427480916
+          }
+        }
+      },
+      {
+        "block_id": 2,
+        "context": "Giuseppe M.; Davis, Barry R.; Ridao, Manuel; Zaragoza, Abel; Montero-Corominas, Dolores; Tobías, Aurelio; de la Fuente-Honrubia, César; Tabarés-Seisdedos, Rafael (tháng 3 năm 2016). \"Cardiovascular and Renal Outcomes of Renin-Angiotensin System Blockade in Adult Patients with Diabetes Mellitus: A Systematic Review with Network Meta-Analyses\". PLOS Medicine. Quyển 13 số 3. tr. e1001971. doi:10.1371/journal.pmed.1001971. ISSN 1549-1676. PMC 4783064. PMID 26954482. 90. ^ Pignone M, Alberts MJ, Colwell JA, Cushman M, Inzucchi SE, Mukherjee D, Rosenson RS,",
+        "display_context": "Giuseppe M.; Davis, Barry R.; Ridao, Manuel; Zaragoza, Abel; Montero-Corominas, Dolores; Tobías, Aurelio; de la Fuente-Honrubia, César; Tabarés-Seisdedos, Rafael (tháng 3 năm 2016). \"Cardiovascular and Renal Outcomes of Renin-Angiotensin System Blockade in Adult Patients with Diabetes Mellitus: A Systematic Review with Network Meta-Analyses\". PLOS Medicine. Quyển 13 số 3. tr. e1001971. doi:10.1371/journal.pmed.1001971. ISSN 1549-1676. PMC 4783064. PMID 26954482. 90. ^ Pignone M, Alberts MJ, Colwell JA, Cushman M, Inzucchi SE, Mukherjee D, Rosenson RS,",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 115.13671875,
+            "right": 560.5711669921875,
+            "bottom": 212.54296875,
+            "width": 525.3914794921875,
+            "height": 97.40625
+          },
+          "block_type": "paragraph",
+          "num_lines": 7,
+          "num_spans": 11,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.018421052631578946,
+            "confidence": 0.9815789473684211
+          }
+        }
+      },
+      {
+        "block_id": 3,
+        "context": "Williams CD, Wilson PW, Kirkman MS (tháng 6 năm 2010). \"Aspirin for primary prevention of cardiovascular events in people with diabetes: a position statement of the American Diabetes Association, a scientific statement of the American Heart Association, and an expert consensus document of the American College of Cardiology Foundation\". Diabetes Care. Quyển 33 số 6. tr. 1395–402. doi:10.2337/dc10-0555. PMC 2875463. PMID 20508233. 91. ^ Frachetti KJ, Goldfine AB (tháng 4 năm 2009). \"Bariatric surgery for diabetes management\".",
+        "display_context": "Williams CD, Wilson PW, Kirkman MS (tháng 6 năm 2010). \"Aspirin for primary prevention of cardiovascular events in people with diabetes: a position statement of the American Diabetes Association, a scientific statement of the American Heart Association, and an expert consensus document of the American College of Cardiology Foundation\". Diabetes Care. Quyển 33 số 6. tr. 1395–402. doi:10.2337/dc10-0555. PMC 2875463. PMID 20508233. 91. ^ Frachetti KJ, Goldfine AB (tháng 4 năm 2009). \"Bariatric surgery for diabetes management\".",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 212.63671875,
+            "right": 559.4437866210938,
+            "bottom": 296.54296875,
+            "width": 524.2640991210938,
+            "height": 83.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 6,
+          "num_spans": 10,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.016129032258064516,
+            "confidence": 0.9838709677419355
+          }
+        }
+      },
+      {
+        "block_id": 4,
+        "context": "Current Opinion in Endocrinology, Diabetes and Obesity. Quyển 16 số 2. tr. 119–24. doi:10.1097/MED.0b013e32832912e7. PMID 19276974. S2CID 31797748.",
+        "display_context": "Current Opinion in Endocrinology, Diabetes and Obesity. Quyển 16 số 2. tr. 119–24. doi:10.1097/MED.0b013e32832912e7. PMID 19276974. S2CID 31797748.",
+        "metadata": {
+          "bbox": {
+            "left": 55.1953125,
+            "top": 296.63671875,
+            "right": 499.69171142578125,
+            "bottom": 323.54296875,
+            "width": 444.49639892578125,
+            "height": 26.90625
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 3,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0273972602739726,
+            "confidence": 0.9726027397260274
+          }
+        }
+      },
+      {
+        "block_id": 5,
+        "context": "92. ^ a b Schulman AP, del Genio F, Sinha N, Rubino F (September–October 2009). \" \"Metabolic\"",
+        "display_context": "92. ^ a b Schulman AP, del Genio F, Sinha N, Rubino F (September–October 2009). \" \"Metabolic\"",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 326.31329345703125,
+            "right": 547.2390747070312,
+            "bottom": 342.29296875,
+            "width": 512.0593872070312,
+            "height": 15.97967529296875
+          },
+          "block_type": "list",
+          "num_lines": 1,
+          "num_spans": 5,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.0,
+            "confidence": 1.0
+          }
+        }
+      },
+      {
+        "block_id": "6_merged",
+        "context": "surgery for treatment of type 2 diabetes mellitus\". Endocrine Practice. Quyển 15 số 6. tr. 624–31. doi:10.4158/EP09170.RAR. PMID 19625245. 93. ^ Colucci RA (tháng 1 năm 2011). \"Bariatric surgery in patients with type 2 diabetes: a viable option\". Postgraduate Medicine. Quyển 123 số 1. tr. 24–33. doi:10.3810/pgm.2011.01.2242. PMID 21293081. S2CID 207551737. 94. ^ Dixon JB, le Roux CW, Rubino F, Zimmet P (tháng 6 năm 2012). \"Bariatric surgery for type diabetes\". Lancet. Quyển 379 số 9833. tr. 2300–11. doi:10.1016/S0140-673660401-2. PMID 22683132. S2CID 5198462. 95. ^ \"Pancreas Transplantation\". American Diabetes Association. Bản gốc lưu trữ ngày 13 tháng năm 2014. Truy cập ngày 9 tháng 4 năm 2014.",
+        "display_context": "surgery for treatment of type 2 diabetes mellitus\". Endocrine Practice. Quyển 15 số 6. tr. 624–31. doi:10.4158/EP09170.RAR. PMID 19625245. 93. ^ Colucci RA (tháng 1 năm 2011). \"Bariatric surgery in patients with type 2 diabetes: a viable option\". Postgraduate Medicine. Quyển 123 số 1. tr. 24–33. doi:10.3810/pgm.2011.01.2242. PMID 21293081. S2CID 207551737. 94. ^ Dixon JB, le Roux CW, Rubino F, Zimmet P (tháng 6 năm 2012). \"Bariatric surgery for type diabetes\". Lancet. Quyển 379 số 9833. tr. 2300–11. doi:10.1016/S0140-673660401-2. PMID 22683132. S2CID 5198462. 95. ^ \"Pancreas Transplantation\". American Diabetes Association. Bản gốc lưu trữ ngày 13 tháng năm 2014. Truy cập ngày 9 tháng 4 năm 2014.",
+        "metadata": {
+          "bbox": {
+            "left": 35.1796875,
+            "top": 342.38671875,
+            "right": 568.4104614257812,
+            "bottom": 486.29296875
+          },
+          "block_type": "paragraph",
+          "num_lines": 10,
+          "num_spans": 22,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "english",
+            "vietnamese_ratio": 0.027586206896551724,
+            "confidence": 0.9724137931034482
+          }
+        }
+      },
+      {
+        "block_id": 12,
+        "context": "Liên kết ngoài",
+        "display_context": "Liên kết ngoài",
+        "metadata": {
+          "bbox": {
+            "left": 36.0,
+            "top": 509.103515625,
+            "right": 153.90000915527344,
+            "bottom": 533.3876953125,
+            "width": 117.90000915527344,
+            "height": 24.2841796875
+          },
+          "block_type": "title",
+          "num_lines": 1,
+          "num_spans": 1,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.25,
+            "confidence": 0.5
+          }
+        }
+      },
+      {
+        "block_id": 13,
+        "context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "display_context": "00:25 / Đái tháo đường – Wikipedia tiếng Việt",
+        "metadata": {
+          "bbox": {
+            "left": 24.0,
+            "top": 15.262338638305664,
+            "right": 412.60430908203125,
+            "bottom": 24.194252014160156,
+            "width": 388.60430908203125,
+            "height": 8.931913375854492
+          },
+          "block_type": "paragraph",
+          "num_lines": 2,
+          "num_spans": 2,
+          "is_cleaned": true,
+          "page_index": 14,
+          "language_info": {
+            "language": "vietnamese",
+            "vietnamese_ratio": 0.26666666666666666,
+            "confidence": 0.5333333333333333
+          }
+        }
+      }
+    ]
+  }
+]

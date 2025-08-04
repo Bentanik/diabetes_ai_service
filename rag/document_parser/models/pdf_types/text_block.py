@@ -11,6 +11,7 @@ Module chứa các dataclass và type definitions cho việc trích xuất text 
 from dataclasses import dataclass
 from typing import List, Optional
 
+from rag.types import LanguageInfo
 from rag.document_parser.models.pdf_types import BBox
 
 
@@ -34,6 +35,7 @@ class BlockMetadata:
     num_spans: int
     is_cleaned: bool
     page_index: Optional[int] = None
+    language_info: Optional[LanguageInfo] = None
 
 
 @dataclass
@@ -44,11 +46,13 @@ class TextBlock:
     Attributes:
         block_id: ID unique của block
         context: Nội dung text đã được extract
+        display_context: Nội dung text đã được làm sạch
         metadata: Thông tin metadata của block
     """
 
     block_id: str
     context: str
+    display_context: str
     metadata: BlockMetadata
 
 

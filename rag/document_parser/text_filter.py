@@ -1,19 +1,12 @@
-"""
-Text Filter Module - Bộ lọc và làm sạch văn bản từ PDF
-
-Module này cung cấp các utility để lọc và làm sạch text được trích xuất từ PDF:
-- Loại bỏ URL, email, và các link không cần thiết
-- Loại bỏ số trang và metadata (6/15, Page 1, Trang 1, etc.)
-- Loại bỏ dòng quá ngắn có thể là noise
-- Detect và filter metadata/reference không cần thiết
-- Thống kê quá trình làm sạch văn bản
-"""
-
 import re
 
 
 class TextFilter:
     """Bộ lọc văn bản - Filter và clean text từ PDF"""
+
+    URL_PATTERN = r"@?https?://[^\s]+|@?www\.|[a-zA-Z0-9.-]+\.(org|com|net|edu|gov|vn)"
+    PAGE_NUMBER_PATTERN = r"^\d+/\d+$|^\bPage\s+\d+\b|^\bTrang\s+\d+\b|^\d+\s*$"
+    TIMESTAMP_PATTERN = r"\d{2}:\d{2}\s*/"
 
     @staticmethod
     def clean_text(
@@ -27,6 +20,15 @@ class TextFilter:
         if not text or not text.strip():
             return ""
 
+        # Loại bỏ các đoạn chứa URL, metadata, hoặc dấu thời gian
+        if remove_urls and re.search(TextFilter.URL_PATTERN, text, re.IGNORECASE):
+            return ""
+        if remove_page_numbers and (
+            re.search(TextFilter.PAGE_NUMBER_PATTERN, text, re.IGNORECASE)
+            or re.search(TextFilter.TIMESTAMP_PATTERN, text)
+        ):
+            return ""
+
         lines = text.split("\n")
         cleaned_lines = []
 
@@ -35,7 +37,7 @@ class TextFilter:
             if not line:
                 continue
 
-            # Loại bỏ URL và email patterns
+            # Loại bỏ URL và email patterns trong dòng
             if remove_urls:
                 url_patterns = [
                     r"@?https?://[^\s]+",  # http://, https://, @https://
@@ -45,7 +47,7 @@ class TextFilter:
                 for pattern in url_patterns:
                     line = re.sub(pattern, "", line, flags=re.IGNORECASE)
 
-            # Loại bỏ pattern số trang
+            # Loại bỏ pattern số trang trong dòng
             if remove_page_numbers:
                 page_patterns = [
                     r"\b\d+/\d+\b",  # "6/15", "1/10"
@@ -71,23 +73,28 @@ class TextFilter:
     @staticmethod
     def is_likely_metadata(text: str) -> bool:
         """Kiểm tra xem văn bản có phải là metadata cần được lọc bỏ không"""
-        text = text.strip().lower()
+        if not text or not text.strip():
+            return True
+
+        text_lower = text.strip().lower()
 
         # Các pattern metadata phổ biến
         metadata_patterns = [
-            r"^\d+/\d+$",  # Số trang như "6/15"
-            r"^page\s+\d+",  # "Page 1"
-            r"^trang\s+\d+",  # "Trang 1"
-            r"^@?https?://",  # URLs
-            r"^@?www\.",  # WWW links
-            r"^\d+$",  # Chỉ là số
+            TextFilter.URL_PATTERN,  # URLs, Wikipedia, tên miền
+            TextFilter.PAGE_NUMBER_PATTERN,  # Số trang
+            TextFilter.TIMESTAMP_PATTERN,  # Dấu thời gian như "00:25 /"
             r"^[a-z]:\\\\.+",  # Đường dẫn file Windows
             r"^/[a-z/]+",  # Đường dẫn file Unix
+            r"^\d+$",  # Chỉ là số
         ]
 
         for pattern in metadata_patterns:
-            if re.match(pattern, text):
+            if re.search(pattern, text_lower, re.IGNORECASE):
                 return True
+
+        # Kiểm tra các đoạn ngắn chứa dấu gạch chéo hoặc từ khóa metadata
+        if len(text) < 50 and ("/" in text_lower or "wikipedia" in text_lower):
+            return True
 
         return False
 
