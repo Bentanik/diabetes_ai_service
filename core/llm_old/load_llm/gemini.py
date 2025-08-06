@@ -33,11 +33,3 @@ def get_gemini_llm() -> ChatGoogleGenerativeAI:
             logger.error(f"Lỗi khởi tạo Gemini LLM: {str(e)}", exc_info=True)
             raise
     return _gemini_instance
-
-
-if __name__ == "__main__":
-    llm = get_gemini_llm()
-    prompt = "Hãy giải thích bệnh tiểu đường type 2 là gì bằng tiếng Việt."
-    print(f"Prompt: {prompt}\n---")
-    response = llm.invoke(prompt)
-    print(f"Gemini trả lời:\n{response.content}")
