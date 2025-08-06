@@ -37,7 +37,6 @@ class BlockMetadata:
     is_cleaned: bool
     page_index: Optional[int] = None
     language_info: Optional[LanguageInfo] = None
-    structure_analysis: Optional[StructureAnalysis] = None
 
 
 @dataclass

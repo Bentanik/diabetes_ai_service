@@ -156,7 +156,7 @@ class PdfExtractor:
         return text
 
     async def _clean_text_for_chunking(self, text: str) -> str:
-        """Làm sạch text nhưng không tokenize hoặc loại bỏ stopwords"""
+        """Làm sạch text"""
         if not text:
             return text
 
@@ -609,61 +609,19 @@ class PdfExtractor:
 
     async def extract_all_blocks_to_json(self, pdf_path: str, output_path: str) -> None:
         """Trích xuất tất cả blocks và lưu vào JSON"""
+        from dataclasses import asdict
+
         try:
             pages_data = await self.extract_all_pages_data(pdf_path)
 
-            json_data = []
-            for page in pages_data:
-                page_dict = {
-                    "page_index": page.page_index,
-                    "page_size": {
-                        "width": page.page_size.width,
-                        "height": page.page_size.height,
-                    },
-                    "blocks": [
-                        {
-                            "block_id": block.block_id,
-                            "context": block.context,
-                            "metadata": {
-                                "bbox": block.metadata.bbox,
-                                "block_type": block.metadata.block_type,
-                                "num_lines": block.metadata.num_lines,
-                                "num_spans": block.metadata.num_spans,
-                                "is_cleaned": block.metadata.is_cleaned,
-                                "page_index": block.metadata.page_index,
-                                "language_info": block.metadata.language_info,
-                            },
-                        }
-                        for block in page.blocks
-                    ],
-                }
-                json_data.append(page_dict)
-
             with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(json_data, f, ensure_ascii=False, indent=2)
+                json.dump([asdict(page) for page in pages_data], f, ensure_ascii=False, indent=2)
 
             logger.info("Đã lưu kết quả vào: %s", output_path)
 
         except Exception as e:
             logger.error("Lỗi khi lưu file JSON: %s", e)
             raise
-
-    async def test_text_cleaning(self):
-        """Test method để kiểm tra việc làm sạch text"""
-        test_cases = [
-            "Cũng có thể điều trị đái tháo đường loại 2 [1].\nĐây là một phương pháp hiệu quả [2, 3].",
-            "COVID-19 là bệnh nguy hiểm (1).\n\nCần phải cẩn thận [4-6].",
-            "Liều dùng 500mg mỗi ngày [ref 7].\nKhông được quá liều.",
-            "Vitamin D3 rất quan trọng.\n\nNên bổ sung hàng ngày [8].",
-            "Dòng 1\nDòng 2\n\nDòng 3",
-        ]
-
-        print("=== Test Text Cleaning for Chunking ===")
-        for test_text in test_cases:
-            cleaned = await self._clean_text_for_chunking(test_text)
-            print(f"Original:  {repr(test_text)}")
-            print(f"Cleaned:   {repr(cleaned)}")
-            print("---")
 
 async def main():
     """Main function để test"""
@@ -688,8 +646,6 @@ async def main():
         max_bbox_distance=50.0,
         debug_mode=True,
     )
-
-    await extractor.test_text_cleaning()
 
     try:
         await extractor.extract_all_blocks_to_json(pdf_path, output_path)
