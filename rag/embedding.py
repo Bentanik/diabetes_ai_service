@@ -1,22 +1,23 @@
 from typing import List
 import numpy as np
 import asyncio
-from core.llm import get_embedding_model
-from utils import get_logger
+from core.llm import EmbeddingModel
+import logging
+
 
 class Embedding:
     def __init__(self):
         """
         Khởi tạo class Embedding để tạo embedding từ text hoặc list text.
         """
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.model = None
         self._initialized = False
         self._init_lock = asyncio.Lock()
 
     async def _ensure_initialized(self):
         """
-        Đảm bảo model đã được khởi tạo - thread-safe và async.
+        Đảm bảo model đã được khởi tạo
         """
         if self._initialized:
             return
@@ -25,14 +26,16 @@ class Embedding:
                 return
             try:
                 self.logger.info("Khởi tạo Embedding model...")
-                self.model = await get_embedding_model()
+                self.model = await EmbeddingModel.get_instance()
                 self._initialized = True
                 self.logger.info(f"Embedding model đã sẵn sàng")
             except Exception as e:
-                self.logger.error(f"Lỗi khởi tạo Embedding model: {str(e)}", exc_info=True)
+                self.logger.error(
+                    f"Lỗi khởi tạo Embedding model: {str(e)}", exc_info=True
+                )
                 raise
 
-    async def embed_text(self, text: str) -> np.ndarray:
+    async def embed_text(self, text: str) -> List[float]:
         """
         Tạo embedding cho một chuỗi text.
 
@@ -40,19 +43,31 @@ class Embedding:
             text (str): Chuỗi text cần tạo embedding.
 
         Returns:
-            np.ndarray: Vector embedding của text.
+            List[float]: Vector embedding của text.
         """
         await self._ensure_initialized()
         try:
-            embedding = await asyncio.to_thread(
-                self.model.encode, [text], show_progress_bar=False
-            )
-            return embedding[0]
+            embedding = await self.model.embed(text)
+            # Nếu model trả về batch, lấy phần tử đầu và chuyển sang list
+            if isinstance(embedding, np.ndarray):
+                if len(embedding.shape) == 2:
+                    return embedding[0].tolist()
+                else:
+                    return embedding.tolist()
+            elif isinstance(embedding, list):
+                if isinstance(embedding[0], (list, np.ndarray)):
+                    return list(embedding[0])
+                else:
+                    return list(embedding)
+            else:
+                return list(embedding)
         except Exception as e:
-            self.logger.error(f"Lỗi khi tạo embedding cho text: {str(e)}", exc_info=True)
+            self.logger.error(
+                f"Lỗi khi tạo embedding cho text: {str(e)}", exc_info=True
+            )
             raise
 
-    async def embed_texts(self, texts: List[str]) -> np.ndarray:
+    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
         Tạo embedding cho danh sách các chuỗi text.
 
@@ -60,21 +75,29 @@ class Embedding:
             texts (List[str]): Danh sách các chuỗi text cần tạo embedding.
 
         Returns:
-            np.ndarray: Ma trận embedding của các text (shape: [len(texts), vector_size]).
+            List[List[float]]: Ma trận embedding của các text.
         """
         await self._ensure_initialized()
         try:
-            embeddings = await asyncio.to_thread(
-                self.model.encode, texts, show_progress_bar=False
-            )
-            return embeddings
+            embeddings = await self.model.embed_batch(texts)
+            # Chuyển về list of list
+            if isinstance(embeddings, np.ndarray):
+                return embeddings.tolist()
+            elif isinstance(embeddings, list):
+                # Đảm bảo mỗi phần tử là list[float]
+                return [list(e) if not isinstance(e, list) else e for e in embeddings]
+            else:
+                # Trường hợp đặc biệt
+                return list(embeddings)
         except Exception as e:
-            self.logger.error(f"Lỗi khi tạo embedding cho list text: {str(e)}", exc_info=True)
+            self.logger.error(
+                f"Lỗi khi tạo embedding cho list text: {str(e)}", exc_info=True
+            )
             raise
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
-        Tạo embedding cho danh sách các chuỗi text, trả về dạng list để tương thích với langchain.
+        Tạo embedding cho danh sách các chuỗi text.
 
         Args:
             texts (List[str]): Danh sách các chuỗi text cần tạo embedding.
@@ -83,8 +106,8 @@ class Embedding:
             List[List[float]]: Danh sách các vector embedding.
         """
         try:
-            embeddings_np = asyncio.run(self.embed_texts(texts))
-            return embeddings_np.tolist()
+            embeddings = await self.embed_texts(texts)
+            return embeddings
         except RuntimeError as e:
             if "cannot schedule new coroutine" in str(e):
                 raise RuntimeError(
@@ -92,10 +115,12 @@ class Embedding:
                 )
             raise
         except Exception as e:
-            self.logger.error(f"Lỗi khi tạo embeddings cho documents: {str(e)}", exc_info=True)
+            self.logger.error(
+                f"Lỗi khi tạo embeddings cho documents: {str(e)}", exc_info=True
+            )
             raise
 
-    def embed_query(self, text: str) -> List[float]:
+    async def embed_query(self, text: str) -> List[float]:
         """
         Tạo embedding cho một chuỗi query, trả về dạng list để tương thích với langchain.
 
@@ -106,8 +131,8 @@ class Embedding:
             List[float]: Vector embedding của query.
         """
         try:
-            emb = asyncio.run(self.embed_text(text))
-            return emb.tolist()
+            emb = await self.embed_text(text)
+            return emb
         except RuntimeError as e:
             if "cannot schedule new coroutine" in str(e):
                 raise RuntimeError(
@@ -115,5 +140,7 @@ class Embedding:
                 )
             raise
         except Exception as e:
-            self.logger.error(f"Lỗi khi tạo embedding cho query: {str(e)}", exc_info=True)
+            self.logger.error(
+                f"Lỗi khi tạo embedding cho query: {str(e)}", exc_info=True
+            )
             raise

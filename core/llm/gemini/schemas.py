@@ -12,3 +12,6 @@ class Role(str, Enum):
 class Message:
     role: Role
     content: str
+
+    def __repr__(self):
+        return f"Message(role={self.role.value}, content={self.content})"

@@ -1,6 +1,7 @@
 import re
 from functools import lru_cache
-from ..schemas.common import LanguageInfo
+from rag.types import LanguageInfo
+
 
 class LanguageDetector:
     @staticmethod

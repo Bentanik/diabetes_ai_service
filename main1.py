@@ -1,18 +1,31 @@
 import asyncio
+from typing import Dict, List
 
 from core.llm.gemini.manager import GeminiChatManager
+from core.llm.gemini.schemas import Message, Role
+from core.llm.gemini.utils import messages_to_dicts
 
+def save_to_file(history: List[Dict[str, str]], file_path: str):
+    import json
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(
+            history,
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
 
 async def main():
-    manager = GeminiChatManager(
-        "Bạn là một chuyên gia về bệnh đái tháo đường, không được nhắc đến gì liên quan kiểu tui là AI, bạn phải trả lời bằng tiếng Việt, tui muốn bạn phải trả lời thân thiện và giải thích ra những khái niệm và các vấn đề liên quan đến bệnh đái tháo đường dễ hiểu"
-    )
-    user_id = "test_user"
-    user_message = "Với căn bệnh tiểu đường loại 2 thì tui nên làm gì ổn"
+    manager = GeminiChatManager()
+    user_id = "user123"
 
-    response = await manager.chat(user_id, user_message)
-    print(response)
+    manager.set_system_prompt(user_id, "Bạn là trợ lý AI chuyên về y tế.")
+    message_user = Message(role=Role.USER, content="Xin chào, tui bị trầm cảm!")
+    message = await manager.chat(user_id, message_user.content)
+    message_json = messages_to_dicts([message_user, message])
+    save_to_file(message_json, "chat_history.json")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+

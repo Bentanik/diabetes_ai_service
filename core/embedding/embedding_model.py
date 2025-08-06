@@ -1,5 +1,3 @@
-# EmbeddingModel - Singleton sử dụng 1 model embedding cố định
-
 import asyncio
 from langchain_huggingface import HuggingFaceEmbeddings
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
@@ -21,11 +19,14 @@ class EmbeddingModel:
             return
 
         def _load():
-            self.model = HuggingFaceEmbeddings(
-                model_name=self.model_name,
-                model_kwargs={"device": "cuda"},
-            )
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            try:
+                self.model = HuggingFaceEmbeddings(
+                    model_name=self.model_name,
+                    model_kwargs={"device": "cuda"},
+                )
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            except Exception as e:
+                raise RuntimeError(f"Failed to load embedding model or tokenizer: {e}")
 
         await asyncio.to_thread(_load)
         self._is_loaded = True
@@ -39,9 +40,13 @@ class EmbeddingModel:
         return cls._instance
 
     async def embed(self, text: str) -> List[float]:
+        if not self._is_loaded:
+            raise RuntimeError("EmbeddingModel chưa được load. Gọi await load() trước.")
         return await asyncio.to_thread(self.model.embed_query, text)
 
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        if not self._is_loaded:
+            raise RuntimeError("EmbeddingModel chưa được load. Gọi await load() trước.")
         return await asyncio.to_thread(self.model.embed_documents, texts)
 
     def count_tokens(self, text: str) -> int:

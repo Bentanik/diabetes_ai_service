@@ -1,5 +1,6 @@
 import re
 
+
 class TextFilter:
     """Bộ lọc văn bản - Filter và clean text từ PDF"""
 

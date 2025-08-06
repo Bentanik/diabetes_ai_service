@@ -2,13 +2,13 @@ from typing import Dict, List
 from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import VectorParams, Distance
-from core.llm.embedding_model import EmbeddingModel
-import logging
+from core.llm import get_embedding_model
+from utils import get_logger
 
 
 class VectorStoreManager:
     def __init__(self, force_recreate: bool = False):
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
         self.embedding_model = None
         self.client = QdrantClient(host="localhost", port=6333)
         self.vector_stores: Dict[str, Qdrant] = {}
@@ -22,8 +22,7 @@ class VectorStoreManager:
     ) -> None:
         try:
             if self.embedding_model is None:
-                embedding_model = await EmbeddingModel.get_instance()
-                self.embedding_model = embedding_model.model
+                self.embedding_model = await get_embedding_model()
 
             if self.force_recreate and self.client.collection_exists(collection_name):
                 self.logger.info(

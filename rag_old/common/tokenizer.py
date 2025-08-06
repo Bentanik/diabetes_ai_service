@@ -8,8 +8,7 @@ from pathlib import Path
 import nltk
 from nltk.corpus import stopwords
 
-from ..schemas.common import LanguageInfo
-
+from rag.types import LanguageInfo
 
 try:
     from underthesea import word_tokenize as vi_tokenize

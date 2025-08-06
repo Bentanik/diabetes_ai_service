@@ -1,11 +1,11 @@
-import logging
 from typing import Optional, List, Dict, Any
 from langchain_core.documents import Document
 from rag.vector_store import VectorStoreManager
 from qdrant_client.http.models import Filter, FieldCondition, Range, MatchValue
+from utils import get_logger
 from pydantic import BaseModel
 from threading import Lock
-from rag.embedding import Embedding
+from core.llm import get_embedding_model
 import asyncio
 
 
@@ -49,7 +49,7 @@ def create_qdrant_filter(filter_dict: Optional[Dict[str, Any]]) -> Optional[Filt
 class VectorStoreOperations:
     _instance: Optional["VectorStoreOperations"] = None
     _lock: Lock = Lock()
-    _logger = logging.getLogger(__name__)
+    _logger = get_logger(__name__)
 
     @classmethod
     def get_instance(cls, force_recreate: bool = False) -> "VectorStoreOperations":
@@ -80,7 +80,7 @@ class VectorStoreOperations:
         try:
             self.logger.info(f"Đang tạo collection {collection_name}...")
             await self.manager.create_collection_if_not_exists(
-                collection_name=collection_name, vector_size=vector_size
+                collection_name, vector_size
             )
             self.logger.info(f"Tạo collection {collection_name} thành công trong")
         except Exception as e:
@@ -98,7 +98,6 @@ class VectorStoreOperations:
     ) -> None:
         if not texts:
             raise ValueError("Danh sách texts không được rỗng")
-
         if metadatas is None:
             metadatas = [{}] * len(texts)
         elif len(metadatas) != len(texts):
@@ -118,7 +117,7 @@ class VectorStoreOperations:
                 for text, metadata in zip(texts, metadatas)
             ]
 
-            embeddings = await Embedding().embed_documents(
+            embeddings = await get_embedding_model().embed_documents(
                 [doc.page_content for doc in documents]
             )
             self.logger.info(
@@ -139,11 +138,11 @@ class VectorStoreOperations:
         collection_names: Optional[List[str]] = None,
         top_k: int = 5,
         vector_size: int = 768,
-        score_threshold: float = 0.5,  # Thay thế min_score bằng score_threshold
+        min_score: float = 0.5,
         filter: Optional[Dict[str, Any]] = None,
     ) -> List[SearchResult]:
         """
-        Truy vấn vector store, trả về các kết quả có score >= score_threshold.
+        Truy vấn vector store, trả về các kết quả có score >= min_score.
         Nếu score là khoảng cách, cần chỉnh lại ngưỡng cho phù hợp.
         """
         try:
@@ -167,27 +166,25 @@ class VectorStoreOperations:
                     vector_store = await self.manager.get_store(
                         collection_name, vector_size
                     )
-                    results = await vector_store.asimilarity_search_with_score(
-                        query=query_text, k=top_k, filter=qdrant_filter
+                    results = await asyncio.to_thread(
+                        vector_store.similarity_search_with_score,
+                        query=query_text,
+                        k=top_k,
+                        filter=qdrant_filter,
                     )
-
-                    formatted_results = []
-                    for i, (doc, score) in enumerate(results):
-                        self.logger.info(
-                            f"Score: {score:.3f} | Text: {doc.page_content[:80]}..."
+                    formatted_results = [
+                        SearchResult(
+                            id=doc.metadata.get("id", str(i)),
+                            score=float(score),
+                            payload={
+                                **doc.metadata,
+                                "collection_name": collection_name,
+                            },
+                            text=doc.page_content,
                         )
-                        if float(score) >= score_threshold:  # Sử dụng score_threshold
-                            formatted_results.append(
-                                SearchResult(
-                                    id=doc.metadata.get("id", str(i)),
-                                    score=float(score),
-                                    payload={
-                                        **doc.metadata,
-                                        "collection_name": collection_name,
-                                    },
-                                    text=doc.page_content,
-                                )
-                            )
+                        for i, (doc, score) in enumerate(results)
+                        if float(score) >= min_score
+                    ]
                     all_results.extend(formatted_results)
                 except Exception as e:
                     self.logger.warning(
@@ -198,12 +195,7 @@ class VectorStoreOperations:
             all_results = sorted(all_results, key=lambda x: x.score, reverse=True)[
                 :top_k
             ]
-            if not all_results:
-                self.logger.info(
-                    "Không tìm thấy kết quả nào vượt ngưỡng score_threshold"
-                )
-            else:
-                self.logger.info(f"Tìm kiếm hoàn tất")
+            self.logger.info(f"Tìm kiếm hoàn tất")
             return all_results
         except Exception as e:
             self.logger.error(f"Lỗi tìm kiếm: {str(e)}", exc_info=True)

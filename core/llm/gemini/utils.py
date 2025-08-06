@@ -3,7 +3,7 @@ from .schemas import Message
 
 
 def messages_to_dicts(messages: List[Message]) -> List[Dict[str, str]]:
-    return [{"role": msg.role.value, "content": msg.content} for msg in messages]
+    return [{"role": msg.role, "content": msg.content} for msg in messages]
 
 
 def dicts_to_messages(dicts: List[Dict[str, str]]) -> List[Message]:

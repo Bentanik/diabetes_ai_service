@@ -3,17 +3,19 @@ import logging
 import re
 from typing import Dict, List, Tuple
 import fitz
-from ..common import LanguageDetector, MultilingualTokenizer
-from .text_filter import TextFilter
-from ..schemas.pdf import (
+from rag.common.language_detector import LanguageDetector
+from rag.common.tokenizer import MultilingualTokenizer
+from rag.document_parser.text_filter import TextFilter
+from rag.document_parser.models.pdf_types import (
+    BBox,
     TextBlock,
     BlockMetadata,
     PageData,
     PageSize,
-    BBox
 )
 
 logger = logging.getLogger(__name__)
+
 
 class PdfExtractor:
     """
@@ -140,20 +142,15 @@ class PdfExtractor:
 
         return cleaned_text
 
-    def _remove_invisible_unicode(self, text: str) -> str:
-        # Xóa các ký tự Unicode ẩn thường gặp khi extract PDF
-        return re.sub(r"[\u200b\u200c\u200d\ufeff]", "", text)
-
     def _normalize_whitespace_and_newlines(self, text: str) -> str:
+        """Chuẩn hóa khoảng trắng và thay thế tất cả newlines bằng spaces"""
         if not text:
             return text
 
-        # Xóa ký tự Unicode ẩn trước
-        text = self._remove_invisible_unicode(text)
-        text = re.sub(r"\n{2,}", "\n", text)
+        if self.remove_newlines:
+            text = re.sub(r"\n+", " ", text)
         text = re.sub(r"[ \t]+", " ", text)
-        text = text.strip()
-        return text
+        return text.strip()
 
     async def _clean_text_for_chunking(self, text: str) -> str:
         """Làm sạch text nhưng không tokenize hoặc loại bỏ stopwords"""
@@ -249,6 +246,7 @@ class PdfExtractor:
                     merged_text = (
                         f"{current_block.context.strip()} {next_block.context.strip()}"
                     )
+                    display_merged_text = f"{current_block.display_context.strip()} {next_block.display_context.strip()}"
 
                     # Chỉ clean basic (whitespace, references)
                     merged_text = await self._clean_text_for_chunking(merged_text)
@@ -268,6 +266,7 @@ class PdfExtractor:
                     merged_block = TextBlock(
                         block_id=f"{current_block.block_id}_merged",
                         context=merged_text,
+                        display_context=display_merged_text,
                         metadata=merged_metadata,
                     )
                     merged_blocks.append(merged_block)
@@ -281,20 +280,24 @@ class PdfExtractor:
 
         return merged_blocks
 
-    async def _merge_short_blocks(self, blocks: List[TextBlock]) -> List[TextBlock]:
-        """Gộp các block ngắn bất kể loại block - CHỈ merge, KHÔNG tokenize"""
+    async def _merge_short_paragraphs(self, blocks: List[TextBlock]) -> List[TextBlock]:
+        """Gộp paragraph ngắn - CHỈ merge, KHÔNG tokenize"""
         merged_blocks = []
         i = 0
 
         while i < len(blocks):
             current_block = blocks[i]
 
-            if len(current_block.context) < self.max_block_length:
+            if (
+                current_block.metadata.block_type == "paragraph"
+                and len(current_block.context) < self.max_block_length
+            ):
                 short_blocks = [current_block]
                 j = i + 1
 
                 while (
                     j < len(blocks)
+                    and blocks[j].metadata.block_type == "paragraph"
                     and len(blocks[j].context) < self.max_block_length
                     and abs(
                         blocks[j].metadata.bbox["top"]
@@ -310,17 +313,16 @@ class PdfExtractor:
                     merged_text = " ".join(
                         block.context.strip() for block in short_blocks
                     )
+                    display_merged_text = " ".join(
+                        block.display_context.strip() for block in short_blocks
+                    )
 
                     # Chỉ clean basic
                     merged_text = await self._clean_text_for_chunking(merged_text)
 
-                    # Giữ block_type của block đầu tiên hoặc đặt là 'mixed' nếu các block có loại khác nhau
-                    block_types = {block.metadata.block_type for block in short_blocks}
-                    merged_block_type = short_blocks[0].metadata.block_type if len(block_types) == 1 else "mixed"
-
                     merged_metadata = BlockMetadata(
                         bbox=self._calculate_merged_bbox(short_blocks),
-                        block_type=merged_block_type,
+                        block_type="paragraph",
                         num_lines=sum(
                             block.metadata.num_lines for block in short_blocks
                         ),
@@ -335,6 +337,7 @@ class PdfExtractor:
                     merged_block = TextBlock(
                         block_id=f"{short_blocks[0].block_id}_merged",
                         context=merged_text,
+                        display_context=display_merged_text,
                         metadata=merged_metadata,
                     )
                     merged_blocks.append(merged_block)
@@ -378,6 +381,9 @@ class PdfExtractor:
                     merged_text = " ".join(
                         block.context.strip() for block in table_blocks
                     )
+                    display_merged_text = " ".join(
+                        block.display_context.strip() for block in table_blocks
+                    )
 
                     # Chỉ clean basic
                     merged_text = await self._clean_text_for_chunking(merged_text)
@@ -399,6 +405,7 @@ class PdfExtractor:
                     merged_block = TextBlock(
                         block_id=f"table_{table_blocks[0].block_id}",
                         context=merged_text,
+                        display_context=display_merged_text,
                         metadata=merged_metadata,
                     )
                     merged_blocks.append(merged_block)
@@ -422,8 +429,10 @@ class PdfExtractor:
         processed_blocks = []
         for block in blocks:
             try:
-                # Detect language từ context (text đẹp)
-                language_info = self.text_detector.detect_language(block.context)
+                # Detect language từ display_context (text đẹp)
+                language_info = self.text_detector.detect_language(
+                    block.display_context
+                )
 
                 # Remove stopwords từ context (for chunking) nhưng preserve format
                 processed_context = await self.tokenizer.tokenize_preserve_format(
@@ -434,6 +443,7 @@ class PdfExtractor:
                 processed_block = TextBlock(
                     block_id=block.block_id,
                     context=processed_context,  # Đã remove stopwords nhưng vẫn đẹp
+                    display_context=block.display_context,  # Giữ nguyên text gốc đẹp
                     metadata=block.metadata,
                 )
                 processed_blocks.append(processed_block)
@@ -507,23 +517,23 @@ class PdfExtractor:
                                 )
                             continue
 
-                        cleaned_text = await self._clean_text_for_chunking(cleaned_text)
+                        display_text = await self._clean_text_for_chunking(cleaned_text)
                     else:
-                        cleaned_text = await self._clean_text_for_chunking(
+                        display_text = await self._clean_text_for_chunking(
                             original_text
                         )
 
-                    if not cleaned_text.strip():
+                    if not display_text.strip():
                         continue
                     if self.debug_mode:
                         logger.debug("Original: %s", repr(original_text))
-                        logger.debug("Cleaned: %s", repr(cleaned_text))
+                        logger.debug("Display: %s", repr(display_text))
 
                     language_info = None
                     if self.text_detector:
                         try:
                             language_info = self.text_detector.detect_language(
-                                cleaned_text
+                                display_text
                             )
                         except Exception as e:
                             logger.error("Lỗi khi phát hiện ngôn ngữ: %s", e)
@@ -546,16 +556,18 @@ class PdfExtractor:
                         language_info=language_info,
                     )
 
+                    # FIX: Gán context = display_text thay vì rỗng
                     text_block = TextBlock(
                         block_id=block_idx,
-                        context=cleaned_text,
+                        context=display_text,  # Đây là fix chính
+                        display_context=display_text,
                         metadata=metadata,
                     )
                     blocks.append(text_block)
 
             # Merge các blocks
             blocks = await self._merge_title_with_paragraph(blocks)
-            blocks = await self._merge_short_blocks(blocks)
+            blocks = await self._merge_short_paragraphs(blocks)
             blocks = await self._merge_table_blocks(blocks)
 
             # Apply stopword removal cuối cùng
@@ -624,6 +636,7 @@ class PdfExtractor:
                         {
                             "block_id": block.block_id,
                             "context": block.context,
+                            "display_context": block.display_context,
                             "metadata": {
                                 "bbox": block.metadata.bbox,
                                 "block_type": block.metadata.block_type,
@@ -665,6 +678,7 @@ class PdfExtractor:
             print(f"Cleaned:   {repr(cleaned)}")
             print("---")
 
+
 async def main():
     """Main function để test"""
     logging.basicConfig(
@@ -672,7 +686,7 @@ async def main():
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
 
-    pdf_path = "C:/Users/Quangdepzai/Downloads/text.pdf"
+    pdf_path = "C:/Users/vietv/Downloads/asd.pdf"
     output_path = "output_blocks.json"
 
     extractor = PdfExtractor(
@@ -703,6 +717,8 @@ async def main():
         logger.error("Lỗi không xác định: %s", e)
         raise
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())
