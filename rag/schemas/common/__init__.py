@@ -1,3 +1,3 @@
-from .language_info import LanguageInfo
+from .language_info import LanguageType, LanguageInfo
 
-__all__ = ["LanguageInfo"]
+__all__ = ["LanguageType", "LanguageInfo"]

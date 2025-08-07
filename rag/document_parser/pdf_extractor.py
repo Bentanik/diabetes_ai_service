@@ -245,12 +245,10 @@ class PdfExtractor:
                     )
                     < 20
                 ):
-                    # CHỈ merge text, KHÔNG tokenize
                     merged_text = (
                         f"{current_block.context.strip()} {next_block.context.strip()}"
                     )
 
-                    # Chỉ clean basic (whitespace, references)
                     merged_text = await self._clean_text_for_chunking(merged_text)
 
                     merged_metadata = BlockMetadata(

@@ -9,7 +9,6 @@ Package này chứa tất cả các data structures và types cho việc xử l�
 
 from .bbox import BBox
 from .text_block import TextBlock, BlockMetadata, PageData, PageSize
-from .structure import StructureAnalysis, StructureType
 from .hierarchical_structure import HierarchicalStructure
 
 __all__ = [
@@ -18,7 +17,5 @@ __all__ = [
     "BlockMetadata",
     "PageData",
     "PageSize",
-    "StructureAnalysis",
     "HierarchicalStructure",
-    "StructureType",
 ]

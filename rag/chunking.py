@@ -1,53 +1,80 @@
 import asyncio
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from transformers import PreTrainedTokenizerBase
+import threading
+import re
 
-from rag.types.types import Chunk, ChunkMetadata, StructureType
-from rag.types.pdf_types import TextBlock
-from rag.types import LanguageInfo
-from rag.types.chunking_config import ChunkingConfig
-from rag.common.structure_analyzer import DocumentStructureAnalyzer
-from rag.common.language_detector import LanguageDetector
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from transformers import AutoTokenizer
+
+from rag.schemas.chunk import Chunk, PDFChunkMetadata
+from rag.schemas.common.language_info import LanguageType
+from rag.schemas.pdf import TextBlock
+from rag.config import ChunkingConfig
+
+
+def ensure_language_info(language_info):
+    if not language_info:
+        return None
+    if isinstance(language_info, dict):
+        class LangInfo:
+            def __init__(self, d):
+                self.language = d.get("language", LanguageType.UNKNOWN)
+                self.confidence = d.get("confidence", 0.0)
+        return LangInfo(language_info)
+    return language_info
+
+
+class ThreadSafeTokenizer:
+    """Thread-safe wrapper cho tokenizer"""
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        self._local = threading.local()
+    
+    def _get_tokenizer(self):
+        if not hasattr(self._local, 'tokenizer'):
+            self._local.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        return self._local.tokenizer
+    
+    def encode(self, text: str, **kwargs):
+        return self._get_tokenizer().encode(text, **kwargs)
+    
+    def decode(self, tokens, **kwargs):
+        return self._get_tokenizer().decode(tokens, **kwargs)
 
 
 class Chunking:
     def __init__(
         self,
-        config: Optional["ChunkingConfig"] = None,
-        tokenizer: Optional[PreTrainedTokenizerBase] = None,
+        config: Optional[ChunkingConfig] = None,
+        model_name: str = 'sentence-transformers/all-MiniLM-L6-v2',
     ):
-        self.config = config if config is not None else ChunkingConfig()
-        self.tokenizer: PreTrainedTokenizerBase = tokenizer
+        self.logger = logging.getLogger(__name__)
+        self.config = config if config else ChunkingConfig()
+        self.model_name = model_name
+        
+        self.tokenizer = ThreadSafeTokenizer(model_name)
+
+        if self.config.max_chunk_size > 512:
+            self.logger.warning(f"max_chunk_size ({self.config.max_chunk_size}) > 512, setting to 400")
+            self.config.max_chunk_size = 400
+        
+        if self.config.min_chunk_size > self.config.max_chunk_size // 2:
+            self.config.min_chunk_size = self.config.max_chunk_size // 4
+
         self.executor = ThreadPoolExecutor(max_workers=2)
-        self.structure_analyzer = DocumentStructureAnalyzer()
-        self.lang_detector = LanguageDetector()
-        self._init_splitters()
+        self.semaphore = asyncio.Semaphore(2)
 
-        if self.tokenizer is None:
-            raise ValueError("Phải truyền tokenizer vào cho Chunking!")
-
-    def _init_splitters(self) -> None:
-        separators = [
-            "\n\n\n",
-            "\n\n",
-            "\n",
-            "。",
-            "．",
-            "！",
-            "？",
-            "；",
-            ".",
-            "!",
-            "?",
-            ";",
-            ":",
-            " ",
-            "",
+        self.separators_default = [
+            "\n\n\n", "\n\n", "\n", ".", "!", "?", ";", ":", "...", ",", " ", ""
         ]
+
+        self._init_splitter()
+
+    def _init_splitter(self) -> None:
         self.splitter = RecursiveCharacterTextSplitter(
-            separators=separators,
+            separators=self.separators_default,
             chunk_size=self.config.max_chunk_size,
             chunk_overlap=self.config.chunk_overlap,
             length_function=self._count_tokens,
@@ -55,178 +82,235 @@ class Chunking:
         )
 
     def _count_tokens(self, text: str) -> int:
-        return len(self.tokenizer.encode(text))
+        try:
+            tokens = self.tokenizer.encode(text, truncation=True, max_length=512, add_special_tokens=False)
+            return len(tokens)
+        except Exception as e:
+            self.logger.warning(f"Token counting error: {e}, using word count")
+            return int(len(text.split()) * 1.3)
 
-    async def _chunk_semantic(self, block: TextBlock) -> List[Chunk]:
-        import re
+    def _safe_truncate_by_chars(self, text: str, max_tokens: int = 400) -> str:
+        if self._count_tokens(text) <= max_tokens:
+            return text
+        
+        estimated_max_chars = max_tokens * 3
+        if len(text) <= estimated_max_chars:
+            return text
+        
+        truncated = text[:estimated_max_chars]
+        for separator in ["\n\n", "\n", ".", "!", "?", " "]:
+            last_sep = truncated.rfind(separator)
+            if last_sep > estimated_max_chars * 0.8:
+                return truncated[:last_sep + len(separator)]
+        return truncated
 
+    def _chunk_semantic_sync(self, block: TextBlock) -> List[Chunk]:
         text = block.context.strip()
-        paragraphs = re.split(r"\n\s*\n", text)
-        chunks: List[str] = []
-        current_chunk: List[str] = []
+        if not text:
+            return []
+
+        text = self._safe_truncate_by_chars(text, self.config.max_chunk_size)
+
+        content_type = getattr(block.metadata, "block_type", "paragraph")
+        if content_type == "paragraph" and any(text.startswith(s) for s in ["-", "*", "+"]):
+            content_type = "list"
+
+        token_count = self._count_tokens(text)
+
+        if token_count <= self.config.min_chunk_size or content_type in ["heading", "code", "list"]:
+            metadata = PDFChunkMetadata(block_metadata=block.metadata)
+            return [Chunk(text=text, metadata=metadata)]
+
+        lang_info = ensure_language_info(getattr(block.metadata, "language_info", None))
+        language = lang_info.language if lang_info else LanguageType.UNKNOWN
+
+        separators = self.separators_default
+        if language == LanguageType.VIETNAMESE:
+            separators = ["\n\n\n", "\n\n", "\n", ".", "!", "?", "...", ",", ";", ":"]
+
+        splitter = RecursiveCharacterTextSplitter(
+            separators=separators,
+            chunk_size=self.config.max_chunk_size,
+            chunk_overlap=self.config.chunk_overlap,
+            length_function=self._count_tokens,
+            is_separator_regex=False,
+        )
+
+        try:
+            chunks = splitter.split_text(text)
+        except Exception as e:
+            self.logger.warning(f"Splitter error: {e}, using manual split")
+            chunks = self._manual_split_preserve_format(text)
+
+        if not chunks:
+            chunks = [text]
+
+        safe_chunks = []
+        for chunk in chunks:
+            safe_chunk = self._safe_truncate_by_chars(chunk, self.config.max_chunk_size)
+            if safe_chunk.strip():
+                safe_chunks.append(safe_chunk)
+        
+        chunks = safe_chunks
+
+        merged_chunks = []
+        current_text = ""
         current_tokens = 0
-
-        for paragraph in paragraphs:
-            paragraph = paragraph.strip()
-            if not paragraph:
-                continue
-            para_tokens = self._count_tokens(paragraph)
-            # Nếu paragraph quá dài, cần cắt nhỏ thêm
-            if para_tokens > self.config.max_chunk_size:
-                # Nếu đang có chunk, đóng lại trước khi thêm các chunk nhỏ
-                if current_chunk:
-                    chunk_content = "\n\n".join(current_chunk)
-                    chunks.append(chunk_content)
-                    current_chunk = []
-                    current_tokens = 0
-                # Cắt paragraph thành các đoạn nhỏ hơn max_chunk_size
-                tokens = self.tokenizer.encode(paragraph)
-                for i in range(0, len(tokens), self.config.max_chunk_size):
-                    chunk_tokens = tokens[i : i + self.config.max_chunk_size]
-                    chunk_text = self.tokenizer.decode(chunk_tokens)
-                    chunks.append(chunk_text)
-                continue
-
-            # Nếu cộng paragraph vào chunk hiện tại mà vượt max_chunk_size, đóng chunk hiện tại
-            if (
-                current_tokens + para_tokens > self.config.max_chunk_size
-                and current_chunk
-            ):
-                chunk_content = "\n\n".join(current_chunk)
-                chunks.append(chunk_content)
-                current_chunk = [paragraph]
-                current_tokens = para_tokens
+        
+        for chunk in chunks:
+            chunk_tokens = self._count_tokens(chunk)
+            
+            if current_text and current_tokens + chunk_tokens <= self.config.max_chunk_size:
+                current_text += "\n\n" + chunk
+                current_tokens += chunk_tokens
             else:
-                current_chunk.append(paragraph)
-                current_tokens += para_tokens
+                if current_text and current_tokens >= self.config.min_chunk_size:
+                    metadata = PDFChunkMetadata(block_metadata=block.metadata)
+                    merged_chunks.append(Chunk(text=current_text, metadata=metadata))
+                current_text = chunk
+                current_tokens = chunk_tokens
 
-        # Đóng chunk cuối cùng nếu còn
+        if current_text:
+            if merged_chunks and current_tokens < self.config.min_chunk_size:
+                last_chunk_text = merged_chunks[-1].text + "\n\n" + current_text
+                if self._count_tokens(last_chunk_text) > self.config.max_chunk_size:
+                    safe_merged = self._safe_truncate_by_chars(last_chunk_text, self.config.max_chunk_size)
+                    merged_chunks[-1].text = safe_merged
+                else:
+                    merged_chunks[-1].text = last_chunk_text
+            else:
+                metadata = PDFChunkMetadata(block_metadata=block.metadata)
+                merged_chunks.append(Chunk(text=current_text, metadata=metadata))
+
+        return merged_chunks
+
+    def _manual_split_preserve_format(self, text: str) -> List[str]:
+        paragraphs = re.split(r'\n\s*\n', text)
+        if len(paragraphs) > 1:
+            chunks = []
+            current_chunk = ""
+            current_tokens = 0
+            
+            for para in paragraphs:
+                para_tokens = self._count_tokens(para)
+                if current_chunk and current_tokens + para_tokens <= self.config.max_chunk_size:
+                    current_chunk += "\n\n" + para
+                    current_tokens += para_tokens
+                else:
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                    current_chunk = para
+                    current_tokens = para_tokens
+            
+            if current_chunk:
+                chunks.append(current_chunk)
+            return chunks
+        
+        sentences = re.split(r'([.!?]+\s*)', text)
+        chunks = []
+        current_chunk = ""
+        current_tokens = 0
+        
+        i = 0
+        while i < len(sentences):
+            sentence = sentences[i]
+            if i + 1 < len(sentences) and re.match(r'[.!?]+\s*', sentences[i + 1]):
+                sentence += sentences[i + 1]
+                i += 2
+            else:
+                i += 1
+                
+            sentence_tokens = self._count_tokens(sentence)
+            if current_chunk and current_tokens + sentence_tokens <= self.config.max_chunk_size:
+                current_chunk += sentence
+                current_tokens += sentence_tokens
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk)
+                current_chunk = sentence
+                current_tokens = sentence_tokens
+        
         if current_chunk:
-            chunk_content = "\n\n".join(current_chunk)
-            chunks.append(chunk_content)
-
-        results: List[Chunk] = []
-        for i, chunk in enumerate(chunks):
-            lang_info: LanguageInfo = self.lang_detector.detect_language(chunk)
-            tokens = self._count_tokens(chunk)
-            chunk_metadata: ChunkMetadata = {
-                "strategy": "semantic",
-                "token_count": tokens,
-                "language_info": lang_info,
-                "source": block.block_id,
-                "block_metadata": block.metadata,
-            }
-            results.append(
-                {
-                    "text": chunk,
-                    "metadata": chunk_metadata,
-                }
-            )
-        return results
+            chunks.append(current_chunk)
+        
+        return chunks if chunks else [text]
 
     async def chunk_text(self, blocks: List[TextBlock]) -> List[Chunk]:
-        """Chunk list các TextBlock, trả về list Chunk chuẩn type"""
-        all_chunks: List[Chunk] = []
-        for idx, block in enumerate(blocks):
-            text = block.context.strip()
-            if not text:
-                continue
-            # Phân tích cấu trúc cho block nếu chưa có
-            if not block.metadata.structure_analysis:
-                block.metadata.structure_analysis = (
-                    await self.structure_analyzer.analyze_structure(text)
-                )
-            structure_type = block.metadata.structure_analysis.get(
-                "structure_type", StructureType.SIMPLE
-            )
-            token_count = self._count_tokens(text)
-            if token_count < self.config.min_chunk_size:
-                lang_info: LanguageInfo = self.lang_detector.detect_language(text)
-                chunk_metadata: ChunkMetadata = {
-                    "strategy": "short",
-                    "token_count": token_count,
-                    "language_info": lang_info,
-                    "source": block.block_id,
-                    "structure_analysis": block.metadata.structure_analysis,
-                }
-                all_chunks.append(
-                    {
-                        "text": text,
-                        "metadata": chunk_metadata,
-                    }
-                )
-                continue
-            # Chọn strategy
-            # if structure_type == StructureType.HIERARCHICAL:
-            #     chunks = await self._chunk_hierarchical(block, idx)
-            # elif structure_type in [StructureType.COMPLEX, StructureType.TABLE]:
-            #     chunks = await self._chunk_semantic(block, idx)
-            # else:
-            #     chunks = await self._chunk_simple(block, idx)
-            chunks = await self._chunk_semantic(block)
-            all_chunks.extend(chunks)
+        all_chunks = []
+
+        async def run_chunk(block: TextBlock) -> List[Chunk]:
+            async with self.semaphore:
+                loop = asyncio.get_running_loop()
+                try:
+                    return await loop.run_in_executor(self.executor, self._chunk_semantic_sync, block)
+                except Exception as e:
+                    self.logger.error(f"Chunk processing error for block: {e}")
+                    return []
+
+        batch_size = 5
+        for i in range(0, len(blocks), batch_size):
+            batch = blocks[i:i + batch_size]
+            tasks = [asyncio.create_task(run_chunk(block)) for block in batch]
+            
+            for task in asyncio.as_completed(tasks):
+                try:
+                    chunks = await task
+                    all_chunks.extend(chunks)
+                except Exception as e:
+                    self.logger.error(f"Task completion error: {e}")
+            
+            await asyncio.sleep(0.1)
+
         return all_chunks
 
-
-import asyncio
-from transformers import AutoTokenizer
-
-# Giả sử các class đã import từ file của bạn:
-# - Chunking, ChunkingConfig, TextBlock, BlockMetadata, PageSize, LanguageInfo, StructureAnalysis
-
-
-def build_textblock_from_text(text: str, block_id: str = "block_1") -> TextBlock:
-    from rag.types.pdf_types.text_block import BlockMetadata
-
-    # Tạo metadata tối thiểu
-    bbox = (0, 0, 100, 100)  # Dummy bbox
-    metadata = BlockMetadata(
-        bbox=bbox,
-        block_type="paragraph",
-        num_lines=text.count("\n") + 1,
-        num_spans=1,
-        is_cleaned=True,
-        page_index=0,
-        language_info=None,
-        structure_analysis=None,
-    )
-    return TextBlock(
-        block_id=block_id,
-        context=text,
-        metadata=metadata,
-    )
+    def close(self):
+        self.executor.shutdown(wait=True)
 
 
 async def main():
-    # 1. Tạo tokenizer (thay bằng model bạn dùng, ví dụ "vinai/phobert-base" hoặc "bert-base-uncased")
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    from rag.document_parser.pdf_extractor import PdfExtractor
+    logging.basicConfig(level=logging.INFO)
 
-    # 2. Đoạn text mẫu
-    text = """Text Block Models - Data structures cho text blocks từ PDF
+    model_name = 'sentence-transformers/all-MiniLM-L6-v2'
+    pdf_path = "C:/Users/Quangdepzai/Downloads/text.pdf"
 
-Module chứa các dataclass và type definitions cho việc trích xuất text từ PDF:
-- BlockMetadata: Metadata của một text block
-- TextBlock: Một text block hoàn chỉnh với content và metadata  
-- PageSize: Kích thước trang PDF
-- PageData: Data của một trang PDF hoàn chỉnh
-"""
+    chunking_config = ChunkingConfig()
+    chunking_config.max_chunk_size = 400
+    chunking_config.min_chunk_size = 50
+    chunking_config.chunk_overlap = 50
 
-    # 3. Tạo TextBlock
-    block = build_textblock_from_text(text)
+    extractor = PdfExtractor(
+        enable_text_cleaning=True,
+        remove_urls=True,
+        remove_page_numbers=True,
+        remove_short_lines=True,
+        remove_newlines=True,
+        remove_references=True,
+        remove_stopwords=False,
+        min_line_length=3,
+        max_block_length=300,
+        max_bbox_distance=50.0,
+        debug_mode=True,
+    )
 
-    # 4. Tạo config và Chunking
-    config = ChunkingConfig(max_chunk_size=64, chunk_overlap=16, min_chunk_size=10)
-    chunker = Chunking(tokenizer=tokenizer, config=config)
+    try:
+        pages_data = await extractor.extract_all_pages_data(pdf_path)
+        blocks: List[TextBlock] = [block for page_data in pages_data for block in page_data.blocks]
 
-    # 5. Chunk text
-    chunks = await chunker.chunk_text([block])
+        chunker = Chunking(config=chunking_config, model_name=model_name)
+        try:
+            chunks = await chunker.chunk_text(blocks)
+        finally:
+            chunker.close()
 
-    # 6. In kết quả
-    for i, chunk in enumerate(chunks):
-        print(f"Chunk {i}:")
-        print("Text:", chunk["text"])
-        print("Metadata:", chunk["metadata"])
-        print("-" * 40)
+        import json
+        from dataclasses import asdict
+        with open("chunks.json", "w", encoding="utf-8") as f:
+            json.dump([asdict(chunk) for chunk in chunks], f, ensure_ascii=False, indent=2)
+
+    except Exception as e:
+        logging.error(f"Main execution error: {e}")
+        raise
 
 
 if __name__ == "__main__":

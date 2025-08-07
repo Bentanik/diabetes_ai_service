@@ -1,13 +1,14 @@
 import re
 from functools import lru_cache
-from ..schemas.common import LanguageInfo
+
+from ..schemas.common import LanguageType, LanguageInfo
 
 class LanguageDetector:
     @staticmethod
     @lru_cache(maxsize=1000)
     def detect_language(text: str) -> LanguageInfo:
         if not text:
-            return {"language": "unknown", "vietnamese_ratio": 0.0, "confidence": 0.0}
+            return {"language": LanguageType.UNKNOWN, "vietnamese_ratio": 0.0, "confidence": 0.0}
 
         vietnamese_chars = (
             r"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ]"
@@ -21,18 +22,18 @@ class LanguageDetector:
         )
 
         if total_chars == 0:
-            return {"language": "unknown", "vietnamese_ratio": 0.0, "confidence": 0.0}
+            return {"language": LanguageType.UNKNOWN, "vietnamese_ratio": 0.0, "confidence": 0.0}
 
         vietnamese_ratio = vietnamese_count / total_chars
 
         if vietnamese_ratio > 0.20:
-            language = "vietnamese"
+            language = LanguageType.VIETNAMESE
             confidence = min(vietnamese_ratio * 2, 1.0)
         elif vietnamese_ratio > 0.05:
-            language = "mixed"
+            language = LanguageType.MIXED
             confidence = 0.7
         else:
-            language = "english"
+            language = LanguageType.ENGLISH
             confidence = 1.0 - vietnamese_ratio
 
         return {

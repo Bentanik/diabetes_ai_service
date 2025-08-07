@@ -13,7 +13,6 @@ from typing import List, Optional
 
 from ..pdf.bbox import BBox
 from ..common import LanguageInfo
-from ..pdf.structure import StructureAnalysis
 
 
 @dataclass
