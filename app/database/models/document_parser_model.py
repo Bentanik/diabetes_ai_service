@@ -6,10 +6,9 @@ và trích xuất nội dung từ tài liệu.
 """
 
 from typing import Dict, Any
+from app.database.enums import LanguageType, DocumentType
 from app.database.models import BaseModel
-from app.database.value_objects import PageLocation
-from app.database.value_objects.bounding_box import BoundingBox
-from app.database.enums import DocumentType
+from app.database.value_objects import PageLocation, BoundingBox, LanguageInfo
 
 
 class DocumentParserModel(BaseModel):
@@ -21,6 +20,7 @@ class DocumentParserModel(BaseModel):
         knowledge_id (str): ID của cơ sở tri thức liên quan
         content (str): Nội dung được trích xuất
         location (PageLocation): Vị trí của nội dung trong tài liệu
+        language_info (LanguageInfo): Thông tin ngôn ngữ của tài liệu
         is_active (bool): Trạng thái hoạt động của bản ghi
     """
 
@@ -30,6 +30,7 @@ class DocumentParserModel(BaseModel):
         knowledge_id: str,
         content: str,
         location: PageLocation,
+        language_info: LanguageInfo,
         is_active: bool = True,
         **kwargs
     ):
@@ -40,6 +41,7 @@ class DocumentParserModel(BaseModel):
         self.content = content
         self.location = location
         self.is_active = is_active
+        self.language_info = language_info
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DocumentParserModel":
@@ -64,6 +66,12 @@ class DocumentParserModel(BaseModel):
             y1=bbox_data.get("y1", 0.0),
         )
 
+        language_info = LanguageInfo(
+            language=data.pop("language", LanguageType.UNKNOWN),
+            vietnamese_ratio=data.pop("vietnamese_ratio", 0.0),
+            confidence=data.pop("confidence", 0.0),
+        )
+
         location = PageLocation(
             page=data.pop("page", 0),
             bbox=bbox,
@@ -76,6 +84,7 @@ class DocumentParserModel(BaseModel):
             knowledge_id=knowledge_id,
             content=content,
             location=location,
+            language_info=language_info,
             is_active=is_active,
             **data
         )

@@ -5,11 +5,10 @@ from app.database import initialize_database, close_mongodb_connection
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
-from core.llm import EmbeddingModel
-from rag.chunking import get_chunking_instance
+from core.embedding import EmbeddingModel
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
-from core.llm.load_llm import get_gemini_llm
+from core.llm.gemini.client import GeminiClient
 
 load_dotenv()
 
@@ -27,13 +26,10 @@ async def lifespan(app: FastAPI):
         await EmbeddingModel.get_instance()
 
         # Khởi tạo LLM
-        get_gemini_llm()
+        GeminiClient.get_instance()
 
         # Khởi tạo scorer
         await get_scorer_async()
-
-        # Khởi tạo Chunking
-        await get_chunking_instance(enable_caching=True)
 
         # Khởi tạo các worker
         worker_start_all()

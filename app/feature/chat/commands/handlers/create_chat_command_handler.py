@@ -19,8 +19,9 @@ from shared.messages import ChatResult
 from utils import get_logger
 from app.database import get_collections
 from app.database.models import ChatSessionModel
-from rag.retriever import Retriever
-from core.llm.load_llm import get_gemini_llm
+
+# from rag.retriever import Retriever
+from core.llm.gemini.manager import GeminiChatManager
 from app.dto.models import ChatHistoryModelDTO
 
 
@@ -61,8 +62,7 @@ class CreateChatCommandHandler(CommandHandler):
         super().__init__()
         self.db = get_collections()
         self.logger = get_logger(__name__)
-        self.retriever = Retriever()
-        self.llm = get_gemini_llm()
+        # self.retriever = Retriever()
 
     async def execute(self, command: CreateChatCommand) -> Result[None]:
         try:
@@ -155,7 +155,8 @@ class CreateChatCommandHandler(CommandHandler):
             messages.append(HumanMessage(content=content.strip()))
 
             # Gọi LLM
-            response = await self.llm.ainvoke(messages)
+            # response = await self.llm.ainvoke(messages)
+            response = ""
 
             # Lưu response vào database
             chat_assistant = ChatHistoryModel(

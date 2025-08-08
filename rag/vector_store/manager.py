@@ -2,7 +2,7 @@ from typing import Dict, List
 from langchain_qdrant import Qdrant
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import VectorParams, Distance
-from core.llm.embedding_model import EmbeddingModel
+from core.embedding import EmbeddingModel
 import logging
 
 

@@ -6,7 +6,6 @@ from qdrant_client.http.models import Filter, FieldCondition, Range, MatchValue
 from pydantic import BaseModel
 from threading import Lock
 from rag.embedding import Embedding
-import asyncio
 
 
 class SearchResult(BaseModel):

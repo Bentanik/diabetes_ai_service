@@ -1,11 +1,11 @@
 from bson import ObjectId
 from app.database.models import DocumentJobModel
 from app.database.enums import DocumentJobStatus
-from rag.chunking import get_chunking_instance
 from app.database import get_collections
 from app.database.models import DocumentParserModel
 from core.cqrs import CommandHandler, CommandRegistry
 from core.result import Result
+from rag.chunking import Chunking
 from rag.vector_store import VectorStoreOperations
 from ..process_training_document_command import ProcessTrainingDocumentCommand
 from shared.messages import DocumentResult
@@ -98,7 +98,7 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
             )
 
             # 3. Chunk tài liệu
-            chunking = await get_chunking_instance()
+            chunking = Chunking()
             all_chunks = []
 
             for parser in document_parsers:

@@ -4,11 +4,13 @@ Process Document Upload Command Handler - Xử lý command upload tài liệu
 File này định nghĩa handler để xử lý ProcessDocumentUploadCommand, thực hiện việc upload tài liệu vào database và storage.
 """
 
+import asyncio
 import os
 import tempfile
+from typing import List
 from bson import ObjectId
 from app.database import get_collections
-from app.database.enums import DocumentJobStatus, DocumentType
+from app.database.enums import DocumentJobStatus, DocumentType, LanguageType
 from app.database.models import (
     DocumentJobModel,
     DocumentModel,
@@ -17,6 +19,7 @@ from app.database.models import (
 from app.database.value_objects import DocumentFile, PageLocation, BoundingBox
 from app.storage import MinioManager
 from core.cqrs import CommandHandler, CommandRegistry
+from rag.schemas.common.language_info import LanguageInfo
 from shared.messages import DocumentResult
 from rag.document_parser import PdfExtractor
 
@@ -38,7 +41,13 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             remove_urls=True,
             remove_page_numbers=True,
             remove_short_lines=True,
+            remove_newlines=True,
+            remove_references=True,
+            remove_stopwords=False,
             min_line_length=3,
+            max_block_length=300,
+            max_bbox_distance=50.0,
+            debug_mode=False,
         )
 
     async def execute(self, command: ProcessDocumentUploadCommand) -> Result[None]:
@@ -141,9 +150,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 progress_message="Đang phân tích nội dung diabetes",
             )
 
-            diabetes_score = await self._calculate_diabetes_score(
-                cleaned_text
-            )
+            diabetes_score = await self._calculate_diabetes_score(cleaned_text)
 
             self.logger.info(
                 f"Điểm diabetes cho document {command.document_job_id}: {diabetes_score})"
@@ -288,7 +295,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             self.logger.error(f"Lỗi cập nhật knowledge stats: {e}")
             # Không raise exception để không làm fail toàn bộ process
 
-    async def _extract_and_clean_text(self, file_path: str) -> tuple[str, list]:
+    async def _extract_and_clean_text(self, file_path: str) -> tuple[List[str], list]:
         """
         Trích xuất và làm sạch text từ file
 
@@ -301,7 +308,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         try:
             if file_path.lower().endswith(".pdf"):
                 # Extract text blocks với cleaning enabled
-                pages_data = self.pdf_extractor.extract_all_pages_data(file_path)
+                pages_data = await self.pdf_extractor.extract_all_pages_data(file_path)
 
                 if not pages_data:
                     self.logger.warning(
@@ -313,31 +320,28 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 all_text_blocks = []
                 for page_data in pages_data:
                     for block in page_data.blocks:
-                        if block.context.strip():  # block.context là text đã cleaned
+                        if block.context.strip():
                             all_text_blocks.append(block.context)
 
                 if not all_text_blocks:
                     self.logger.warning(
                         f"Không có text blocks sau khi clean: {file_path}"
                     )
-                    return "", pages_data
-
-                # Kết hợp tất cả text
-                full_text = " ".join(all_text_blocks)
+                    return [], pages_data
 
                 self.logger.info(
-                    f"Extracted và cleaned {len(all_text_blocks)} text blocks, total length: {len(full_text)} chars"
+                    f"Extracted và cleaned {len(all_text_blocks)} text blocks, total length: {len(all_text_blocks)} chars"
                 )
 
-                return full_text, pages_data
+                return all_text_blocks, pages_data
 
             else:
                 self.logger.warning(f"File type không được hỗ trợ: {file_path}")
-                return "", []
+                return [], []
 
         except Exception as e:
             self.logger.error(f"Lỗi extract và clean text: {e}")
-            return "", []
+            return [], []
 
     async def _save_document_parser_results(
         self, document_id: str, knowledge_id: str, pages_data: list, cleaned_text: str
@@ -380,12 +384,32 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                                 doc_type=DocumentType.UPLOAD,
                             )
 
+                            # Tạo LanguageInfo
+                            language_info = LanguageInfo(
+                                language=(
+                                    block.metadata.language
+                                    if hasattr(block.metadata, "language")
+                                    else LanguageType.UNKNOWN
+                                ),
+                                vietnamese_ratio=(
+                                    block.metadata.vietnamese_ratio
+                                    if hasattr(block.metadata, "vietnamese_ratio")
+                                    else 0.0
+                                ),
+                                confidence=(
+                                    block.metadata.confidence
+                                    if hasattr(block.metadata, "confidence")
+                                    else 0.0
+                                ),
+                            )
+
                             # Tạo DocumentParserModel
                             parser_model = DocumentParserModel(
                                 document_id=document_id,
                                 knowledge_id=knowledge_id,
                                 content=block.context,
                                 location=location,
+                                language_info=language_info,
                                 is_active=True,
                             )
 
@@ -431,51 +455,73 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         except Exception as e:
             self.logger.error(f"Lỗi lưu document parser results: {e}")
 
-    async def _calculate_diabetes_score(self, cleaned_text: str) -> float:
+    async def _calculate_diabetes_score(self, text_blocks: List[str]) -> float:
         """
-        Tính điểm diabetes cho text đã được làm sạch
-
-        Args:
-            cleaned_text: Text đã được extract và làm sạch
-
-        Returns:
-            tuple[float, bool]: (diabetes_score)
+        Tính điểm diabetes - weighted average toàn bộ document
         """
         try:
-            if not cleaned_text or not cleaned_text.strip():
-                self.logger.warning("Text rỗng, không thể tính điểm diabetes")
-                return 0.0, False
+            if not text_blocks:
+                return 0.0
 
-            # Nếu text quá dài, lấy mẫu để phân tích
-            if len(cleaned_text) > 10000:
-                # Lấy phần đầu, giữa và cuối
-                start_text = cleaned_text[:3000]
-                mid_point = len(cleaned_text) // 2
-                mid_text = cleaned_text[mid_point - 1500 : mid_point + 1500]
-                end_text = cleaned_text[-3000:]
+            # Clean blocks nhưng giữ nguyên structure
+            valid_blocks = []
+            for block in text_blocks:
+                cleaned = block.strip()
+                if cleaned:  # Chỉ giữ blocks có content
+                    valid_blocks.append(cleaned)
+                # Skip empty blocks hoàn toàn
 
-                sample_text = f"{start_text} {mid_text} {end_text}"
-                self.logger.info(
-                    f"Text quá dài ({len(cleaned_text)} chars), sử dụng sample {len(sample_text)} chars"
-                )
-            else:
-                sample_text = cleaned_text
+            if not valid_blocks:
+                return 0.0
 
-            analysis = await async_analyze_diabetes_content(sample_text)
+            # Process in batches để tránh overwhelm
+            batch_size = 50
+            all_analyses = []
+
+            for i in range(0, len(valid_blocks), batch_size):
+                batch = valid_blocks[i : i + batch_size]
+                tasks = [self._analyze_diabetes_content(block) for block in batch]
+                batch_analyses = await asyncio.gather(*tasks, return_exceptions=True)
+                all_analyses.extend(batch_analyses)
+
+            # Weighted average calculation
+            total_score = 0.0
+            total_weight = 0.0
+            processed_blocks = 0
+            error_blocks = 0
+
+            for analysis, block in zip(all_analyses, valid_blocks):
+                # Calculate weight (có thể dùng word count hoặc char count)
+                weight = len(block.split())  # hoặc len(block) cho char count
+                total_weight += weight
+
+                if isinstance(analysis, Exception):
+                    error_blocks += 1
+                    self.logger.warning(f"Error analyzing block: {analysis}")
+                    # Gán score = 0 cho error blocks
+                    # total_score += 0 (không cộng gì)
+                else:
+                    total_score += analysis.final_score * weight
+                    processed_blocks += 1
+
+            # Handle edge case: all blocks failed
+            if total_weight == 0:
+                self.logger.warning("All blocks have zero weight")
+                return 0.0
+
+            diabetes_score = total_score / total_weight
 
             self.logger.info(
-                f"Diabetes analysis - Score: {analysis.final_score}, "
-                f"Level: {analysis.relevance_level}, "
-                f"Semantic: {analysis.semantic_score}, "
-                f"Keyword: {analysis.keyword_score}, "
-                f"Words: {analysis.word_count}"
+                f"Diabetes score: {diabetes_score:.3f} "
+                f"({processed_blocks}/{len(valid_blocks)} blocks processed, "
+                f"{error_blocks} errors)"
             )
 
-            return analysis.final_score
+            return diabetes_score
 
         except Exception as e:
-            self.logger.error(f"Lỗi tính điểm diabetes: {e}")
-            return 0.0, False
+            self.logger.error(f"Lỗi calculate diabetes score: {e}")
+            return 0.0
 
     async def _update_document_job(
         self,

@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 import asyncio
-from core.llm import EmbeddingModel
+from core.embedding import EmbeddingModel
 import logging
 
 

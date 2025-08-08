@@ -3,6 +3,7 @@ from app.database.value_objects.document_file import DocumentFile
 from app.database.value_objects.knowledge_stats import KnowledgeStats
 from app.database.value_objects.page_location import PageLocation
 from app.database.value_objects.processing_status import ProcessingStatus
+from app.database.value_objects.language_info import LanguageInfo
 
 __all__ = [
     "BoundingBox",
@@ -10,4 +11,5 @@ __all__ = [
     "KnowledgeStats",
     "PageLocation",
     "ProcessingStatus",
+    "LanguageInfo",
 ]

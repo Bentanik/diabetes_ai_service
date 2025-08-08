@@ -14,6 +14,7 @@ from utils import get_logger
 
 logger = get_logger(__name__)
 
+
 class DiabetesAnalysisResult:
     def __init__(
         self,
@@ -46,6 +47,7 @@ class DiabetesAnalysisResult:
     def __repr__(self) -> str:
         return self.__str__()
 
+
 class DiabetesScorer:
     def __init__(self, data_dir: str = "shared", model_dir: str = "model"):
         self.data_dir = Path.cwd() / data_dir
@@ -64,7 +66,7 @@ class DiabetesScorer:
         self.medium_threshold = 0.35
 
     async def _ensure_initialized(self):
-        from core.llm import get_embedding_model
+        from core.embedding import EmbeddingModel
 
         if self._initialized:
             return
@@ -79,11 +81,14 @@ class DiabetesScorer:
             try:
                 logger.info("Khởi tạo DiabetesScorer...")
                 start_time = time.time()
-                self.model = await get_embedding_model()
+                embedding_model = await EmbeddingModel.get_instance()
+                self.model = embedding_model.model
                 self.keywords = await asyncio.to_thread(self._load_keywords)
                 self.embeddings = await self._load_embeddings()
                 self._initialized = True
-                logger.info(f"DiabetesScorer đã sẵn sàng trong {time.time() - start_time:.2f}s")
+                logger.info(
+                    f"DiabetesScorer đã sẵn sàng trong {time.time() - start_time:.2f}s"
+                )
             except Exception as e:
                 logger.error(f"Lỗi khởi tạo DiabetesScorer: {str(e)}", exc_info=True)
                 raise
@@ -96,7 +101,10 @@ class DiabetesScorer:
                 with open(self.keywords_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
-                logger.error(f"Lỗi load keywords từ {self.keywords_file}: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Lỗi load keywords từ {self.keywords_file}: {str(e)}",
+                    exc_info=True,
+                )
         keywords = {
             "vietnamese": {
                 "primary": [
@@ -161,7 +169,9 @@ class DiabetesScorer:
             with open(self.keywords_file, "w", encoding="utf-8") as f:
                 json.dump(keywords, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            logger.error(f"Lỗi lưu keywords vào {self.keywords_file}: {str(e)}", exc_info=True)
+            logger.error(
+                f"Lỗi lưu keywords vào {self.keywords_file}: {str(e)}", exc_info=True
+            )
         return keywords
 
     async def _load_embeddings(self) -> Dict[str, Any]:
@@ -172,7 +182,9 @@ class DiabetesScorer:
                     logger.info(f"Loaded {len(data['texts'])} embeddings từ cache")
                     return data
             except Exception as e:
-                logger.error(f"Lỗi load cache từ {self.embeddings_file}: {str(e)}", exc_info=True)
+                logger.error(
+                    f"Lỗi load cache từ {self.embeddings_file}: {str(e)}", exc_info=True
+                )
         return await self._create_embeddings()
 
     def _load_pickle_file(self) -> Dict[str, Any]:
@@ -193,8 +205,12 @@ class DiabetesScorer:
         for lang in ["vietnamese", "english"]:
             for category, words in self.keywords[lang].items():
                 if words:
-                    cat_embeddings = await asyncio.to_thread(self.model.embed_documents, words)
-                    category_embeddings[f"{lang}_{category}"] = np.mean(cat_embeddings, axis=0)
+                    cat_embeddings = await asyncio.to_thread(
+                        self.model.embed_documents, words
+                    )
+                    category_embeddings[f"{lang}_{category}"] = np.mean(
+                        cat_embeddings, axis=0
+                    )
         result = {
             "texts": unique_texts,
             "embeddings": embeddings,
@@ -203,7 +219,9 @@ class DiabetesScorer:
         }
         try:
             await asyncio.to_thread(self._save_pickle_file, result)
-            logger.info(f"Embeddings đã tạo và cache trong {time.time() - start_time:.2f}s")
+            logger.info(
+                f"Embeddings đã tạo và cache trong {time.time() - start_time:.2f}s"
+            )
         except Exception as e:
             logger.error(f"Không thể lưu cache: {str(e)}", exc_info=True)
         return result
@@ -222,7 +240,10 @@ class DiabetesScorer:
             max_sim = float(np.max(similarities))
             top_sim = float(np.mean(np.sort(similarities)[-5:]))
             cat_scores = []
-            weights = self.keywords.get("weights", {"primary": 2.0, "medical": 1.5, "treatments": 1.8, "symptoms": 1.2})
+            weights = self.keywords.get(
+                "weights",
+                {"primary": 2.0, "medical": 1.5, "treatments": 1.8, "symptoms": 1.2},
+            )
             for cat_name, cat_emb in self.embeddings["category_embeddings"].items():
                 cat_sim = cosine_similarity(text_emb, cat_emb.reshape(1, -1))[0][0]
                 category = cat_name.split("_")[-1]
@@ -245,7 +266,10 @@ class DiabetesScorer:
         if word_count == 0:
             return 0.0
         total_score = 0.0
-        weights = self.keywords.get("weights", {"primary": 2.0, "medical": 1.5, "treatments": 1.8, "symptoms": 1.2})
+        weights = self.keywords.get(
+            "weights",
+            {"primary": 2.0, "medical": 1.5, "treatments": 1.8, "symptoms": 1.2},
+        )
         matched = set()
         for lang in ["vietnamese", "english"]:
             for category, words in self.keywords[lang].items():
@@ -294,7 +318,9 @@ class DiabetesScorer:
         if not text.strip():
             return 0.0
         if not self._initialized:
-            raise RuntimeError("DiabetesScorer chưa được khởi tạo. Hãy dùng async version.")
+            raise RuntimeError(
+                "DiabetesScorer chưa được khởi tạo. Hãy dùng async version."
+            )
         semantic = asyncio.run(self._semantic_score(text))
         keyword = self._keyword_score(text)
         if keyword > 0.7 and semantic > 0.3:
@@ -355,15 +381,21 @@ class DiabetesScorer:
             weights = [s**1.2 for s in relevant_scores]
         else:
             weights = [max(0.2, s) for s in relevant_scores]
-        weighted_avg = sum(s * w for s, w in zip(relevant_scores, weights)) / sum(weights)
+        weighted_avg = sum(s * w for s, w in zip(relevant_scores, weights)) / sum(
+            weights
+        )
         if len(relevant_scores) >= 3:
             weighted_avg *= 1.05
         return round(min(1.0, weighted_avg), 3)
 
+
 _scorer_instance: Optional[DiabetesScorer] = None
 _scorer_lock = threading.Lock()
 
-async def get_scorer_async(data_dir: str = "shared", model_dir: str = "model") -> DiabetesScorer:
+
+async def get_scorer_async(
+    data_dir: str = "shared", model_dir: str = "model"
+) -> DiabetesScorer:
     global _scorer_instance
     if _scorer_instance is not None and _scorer_instance._initialized:
         return _scorer_instance
@@ -373,7 +405,10 @@ async def get_scorer_async(data_dir: str = "shared", model_dir: str = "model") -
     await _scorer_instance._ensure_initialized()
     return _scorer_instance
 
-async def get_scorer(data_dir: str = "shared", model_dir: str = "model") -> DiabetesScorer:
+
+async def get_scorer(
+    data_dir: str = "shared", model_dir: str = "model"
+) -> DiabetesScorer:
     global _scorer_instance
     if _scorer_instance is not None and _scorer_instance._initialized:
         return _scorer_instance
@@ -383,29 +418,48 @@ async def get_scorer(data_dir: str = "shared", model_dir: str = "model") -> Diab
         await _scorer_instance._ensure_initialized()
     return _scorer_instance
 
-async def async_score_diabetes_content_with_embedding(text: str, data_dir: str = "shared", model_dir: str = "model") -> float:
+
+async def async_score_diabetes_content_with_embedding(
+    text: str, data_dir: str = "shared", model_dir: str = "model"
+) -> float:
     scorer = await get_scorer_async(data_dir, model_dir)
     return await scorer.calculate_diabetes_score(text)
 
-async def async_analyze_diabetes_content(text: str, data_dir: str = "shared", model_dir: str = "model") -> DiabetesAnalysisResult:
+
+async def async_analyze_diabetes_content(
+    text: str, data_dir: str = "shared", model_dir: str = "model"
+) -> DiabetesAnalysisResult:
     scorer = await get_scorer_async(data_dir, model_dir)
     return await scorer.get_detailed_analysis(text)
 
-async def async_analyze_diabetes_content_dict(text: str, data_dir: str = "shared", model_dir: str = "model") -> Dict[str, Any]:
+
+async def async_analyze_diabetes_content_dict(
+    text: str, data_dir: str = "shared", model_dir: str = "model"
+) -> Dict[str, Any]:
     scorer = await get_scorer_async(data_dir, model_dir)
     return await scorer.get_detailed_analysis_dict(text)
 
-def score_diabetes_content_with_embedding(text: str, data_dir: str = "shared", model_dir: str = "model") -> float:
+
+def score_diabetes_content_with_embedding(
+    text: str, data_dir: str = "shared", model_dir: str = "model"
+) -> float:
     scorer = asyncio.run(get_scorer(data_dir, model_dir))
     return scorer.calculate_diabetes_score_sync(text)
 
-def analyze_diabetes_content(text: str, data_dir: str = "shared", model_dir: str = "model") -> DiabetesAnalysisResult:
+
+def analyze_diabetes_content(
+    text: str, data_dir: str = "shared", model_dir: str = "model"
+) -> DiabetesAnalysisResult:
     scorer = asyncio.run(get_scorer(data_dir, model_dir))
     return asyncio.run(scorer.get_detailed_analysis(text))
 
-def analyze_diabetes_content_dict(text: str, data_dir: str = "shared", model_dir: str = "model") -> Dict[str, Any]:
+
+def analyze_diabetes_content_dict(
+    text: str, data_dir: str = "shared", model_dir: str = "model"
+) -> Dict[str, Any]:
     result = analyze_diabetes_content(text, data_dir, model_dir)
     return result.to_dict()
+
 
 DiabetesScorerUtils = DiabetesScorer
 async_get_scorer = get_scorer_async

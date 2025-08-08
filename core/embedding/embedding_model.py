@@ -3,12 +3,13 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import List, Optional
 
+
 class EmbeddingModel:
     _instance: Optional["EmbeddingModel"] = None
     _lock: asyncio.Lock = asyncio.Lock()
 
     def __init__(self) -> None:
-        self.model_name = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        self.model_name = "intfloat/multilingual-e5-large"
         self.model: Optional[HuggingFaceEmbeddings] = None
         self.tokenizer: Optional[PreTrainedTokenizerBase] = None
         self._is_loaded = False
