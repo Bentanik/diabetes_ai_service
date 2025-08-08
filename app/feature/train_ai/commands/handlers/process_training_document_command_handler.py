@@ -1,15 +1,20 @@
+from typing import List
 from bson import ObjectId
 from app.database.models import DocumentJobModel
 from app.database.enums import DocumentJobStatus
 from app.database import get_collections
 from app.database.models import DocumentParserModel
 from core.cqrs import CommandHandler, CommandRegistry
+from core.embedding.embedding_model import EmbeddingModel
 from core.result import Result
 from rag.chunking import Chunking
+from rag.config.chunking_config import ChunkingConfig
+from rag.schemas.pdf.text_block import TextBlock
 from rag.vector_store import VectorStoreOperations
 from ..process_training_document_command import ProcessTrainingDocumentCommand
 from shared.messages import DocumentResult
 from utils import get_logger
+from rag.embedding import get_embedding_instance
 
 
 @CommandRegistry.register_handler(ProcessTrainingDocumentCommand)
@@ -59,9 +64,11 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
             )
 
             # 2. Lấy document từ MongoDB
-            document_parsers = await self.collections.document_parsers.find(
-                {"document_id": document_job.document_id}
-            ).to_list(length=None)
+            document_parsers: List[DocumentParserModel] = (
+                await self.collections.document_parsers.find(
+                    {"document_id": document_job.document_id}
+                ).to_list(length=None)
+            )
 
             document = await self.collections.documents.find_one(
                 {"_id": ObjectId(document_job.document_id)},
@@ -86,10 +93,6 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
                     code=DocumentResult.NOT_FOUND.code,
                 )
 
-            document_parsers = [
-                DocumentParserModel.from_dict(doc) for doc in document_parsers
-            ]
-
             await self._update_document_job(
                 document_job_id=command.document_job_id,
                 status=DocumentJobStatus.PROCESSING,
@@ -98,20 +101,23 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
             )
 
             # 3. Chunk tài liệu
-            chunking = Chunking()
-            all_chunks = []
-
-            for parser in document_parsers:
-                chunks = await chunking.chunk_text(
-                    text=parser.content,
-                    metadata={
-                        "document_parser_id": str(parser.id),
-                        "is_active": parser.is_active,
-                    },
+            chunking_config = ChunkingConfig(
+                max_chunk_size=512, min_chunk_size=64, chunk_overlap=200
+            )
+            embedding_model = await EmbeddingModel.get_instance()
+            chunking = Chunking(
+                config=chunking_config, model_name=embedding_model.model_name
+            )
+            text_blocks = [
+                TextBlock(
+                    context=parser["content"],
                 )
-                all_chunks.extend(chunks)
+                for parser in document_parsers
+            ]
 
-            if not all_chunks:
+            chunks = await chunking.chunk_text(text_blocks)
+
+            if not chunks:
                 self.logger.info(
                     f"Không tạo được chunk nào từ tài liệu {command.document_job_id}"
                 )
@@ -128,12 +134,16 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
             )
 
             # 4. Lưu vào vector database (Qdrant)
-            texts = [chunk["text"] for chunk in all_chunks]
-            metadatas = [chunk.get("metadata", {}) for chunk in all_chunks]
-            print(document["knowledge_id"])
+            texts = [chunk.text for chunk in chunks]
+            metadatas = [
+                {
+                    "is_active": True,
+                }
+                for chunk in chunks
+            ]
             collection_name = document["knowledge_id"]
 
-            self.vector_operations.store_vectors(
+            await self.vector_operations.store_vectors(
                 texts=texts,
                 collection_name=collection_name,
                 metadatas=metadatas,

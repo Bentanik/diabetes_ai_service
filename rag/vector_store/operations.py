@@ -5,7 +5,7 @@ from rag.vector_store import VectorStoreManager
 from qdrant_client.http.models import Filter, FieldCondition, Range, MatchValue
 from pydantic import BaseModel
 from threading import Lock
-from rag.embedding import Embedding
+from rag.embedding import get_embedding_instance
 
 
 class SearchResult(BaseModel):
@@ -117,7 +117,9 @@ class VectorStoreOperations:
                 for text, metadata in zip(texts, metadatas)
             ]
 
-            embeddings = await Embedding().embed_documents(
+            embedding = await get_embedding_instance()
+
+            embeddings = await embedding.embed_documents(
                 [doc.page_content for doc in documents]
             )
             self.logger.info(
@@ -175,7 +177,7 @@ class VectorStoreOperations:
                         self.logger.info(
                             f"Score: {score:.3f} | Text: {doc.page_content[:80]}..."
                         )
-                        if float(score) >= score_threshold:  # Sử dụng score_threshold
+                        if float(score) >= score_threshold:
                             formatted_results.append(
                                 SearchResult(
                                     id=doc.metadata.get("id", str(i)),

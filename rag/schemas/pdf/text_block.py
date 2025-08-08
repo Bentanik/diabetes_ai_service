@@ -8,7 +8,7 @@ Module chứa các dataclass và type definitions cho việc trích xuất text 
 - PageData: Data của một trang PDF hoàn chỉnh
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 from ..pdf.bbox import BBox
@@ -29,11 +29,11 @@ class BlockMetadata:
         page_index: Index của trang (optional, thêm sau)
     """
 
-    bbox: BBox
-    block_type: str
-    num_lines: int
-    num_spans: int
-    is_cleaned: bool
+    bbox: BBox = field(default_factory=lambda: BBox(left=0, top=0, right=0, bottom=0))
+    block_type: str = ""
+    num_lines: int = 0
+    num_spans: int = 0
+    is_cleaned: bool = False
     page_index: Optional[int] = None
     language_info: Optional[LanguageInfo] = None
 
@@ -50,9 +50,9 @@ class TextBlock:
         metadata: Thông tin metadata của block
     """
 
-    block_id: str
-    context: str
-    metadata: BlockMetadata
+    block_id: str = ""
+    context: str = ""
+    metadata: BlockMetadata = field(default_factory=BlockMetadata)
 
 
 @dataclass

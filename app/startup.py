@@ -9,6 +9,7 @@ from core.embedding import EmbeddingModel
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
 from core.llm.gemini.client import GeminiClient
+from rag.embedding import Embedding
 
 load_dotenv()
 
@@ -33,6 +34,9 @@ async def lifespan(app: FastAPI):
 
         # Khởi tạo các worker
         worker_start_all()
+
+        # Khởi tạo embedding
+        await Embedding()._ensure_initialized()
 
         # Khởi tạo database và storage
         await initialize_database()

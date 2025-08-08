@@ -23,7 +23,10 @@ from shared.messages import DocumentResult
 from rag.document_parser import PdfExtractor
 from bson import ObjectId
 
-from utils.diabetes_scorer_utils import get_scorer_async
+from utils.diabetes_scorer_utils import (
+    async_score_diabetes_content_with_embedding,
+    get_scorer_async,
+)
 
 from ..process_document_upload_command import ProcessDocumentUploadCommand
 
@@ -389,7 +392,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                             # Tạo LanguageInfo
                             language_info = LanguageInfo(
                                 language=(
-                                    block.metadata.language
+                                    block.metadata.language_info
                                     if hasattr(block.metadata, "language")
                                     else LanguageType.UNKNOWN
                                 ),
@@ -459,7 +462,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
 
     async def _calculate_diabetes_score(self, text_blocks: List[str]) -> float:
         """
-        Tính điểm diabetes dựa trên semantic scorer - weighted average toàn bộ document
+        Tính điểm diabetes dựa trên final_score - average toàn bộ document
         """
         try:
             if not text_blocks:
@@ -472,59 +475,44 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 self.logger.warning("All text_blocks are empty after stripping")
                 return 0.0
 
-            scorer = await get_scorer_async()
-
             batch_size = 50
-            all_analyses = []
+            all_scores = []
 
             for i in range(0, len(valid_blocks), batch_size):
                 batch = valid_blocks[i : i + batch_size]
-                tasks = [scorer.get_detailed_analysis(block) for block in batch]
-                batch_analyses = await asyncio.gather(*tasks, return_exceptions=True)
-                all_analyses.extend(batch_analyses)
+                tasks = [
+                    async_score_diabetes_content_with_embedding(block)
+                    for block in batch
+                ]
+                batch_scores = await asyncio.gather(*tasks, return_exceptions=True)
+                all_scores.extend(batch_scores)
 
             total_score = 0.0
-            total_weight = 0.0
             processed_blocks = 0
             error_blocks = 0
 
-            for i, (analysis, block) in enumerate(zip(all_analyses, valid_blocks), 1):
-                weight = len(block.split())
-                total_weight += weight
-
-                if isinstance(analysis, Exception):
+            for i, score in enumerate(all_scores, 1):
+                if isinstance(score, Exception):
                     error_blocks += 1
-                    self.logger.warning(
-                        f"[Block {i}] Error analyzing block: {analysis}"
-                    )
+                    self.logger.warning(f"[Block {i}] Error analyzing block: {score}")
                     continue
 
-                semantic_score = getattr(analysis, "semantic_score", None)
-                if semantic_score is None:
+                if not isinstance(score, (int, float)):
                     error_blocks += 1
-                    self.logger.warning(
-                        f"[Block {i}] Missing semantic_score in analysis: {analysis}"
-                    )
+                    self.logger.warning(f"[Block {i}] Invalid score type: {score}")
                     continue
 
-                if not isinstance(semantic_score, (int, float)):
-                    error_blocks += 1
-                    self.logger.warning(
-                        f"[Block {i}] Invalid semantic_score type: {semantic_score}"
-                    )
-                    continue
-
-                total_score += semantic_score * weight
+                total_score += score
                 processed_blocks += 1
 
-            if total_weight == 0:
-                self.logger.warning("Total weight is zero, cannot compute score")
+            if processed_blocks == 0:
+                self.logger.warning("No valid blocks processed, cannot compute score")
                 return 0.0
 
-            diabetes_score = total_score / total_weight
+            diabetes_score = total_score / processed_blocks
 
             self.logger.info(
-                f"Diabetes score (semantic): {diabetes_score:.3f} "
+                f"Diabetes score (final): {diabetes_score:.3f} "
                 f"({processed_blocks}/{len(valid_blocks)} blocks processed, "
                 f"{error_blocks} errors)"
             )

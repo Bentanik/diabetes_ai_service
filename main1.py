@@ -11,7 +11,7 @@ from rag.vector_store import VectorStoreOperations
 from rag.embedding import Embedding
 
 
-collection_name = "diabetes_paper"
+collection_name = "689631b0d0ab7efc3956636f"
 embedding_dim = 768  # mặc định, sẽ cập nhật khi tạo embedding xong
 
 # Giữ chunks text toàn cục để search
