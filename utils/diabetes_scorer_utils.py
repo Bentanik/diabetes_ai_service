@@ -481,33 +481,16 @@ if __name__ == "__main__":
 
         for i, text in enumerate(test_texts, 1):
             print(f"\nTest {i}: {text[:60]}...")
-            # Test new object-based result
             analysis = await scorer.get_detailed_analysis(text)
-            print(f"Score: {analysis.final_score} ({analysis.relevance_level})")
+            # print(f"Score: {analysis.final_score} ({analysis.relevance_level})")
             print(
                 f"Semantic: {analysis.semantic_score}, Keyword: {analysis.keyword_score}"
             )
-            print(f"Object: {analysis}")
-
-    def test_sync():
-        print("Testing SYNC version...")
-        scorer = get_scorer()
-
-        for i, text in enumerate(test_texts[:2], 1):
-            print(f"\nSync Test {i}: {text[:60]}...")
-            # Test new object-based result
-            analysis = analyze_diabetes_content(text)
-            print(f"Score: {analysis.final_score} ({analysis.relevance_level})")
-            print(
-                f"Direct access: final_score={analysis.final_score}, level={analysis.relevance_level}"
-            )
+            # print(f"Object: {analysis}")
 
     try:
         # Test async version
         asyncio.run(test_async())
-
-        print("\n" + "=" * 50)
-        test_sync()
 
     except Exception as e:
         print(f"Error: {e}")

@@ -3,13 +3,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from typing import List, Optional
 
-
 class EmbeddingModel:
     _instance: Optional["EmbeddingModel"] = None
     _lock: asyncio.Lock = asyncio.Lock()
 
     def __init__(self) -> None:
-        self.model_name = "intfloat/multilingual-e5-large"
+        self.model_name = "Alibaba-NLP/gte-multilingual-base"
         self.model: Optional[HuggingFaceEmbeddings] = None
         self.tokenizer: Optional[PreTrainedTokenizerBase] = None
         self._is_loaded = False
@@ -22,7 +21,11 @@ class EmbeddingModel:
             try:
                 self.model = HuggingFaceEmbeddings(
                     model_name=self.model_name,
-                    model_kwargs={"device": "cuda"},
+                    model_kwargs={
+                        "device": "cuda",
+                        "trust_remote_code": True,
+                    },
+                    encode_kwargs={"normalize_embeddings": True},
                 )
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             except Exception as e:

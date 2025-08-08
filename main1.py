@@ -1,105 +1,126 @@
 import asyncio
-from typing import Dict, List
-
-from core.llm.gemini.manager import GeminiChatManager
-from core.llm.gemini.schemas import Message, Role
-from core.llm.gemini.utils import messages_to_dicts
-
-
-def save_to_file(history: List[Dict[str, str]], file_path: str):
-    import json
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(
-            history,
-            f,
-            ensure_ascii=False,
-            indent=2,
-        )
+import json
+from dataclasses import asdict
+from typing import List
+from rag.config.chunking_config import ChunkingConfig
+from rag.document_parser.pdf_extractor import PdfExtractor
+from rag.chunking import Chunking
+from core.embedding.embedding_model import EmbeddingModel
+from rag.schemas.pdf.text_block import TextBlock
+from rag.vector_store import VectorStoreOperations
+from rag.embedding import Embedding
 
 
-async def _calculate_diabetes_score(text_blocks: List[str]) -> float:
-    """
-    Tính điểm diabetes - weighted average toàn bộ document
-    """
-    from utils.diabetes_scorer_utils import async_analyze_diabetes_content
+collection_name = "diabetes_paper"
+embedding_dim = 768  # mặc định, sẽ cập nhật khi tạo embedding xong
 
-    try:
-        if not text_blocks:
-            return 0.0
+# Giữ chunks text toàn cục để search
+all_chunk_texts: List[str] = []
 
-        # Clean blocks nhưng giữ nguyên structure
-        valid_blocks = []
-        for block in text_blocks:
-            cleaned = block.strip()
-            if cleaned:  # Chỉ giữ blocks có content
-                valid_blocks.append(cleaned)
-            # Skip empty blocks hoàn toàn
 
-        if not valid_blocks:
-            return 0.0
+async def extract_chunk_and_store(pdf_path: str):
+    global embedding_dim, all_chunk_texts
 
-        # Process in batches để tránh overwhelm
-        batch_size = 50
-        all_analyses = []
+    extractor = PdfExtractor(
+        enable_text_cleaning=True,
+        remove_urls=True,
+        remove_page_numbers=True,
+        remove_short_lines=True,
+        remove_newlines=True,
+        remove_references=True,
+        remove_stopwords=False,
+        min_line_length=3,
+        max_block_length=300,
+        max_bbox_distance=50.0,
+        debug_mode=False,
+    )
+    embedding_model = await EmbeddingModel.get_instance()
+    text_extract = await extractor.extract_all_pages_data(pdf_path)
+    blocks: List[TextBlock] = [block for page_data in text_extract for block in page_data.blocks]
 
-        for i in range(0, len(valid_blocks), batch_size):
-            batch = valid_blocks[i : i + batch_size]
-            tasks = [async_analyze_diabetes_content(block) for block in batch]
-            batch_analyses = await asyncio.gather(*tasks, return_exceptions=True)
-            all_analyses.extend(batch_analyses)
+    chunking_config = ChunkingConfig(max_chunk_size=512, min_chunk_size=64, chunk_overlap=200)
+    chunker = Chunking(config=chunking_config, model_name=embedding_model.model_name)
+    chunks = await chunker.chunk_text(blocks)
 
-        # Weighted average calculation
-        total_score = 0.0
-        total_weight = 0.0
-        processed_blocks = 0
-        error_blocks = 0
+    # Lưu chunks ra file json
+    with open("chunks.json", "w", encoding="utf-8") as f:
+        json.dump([asdict(chunk) for chunk in chunks], f, ensure_ascii=False, indent=2)
 
-        for analysis, block in zip(all_analyses, valid_blocks):
-            # Calculate weight (có thể dùng word count hoặc char count)
-            weight = len(block.split())  # hoặc len(block) cho char count
-            total_weight += weight
+    # Tạo embedding
+    embedding_client = Embedding()
+    chunk_texts = [chunk.text for chunk in chunks]
+    embeddings = await embedding_client.embed_documents(chunk_texts)
+    embedding_dim = len(embeddings[0])
+    print(f"Tạo được {len(embeddings)} embeddings, mỗi embedding có độ dài {embedding_dim}")
 
-            if isinstance(analysis, Exception):
-                error_blocks += 1
+    # Lưu vào vector store
+    vector_ops = VectorStoreOperations.get_instance()
+    await vector_ops.create_collection(collection_name, vector_size=embedding_dim)
+    metadatas = [{"chunk_index": i} for i in range(len(chunk_texts))]
+    await vector_ops.store_vectors(
+        texts=chunk_texts,
+        collection_name=collection_name,
+        metadatas=metadatas,
+        vector_size=embedding_dim,
+    )
+    print(f"Đã lưu {len(chunk_texts)} chunks vào collection '{collection_name}'")
+
+    all_chunk_texts = chunk_texts
+
+
+async def search_interactive():
+    vector_ops = VectorStoreOperations.get_instance()
+
+    while True:
+        query = input("\nNhập câu hỏi để tìm kiếm (hoặc gõ 'exit' để thoát): ").strip()
+        if query.lower() in ("exit", "quit"):
+            print("Thoát chức năng tìm kiếm.")
+            break
+        if not query:
+            print("Vui lòng nhập câu hỏi không để trống.")
+            continue
+
+        try:
+            results = await vector_ops.search(
+                query_text=query,
+                collection_names=[collection_name],
+                top_k=5,
+                score_threshold=0.7,
+                vector_size=embedding_dim,
+            )
+            if not results:
+                print("Không tìm thấy kết quả nào.")
             else:
-                processed_blocks += 1
-                total_score += analysis.final_score * weight
-                print(
-                    f"Score={analysis.final_score:.3f}, weight={weight}: {block[:50]}..."
-                )
+                # Gom liền tất cả text, loại bỏ xuống dòng và khoảng trắng thừa trong từng đoạn
+                combined_text = "".join(res.text.replace("\n", " ").strip() for res in results)
 
-        # Handle edge case: all blocks failed
-        if total_weight == 0:
-            return 0.0
-
-        diabetes_score = total_score / total_weight
-
-        return diabetes_score
-
-    except Exception as e:
-        return 0.0
+                print(f"Kết quả tìm kiếm cho: '{query}':\n")
+                print(combined_text)
+        except Exception as e:
+            print(f"Lỗi khi tìm kiếm: {e}")
 
 
 async def main():
-    # manager = GeminiChatManager()
-    # user_id = "user123"
+    while True:
+        print("\n====== MENU ======")
+        print("1. Extract + Chunk + Embed + Store")
+        print("2. Search interactive")
+        print("3. Thoát")
 
-    # manager.set_system_prompt(user_id, "Bạn là trợ lý AI chuyên về y tế.")
-    # message_user = Message(role=Role.USER, content="Xin chào, tui bị trầm cảm!")
-    # message = await manager.chat(user_id, message_user.content)
-    # message_json = messages_to_dicts([message_user, message])
-    # save_to_file(message_json, "chat_history.json")
-    hehe = await _calculate_diabetes_score(
-        [
-            "Bệnh tiểu đường type 2 là bệnh mãn tính. Bệnh nhân có triệu chứng khát nước và đi tiểu nhiều.",
-            "Diabetes mellitus affects glucose metabolism. Treatment includes insulin therapy.",
-            "Hôm nay trời đẹp, tôi đi chơi công viên với bạn bè.",
-            "The patient presented with elevated HbA1c levels.",
-            "Biến chứng tiểu đường có thể ảnh hưởng nghiêm trọng đến sức khỏe.",
-        ]
-    )
-    print(hehe)
+        choice = input("Chọn số (1-3): ").strip()
+        if choice == "1":
+            pdf_path = input("Nhập đường dẫn file PDF (ví dụ C:/Users/.../text.pdf): ").strip()
+            if pdf_path:
+                await extract_chunk_and_store(pdf_path)
+            else:
+                print("Đường dẫn không hợp lệ.")
+        elif choice == "2":
+            await search_interactive()
+        elif choice == "3":
+            print("Kết thúc chương trình.")
+            break
+        else:
+            print("Lựa chọn không hợp lệ. Vui lòng chọn lại.")
 
 
 if __name__ == "__main__":

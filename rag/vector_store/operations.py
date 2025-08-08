@@ -138,7 +138,7 @@ class VectorStoreOperations:
         collection_names: Optional[List[str]] = None,
         top_k: int = 5,
         vector_size: int = 768,
-        score_threshold: float = 0.5,  # Thay thế min_score bằng score_threshold
+        score_threshold: float = 0.5,
         filter: Optional[Dict[str, Any]] = None,
     ) -> List[SearchResult]:
         """

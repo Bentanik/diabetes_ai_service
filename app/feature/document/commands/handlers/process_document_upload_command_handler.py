@@ -454,27 +454,19 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
 
         except Exception as e:
             self.logger.error(f"Lỗi lưu document parser results: {e}")
-
     async def _calculate_diabetes_score(self, text_blocks: List[str]) -> float:
         """
-        Tính điểm diabetes - weighted average toàn bộ document
+        Tính điểm diabetes dựa trên semantic scorer - weighted average toàn bộ document
         """
         try:
             if not text_blocks:
                 return 0.0
 
             # Clean blocks nhưng giữ nguyên structure
-            valid_blocks = []
-            for block in text_blocks:
-                cleaned = block.strip()
-                if cleaned:  # Chỉ giữ blocks có content
-                    valid_blocks.append(cleaned)
-                # Skip empty blocks hoàn toàn
-
+            valid_blocks = [b.strip() for b in text_blocks if b.strip()]
             if not valid_blocks:
                 return 0.0
 
-            # Process in batches để tránh overwhelm
             batch_size = 50
             all_analyses = []
 
@@ -484,27 +476,23 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 batch_analyses = await asyncio.gather(*tasks, return_exceptions=True)
                 all_analyses.extend(batch_analyses)
 
-            # Weighted average calculation
             total_score = 0.0
             total_weight = 0.0
             processed_blocks = 0
             error_blocks = 0
 
             for analysis, block in zip(all_analyses, valid_blocks):
-                # Calculate weight (có thể dùng word count hoặc char count)
                 weight = len(block.split())  # hoặc len(block) cho char count
                 total_weight += weight
 
                 if isinstance(analysis, Exception):
                     error_blocks += 1
                     self.logger.warning(f"Error analyzing block: {analysis}")
-                    # Gán score = 0 cho error blocks
-                    # total_score += 0 (không cộng gì)
                 else:
-                    total_score += analysis.final_score * weight
+                    # Chỉ lấy semantic_score
+                    total_score += analysis.semantic_score * weight
                     processed_blocks += 1
 
-            # Handle edge case: all blocks failed
             if total_weight == 0:
                 self.logger.warning("All blocks have zero weight")
                 return 0.0
@@ -512,7 +500,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             diabetes_score = total_score / total_weight
 
             self.logger.info(
-                f"Diabetes score: {diabetes_score:.3f} "
+                f"Diabetes score (semantic): {diabetes_score:.3f} "
                 f"({processed_blocks}/{len(valid_blocks)} blocks processed, "
                 f"{error_blocks} errors)"
             )
