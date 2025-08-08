@@ -298,46 +298,41 @@ class DiabetesScorer:
         semantic_task = self._semantic_score(text)
         keyword_task = asyncio.to_thread(self._keyword_score, text)
         semantic, keyword = await asyncio.gather(semantic_task, keyword_task)
-        if keyword > 0.7 and semantic > 0.3:
-            combined = semantic * 0.4 + keyword * 0.6
-        elif keyword > 0.3 and semantic > 0.2:
-            combined = semantic * 0.6 + keyword * 0.4
-        else:
-            if keyword == 0.0 and semantic > 0.5:
-                combined = semantic * 0.3
-            else:
-                combined = semantic * 0.7 + keyword * 0.3
-        word_count = len(text.split())
-        if word_count < 5:
-            combined *= 0.9
-        elif word_count > 50:
-            combined *= 1.02
-        return round(max(0.0, min(1.0, combined)), 3)
 
-    def calculate_diabetes_score_sync(self, text: str) -> float:
-        if not text.strip():
-            return 0.0
-        if not self._initialized:
-            raise RuntimeError(
-                "DiabetesScorer chưa được khởi tạo. Hãy dùng async version."
-            )
-        semantic = asyncio.run(self._semantic_score(text))
-        keyword = self._keyword_score(text)
-        if keyword > 0.7 and semantic > 0.3:
-            combined = semantic * 0.4 + keyword * 0.6
-        elif keyword > 0.3 and semantic > 0.2:
-            combined = semantic * 0.6 + keyword * 0.4
-        else:
-            if keyword == 0.0 and semantic > 0.5:
-                combined = semantic * 0.3
-            else:
-                combined = semantic * 0.7 + keyword * 0.3
         word_count = len(text.split())
-        if word_count < 5:
-            combined *= 0.9
-        elif word_count > 50:
-            combined *= 1.02
-        return round(max(0.0, min(1.0, combined)), 3)
+
+        weight_sem = 0.7
+        weight_key = 0.3
+
+        # Bonus cho câu cả semantic và keyword tốt
+        if semantic > 0.7 and keyword > 0.3:
+            bonus = 1.12
+        elif semantic > 0.5 and keyword > 0.2:
+            bonus = 1.05
+        else:
+            bonus = 1.0
+
+        # Penalty cực mạnh cho câu không liên quan
+        if keyword < 0.1 and semantic < 0.7:
+            penalty = 0.13
+        elif keyword < 0.15 and semantic < 0.6:
+            penalty = 0.25
+        elif keyword < 0.2 and semantic < 0.4:
+            penalty = 0.18
+        else:
+            penalty = 1.0
+
+        final_score = (semantic * weight_sem + keyword * weight_key) * bonus * penalty
+
+        # Phạt câu quá ngắn
+        if word_count < 7:
+            final_score *= 0.85
+
+        # Phạt câu dài mà ít keyword
+        if word_count > 15 and keyword < 0.3:
+            final_score *= 0.8
+
+        return round(max(0.0, min(1.0, final_score)), 3)
 
     async def get_detailed_analysis(self, text: str) -> DiabetesAnalysisResult:
         if not text.strip():
@@ -440,13 +435,6 @@ async def async_analyze_diabetes_content_dict(
     return await scorer.get_detailed_analysis_dict(text)
 
 
-def score_diabetes_content_with_embedding(
-    text: str, data_dir: str = "shared", model_dir: str = "model"
-) -> float:
-    scorer = asyncio.run(get_scorer(data_dir, model_dir))
-    return scorer.calculate_diabetes_score_sync(text)
-
-
 def analyze_diabetes_content(
     text: str, data_dir: str = "shared", model_dir: str = "model"
 ) -> DiabetesAnalysisResult:
@@ -470,7 +458,7 @@ if __name__ == "__main__":
     test_texts = [
         "Bệnh tiểu đường type 2 là bệnh mãn tính. Bệnh nhân có triệu chứng khát nước và đi tiểu nhiều.",
         "Diabetes mellitus affects glucose metabolism. Treatment includes insulin therapy.",
-        "Hôm nay trời đẹp, tôi đi chơi công viên với bạn bè.",
+        "Hôm nay trời đẹp, tôi đi chơi công viên với bạn bè. và gặp bạn bè tiểu đường",
         "The patient presented with elevated HbA1c levels.",
         "Biến chứng tiểu đường có thể ảnh hưởng nghiêm trọng đến sức khỏe.",
     ]
@@ -484,7 +472,7 @@ if __name__ == "__main__":
             analysis = await scorer.get_detailed_analysis(text)
             # print(f"Score: {analysis.final_score} ({analysis.relevance_level})")
             print(
-                f"Semantic: {analysis.semantic_score}, Keyword: {analysis.keyword_score}"
+                f"Semantic: {analysis.final_score}, Keyword: {analysis.keyword_score}"
             )
             # print(f"Object: {analysis}")
 

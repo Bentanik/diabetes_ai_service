@@ -36,9 +36,13 @@ async def extract_chunk_and_store(pdf_path: str):
     )
     embedding_model = await EmbeddingModel.get_instance()
     text_extract = await extractor.extract_all_pages_data(pdf_path)
-    blocks: List[TextBlock] = [block for page_data in text_extract for block in page_data.blocks]
+    blocks: List[TextBlock] = [
+        block for page_data in text_extract for block in page_data.blocks
+    ]
 
-    chunking_config = ChunkingConfig(max_chunk_size=512, min_chunk_size=64, chunk_overlap=200)
+    chunking_config = ChunkingConfig(
+        max_chunk_size=512, min_chunk_size=64, chunk_overlap=200
+    )
     chunker = Chunking(config=chunking_config, model_name=embedding_model.model_name)
     chunks = await chunker.chunk_text(blocks)
 
@@ -51,7 +55,9 @@ async def extract_chunk_and_store(pdf_path: str):
     chunk_texts = [chunk.text for chunk in chunks]
     embeddings = await embedding_client.embed_documents(chunk_texts)
     embedding_dim = len(embeddings[0])
-    print(f"Tạo được {len(embeddings)} embeddings, mỗi embedding có độ dài {embedding_dim}")
+    print(
+        f"Tạo được {len(embeddings)} embeddings, mỗi embedding có độ dài {embedding_dim}"
+    )
 
     # Lưu vào vector store
     vector_ops = VectorStoreOperations.get_instance()
@@ -92,7 +98,9 @@ async def search_interactive():
                 print("Không tìm thấy kết quả nào.")
             else:
                 # Gom liền tất cả text, loại bỏ xuống dòng và khoảng trắng thừa trong từng đoạn
-                combined_text = "".join(res.text.replace("\n", " ").strip() for res in results)
+                combined_text = "".join(
+                    res.text.replace("\n", " ").strip() for res in results
+                )
 
                 print(f"Kết quả tìm kiếm cho: '{query}':\n")
                 print(combined_text)
@@ -109,7 +117,9 @@ async def main():
 
         choice = input("Chọn số (1-3): ").strip()
         if choice == "1":
-            pdf_path = input("Nhập đường dẫn file PDF (ví dụ C:/Users/.../text.pdf): ").strip()
+            pdf_path = input(
+                "Nhập đường dẫn file PDF (ví dụ C:/Users/.../text.pdf): "
+            ).strip()
             if pdf_path:
                 await extract_chunk_and_store(pdf_path)
             else:

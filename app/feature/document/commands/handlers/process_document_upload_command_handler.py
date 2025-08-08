@@ -8,7 +8,6 @@ import asyncio
 import os
 import tempfile
 from typing import List
-from bson import ObjectId
 from app.database import get_collections
 from app.database.enums import DocumentJobStatus, DocumentType, LanguageType
 from app.database.models import (
@@ -22,6 +21,9 @@ from core.cqrs import CommandHandler, CommandRegistry
 from rag.schemas.common.language_info import LanguageInfo
 from shared.messages import DocumentResult
 from rag.document_parser import PdfExtractor
+from bson import ObjectId
+
+from utils.diabetes_scorer_utils import get_scorer_async
 
 from ..process_document_upload_command import ProcessDocumentUploadCommand
 
@@ -454,25 +456,30 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
 
         except Exception as e:
             self.logger.error(f"Lỗi lưu document parser results: {e}")
+
     async def _calculate_diabetes_score(self, text_blocks: List[str]) -> float:
         """
         Tính điểm diabetes dựa trên semantic scorer - weighted average toàn bộ document
         """
         try:
             if not text_blocks:
+                self.logger.warning("Input text_blocks is empty")
                 return 0.0
 
-            # Clean blocks nhưng giữ nguyên structure
+            # Làm sạch text, loại bỏ block rỗng
             valid_blocks = [b.strip() for b in text_blocks if b.strip()]
             if not valid_blocks:
+                self.logger.warning("All text_blocks are empty after stripping")
                 return 0.0
+
+            scorer = await get_scorer_async()
 
             batch_size = 50
             all_analyses = []
 
             for i in range(0, len(valid_blocks), batch_size):
                 batch = valid_blocks[i : i + batch_size]
-                tasks = [self._analyze_diabetes_content(block) for block in batch]
+                tasks = [scorer.get_detailed_analysis(block) for block in batch]
                 batch_analyses = await asyncio.gather(*tasks, return_exceptions=True)
                 all_analyses.extend(batch_analyses)
 
@@ -481,20 +488,37 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             processed_blocks = 0
             error_blocks = 0
 
-            for analysis, block in zip(all_analyses, valid_blocks):
-                weight = len(block.split())  # hoặc len(block) cho char count
+            for i, (analysis, block) in enumerate(zip(all_analyses, valid_blocks), 1):
+                weight = len(block.split())
                 total_weight += weight
 
                 if isinstance(analysis, Exception):
                     error_blocks += 1
-                    self.logger.warning(f"Error analyzing block: {analysis}")
-                else:
-                    # Chỉ lấy semantic_score
-                    total_score += analysis.semantic_score * weight
-                    processed_blocks += 1
+                    self.logger.warning(
+                        f"[Block {i}] Error analyzing block: {analysis}"
+                    )
+                    continue
+
+                semantic_score = getattr(analysis, "semantic_score", None)
+                if semantic_score is None:
+                    error_blocks += 1
+                    self.logger.warning(
+                        f"[Block {i}] Missing semantic_score in analysis: {analysis}"
+                    )
+                    continue
+
+                if not isinstance(semantic_score, (int, float)):
+                    error_blocks += 1
+                    self.logger.warning(
+                        f"[Block {i}] Invalid semantic_score type: {semantic_score}"
+                    )
+                    continue
+
+                total_score += semantic_score * weight
+                processed_blocks += 1
 
             if total_weight == 0:
-                self.logger.warning("All blocks have zero weight")
+                self.logger.warning("Total weight is zero, cannot compute score")
                 return 0.0
 
             diabetes_score = total_score / total_weight
@@ -508,7 +532,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             return diabetes_score
 
         except Exception as e:
-            self.logger.error(f"Lỗi calculate diabetes score: {e}")
+            self.logger.error(f"Lỗi calculate diabetes score: {e}", exc_info=True)
             return 0.0
 
     async def _update_document_job(
