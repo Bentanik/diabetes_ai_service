@@ -77,11 +77,14 @@ class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeModelDTO
                 knowledge_dtos.append(knowledge_dto)
 
             # Tạo đối tượng phân trang
+
+            total_pages = (total + query.limit - 1) // query.limit
             pagination = Pagination(
                 items=knowledge_dtos,
                 total=total,
                 page=query.page,
                 limit=query.limit,
+                total_pages=total_pages,
             )
 
             # Trả về kết quả thành công

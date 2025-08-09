@@ -12,6 +12,7 @@ from app.database import DBCollections
 from app.database.enums import DocumentJobStatus, DocumentJobType
 from app.database.manager import get_collections
 from app.database.models import DocumentJobModel
+from app.database.value_objects.document_job_file import DocumentJobFile
 from app.database.value_objects.processing_status import ProcessingStatus
 from app.storage import MinioManager
 
@@ -107,15 +108,24 @@ class CreateDocumentCommandHandler(CommandHandler):
             progress_message="Đang tạo tài liệu",
         )
 
+        document_job_file = DocumentJobFile(
+            path=file_path,
+            size_bytes=0,
+            file_name=command.file.filename,
+            file_type=command.file.content_type,
+        )
+
         document_job_model = DocumentJobModel(
             document_id=document_id,
             knowledge_id=command.knowledge_id,
             title=command.title,
             description=command.description,
-            file_path=file_path,
+            file=document_job_file,
             status=processing_status,
             type=DocumentJobType.UPLOAD,
             priority_diabetes=0,
+            is_document_delete=False,
+            is_document_duplicate=False,
         )
         await db.document_jobs.insert_one(document_job_model.to_dict())
 

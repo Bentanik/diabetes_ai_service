@@ -2,6 +2,7 @@ from app.database import get_collections, DBCollections
 from app.database.enums import DocumentJobStatus, DocumentJobType
 from app.database.models import DocumentJobModel, DocumentModel
 from app.database.value_objects import ProcessingStatus
+from app.database.value_objects.document_job_file import DocumentJobFile
 from app.worker.tasks import DocumentJob, add_document_job
 from core.cqrs import CommandHandler, CommandRegistry
 from core.result import Result
@@ -87,7 +88,16 @@ class AddTrainingDocumentCommandHandler(CommandHandler):
             knowledge_id=document.knowledge_id,
             title=document.title,
             description=document.description,
-            file_path=document.file.path,
+            file=DocumentJobFile(
+                path=document.file.path,
+                size_bytes=(
+                    document.file.size_bytes
+                    if hasattr(document.file, "size_bytes")
+                    else 0
+                ),
+                file_name=document.title,
+                file_type="application/pdf",
+            ),
             status=processing_status,
             type=DocumentJobType.TRAINING,
             priority_diabetes=document.priority_diabetes,

@@ -91,6 +91,7 @@ class GetDocumentsQueryHandler(
                 total=total_count,
                 page=query.page,
                 limit=query.limit,
+                total_pages=total_pages,
             )
 
             return Result.success(

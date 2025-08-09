@@ -19,22 +19,14 @@ class Pagination(BaseModel, Generic[T]):
         total (int): Tổng số item có trong toàn bộ dữ liệu
         page (int): Số trang hiện tại
         limit (int): Số item tối đa trên mỗi trang
+        total_pages (int): Tổng số trang
     """
 
     items: List[T] = Field(default_factory=list)
     total: int
     page: int
     limit: int
-
-    @property
-    def total_pages(self) -> int:
-        """
-        Tính toán tổng số trang dựa trên tổng số item và giới hạn mỗi trang
-
-        Returns:
-            int: Tổng số trang, được làm tròn lên
-        """
-        return (self.total + self.limit - 1) // self.limit
+    total_pages: int
 
     class Config:
         arbitrary_types_allowed = True

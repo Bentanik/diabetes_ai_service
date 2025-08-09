@@ -72,6 +72,15 @@ class DeleteDocumentCommandHandler(CommandHandler):
                 {"_id": ObjectId(command.id)}
             )
 
+            # Xóa tài liệu làm sạch
+            await collections.document_parsers.delete_many({"document_id": command.id})
+
+            # Chuyển bên job document sang is delete
+            await collections.document_jobs.update_one(
+                {"document_id": command.id},
+                {"$set": {"is_document_delete": True}},
+            )
+
             if result.deleted_count > 0:
                 # Cập nhật thống kê của knowledge
                 await self._update_knowledge_stats(

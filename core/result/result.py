@@ -160,11 +160,9 @@ class Result(BaseModel, Generic[T]):
 
         content = {
             "isSuccess": True,
-            "value": {
-                "code": self.code,
-                "message": self.message,
-                "data": serialized_data,
-            },
+            "code": self.code,
+            "message": self.message,
+            "data": serialized_data,
         }
 
         return JSONResponse(status_code=http_status, content=content)

@@ -100,7 +100,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 progress_message="Đang tải tài liệu về",
             )
             temp_dir, temp_path = await self._download_file_to_temp(
-                document_job.file_path
+                document_job.file.path
             )
 
             # Tính hash và kiểm tra trùng lặp
@@ -127,6 +127,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                     command.document_job_id,
                     status=DocumentJobStatus.FAILED,
                     progress_message=f"Tài liệu trùng lặp với: {duplicate_check['title']}",
+                    is_document_duplicate=True,
                 )
                 return Result.failure(
                     message=DocumentResult.DUPLICATE.message,
@@ -177,7 +178,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 type=DocumentType.UPLOAD,
                 priority_diabetes=diabetes_score,
                 file=DocumentFile(
-                    path=document_job.file_path,
+                    path=document_job.file.path,
                     size_bytes=file_size,
                     hash=file_hash,
                 ),
@@ -192,6 +193,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 command.document_job_id,
                 status=DocumentJobStatus.PROCESSING,
                 progress=90,
+                file_size_bytes=file_size,
                 progress_message="Đang lưu kết quả phân tích nội dung",
             )
 
@@ -529,24 +531,35 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         status: DocumentJobStatus = None,
         progress: float = None,
         progress_message: str = None,
+        file_size_bytes: int = None,
         priority_diabetes: float = None,
+        is_document_delete: bool = None,
+        is_document_duplicate: bool = None,
     ) -> None:
+        # Sử dụng dot-notation để cập nhật nested fields, tránh overwrite toàn bộ object
+        set_fields = {}
 
-        update_fields = {
-            k: v
-            for k, v in {
-                "status": status,
-                "progress": progress,
-                "progress_message": progress_message,
-                "priority_diabetes": priority_diabetes,
-            }.items()
-            if v is not None
-        }
+        if status is not None:
+            set_fields["status.status"] = status
+        if progress is not None:
+            set_fields["status.progress"] = progress
+        if progress_message is not None:
+            set_fields["status.progress_message"] = progress_message
 
-        if update_fields:
+        if file_size_bytes is not None:
+            set_fields["file.file_size_bytes"] = file_size_bytes
+
+        if priority_diabetes is not None:
+            set_fields["priority_diabetes"] = priority_diabetes
+        if is_document_delete is not None:
+            set_fields["is_document_delete"] = is_document_delete
+        if is_document_duplicate is not None:
+            set_fields["is_document_duplicate"] = is_document_duplicate
+
+        if set_fields:
             await self.collections.document_jobs.update_one(
                 {"_id": ObjectId(document_job_id)},
-                {"$set": update_fields},
+                {"$set": set_fields},
             )
 
     async def _download_file_to_temp(self, file_path: str) -> tuple[str, str]:
