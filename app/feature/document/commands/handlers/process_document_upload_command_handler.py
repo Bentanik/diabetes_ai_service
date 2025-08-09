@@ -181,6 +181,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                     path=document_job.file.path,
                     size_bytes=file_size,
                     hash=file_hash,
+                    file_type=document_job.file.file_type,
                 ),
             )
 
@@ -392,24 +393,13 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                             )
 
                             # Tạo LanguageInfo
-                            language_info = LanguageInfo(
-                                language=(
-                                    block.metadata.language_info
-                                    if hasattr(block.metadata, "language")
-                                    else LanguageType.UNKNOWN
-                                ),
-                                vietnamese_ratio=(
-                                    block.metadata.vietnamese_ratio
-                                    if hasattr(block.metadata, "vietnamese_ratio")
-                                    else 0.0
-                                ),
-                                confidence=(
-                                    block.metadata.confidence
-                                    if hasattr(block.metadata, "confidence")
-                                    else 0.0
-                                ),
-                            )
+                            li = getattr(block.metadata, "language_info", None)
 
+                            language_info = LanguageInfo(
+                                language=getattr(li, "language", LanguageType.UNKNOWN),
+                                vietnamese_ratio=getattr(li, "vietnamese_ratio", 0.0),
+                                confidence=getattr(li, "confidence", 0.0),
+                            )
                             # Tạo DocumentParserModel
                             parser_model = DocumentParserModel(
                                 document_id=document_id,

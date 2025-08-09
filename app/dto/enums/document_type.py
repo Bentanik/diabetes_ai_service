@@ -15,5 +15,6 @@ class DocumentType(str, Enum):
         UPLOAD: Tài liệu được upload bởi người dùng
         TRAINING: Tài liệu dùng để training
     """
+
     UPLOAD = "upload_document"
-    TRAINING = "training_document" 
+    TRAINING = "training_document"

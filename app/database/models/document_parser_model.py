@@ -41,7 +41,12 @@ class DocumentParserModel(BaseModel):
         self.content = content
         self.location = location
         self.is_active = is_active
-        self.language_info = language_info
+
+        self.language_info = language_info or LanguageInfo(
+            language=LanguageType.UNKNOWN,
+            vietnamese_ratio=0.0,
+            confidence=0.0,
+        )
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "DocumentParserModel":

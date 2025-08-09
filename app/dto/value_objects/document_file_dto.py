@@ -20,9 +20,11 @@ class DocumentFileDTO(BaseModel):
         size_bytes (int): Kích thước file tính bằng bytes
         hash (Optional[str]): Hash của file để kiểm tra trùng lặp
     """
+
     path: str = Field("", description="Đường dẫn đến file")
     size_bytes: int = Field(0, ge=0, description="Kích thước file (bytes)")
     hash: Optional[str] = Field(None, description="Hash của file")
+    file_type: Optional[str] = Field(None, description="Loại file")
 
     @classmethod
     def from_value_object(cls, value_object: DocumentFile) -> "DocumentFileDTO":
@@ -30,7 +32,8 @@ class DocumentFileDTO(BaseModel):
         return cls(
             path=value_object.path,
             size_bytes=value_object.size_bytes,
-            hash=value_object.hash
+            hash=value_object.hash,
+            file_type=value_object.file_type,
         )
 
     def to_value_object(self) -> DocumentFile:
@@ -38,5 +41,6 @@ class DocumentFileDTO(BaseModel):
         return DocumentFile(
             path=self.path,
             size_bytes=self.size_bytes,
-            hash=self.hash
-        ) 
+            hash=self.hash,
+            file_type=self.file_type,
+        )

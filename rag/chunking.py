@@ -128,7 +128,7 @@ class Chunking:
             return []
 
         text = self._safe_truncate_by_chars(text, self.config.max_chunk_size)
-
+        block_id = block.block_id
         content_type = getattr(block.metadata, "block_type", "paragraph")
         if content_type == "paragraph" and any(
             text.startswith(s) for s in ["-", "*", "+"]
@@ -143,7 +143,7 @@ class Chunking:
             "list",
         ]:
             metadata = PDFChunkMetadata(block_metadata=block.metadata)
-            return [Chunk(text=text, metadata=metadata)]
+            return [Chunk(text=text, metadata=metadata, block_id=block_id)]
 
         lang_info = ensure_language_info(getattr(block.metadata, "language_info", None))
         language = lang_info.language if lang_info else LanguageType.UNKNOWN
@@ -193,7 +193,9 @@ class Chunking:
             else:
                 if current_text and current_tokens >= self.config.min_chunk_size:
                     metadata = PDFChunkMetadata(block_metadata=block.metadata)
-                    merged_chunks.append(Chunk(text=current_text, metadata=metadata))
+                    merged_chunks.append(
+                        Chunk(text=current_text, metadata=metadata, block_id=block_id)
+                    )
                 current_text = chunk
                 current_tokens = chunk_tokens
 
@@ -209,7 +211,9 @@ class Chunking:
                     merged_chunks[-1].text = last_chunk_text
             else:
                 metadata = PDFChunkMetadata(block_metadata=block.metadata)
-                merged_chunks.append(Chunk(text=current_text, metadata=metadata))
+                merged_chunks.append(
+                    Chunk(text=current_text, metadata=metadata, block_id=block_id)
+                )
 
         return merged_chunks
 

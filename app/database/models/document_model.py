@@ -71,6 +71,7 @@ class DocumentModel(BaseModel):
             path=data.pop("file_path", ""),
             size_bytes=data.pop("file_size_bytes", 0),
             hash=data.pop("file_hash", None),
+            file_type=data.pop("file_type", None),
         )
 
         return cls(

@@ -78,7 +78,7 @@ class AddTrainingDocumentCommandHandler(CommandHandler):
     async def _enqueue_document_job(self, db: DBCollections, document: DocumentModel):
         # Tạo DocumentJobModel để lưu vào DB
         processing_status = ProcessingStatus(
-            status=DocumentJobStatus.PENDING,
+            status=DocumentJobStatus.PROCESSING,
             progress=10,
             progress_message="Đang tạo tài liệu",
         )

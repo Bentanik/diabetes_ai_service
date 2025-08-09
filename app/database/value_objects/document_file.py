@@ -23,6 +23,7 @@ class DocumentFile:
     path: str = ""
     size_bytes: int = 0
     hash: Optional[str] = None
+    file_type: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Chuyển đổi sang dictionary cho MongoDB"""
@@ -30,4 +31,5 @@ class DocumentFile:
             "file_path": self.path,
             "file_size_bytes": self.size_bytes,
             "file_hash": self.hash,
+            "file_type": self.file_type,
         }

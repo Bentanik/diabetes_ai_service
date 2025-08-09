@@ -4,6 +4,7 @@ from app.database.models import DocumentJobModel
 from app.database.enums import DocumentJobStatus
 from app.database import get_collections
 from app.database.models import DocumentParserModel
+from app.dto.enums.document_type import DocumentType
 from core.cqrs import CommandHandler, CommandRegistry
 from core.embedding.embedding_model import EmbeddingModel
 from core.result import Result
@@ -111,6 +112,7 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
             text_blocks = [
                 TextBlock(
                     context=parser["content"],
+                    block_id=str(parser["_id"]),
                 )
                 for parser in document_parsers
             ]
@@ -133,11 +135,12 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
                 progress_message="Hệ thống đang ghi nhớ nội dung tài liệu...",
             )
 
-            # 4. Lưu vào vector database (Qdrant)
             texts = [chunk.text for chunk in chunks]
             metadatas = [
                 {
                     "is_active": True,
+                    "document_id": document_job.document_id,
+                    "document_parser_id": chunk.block_id,
                 }
                 for chunk in chunks
             ]
@@ -149,9 +152,14 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
                 metadatas=metadatas,
             )
 
+            await self.collections.documents.update_one(
+                {"_id": ObjectId(document_job.document_id)},
+                {"$set": {"type": DocumentType.TRAINING}},
+            )
+
             await self._update_document_job(
                 document_job_id=command.document_job_id,
-                status=DocumentJobStatus.PROCESSING,
+                status=DocumentJobStatus.COMPLETED,
                 progress=100,
                 progress_message="Hệ thống đã ghi nhớ nội dung tài liệu xong",
             )
@@ -167,6 +175,11 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
 
         except Exception as e:
             self.logger.error(f"Lỗi xử lý tài liệu huấn luyện: {e}", exc_info=True)
+            await self._update_document_job(
+                document_job_id=command.document_job_id,
+                status=DocumentJobStatus.FAILED,
+                progress_message=f"Lỗi: {str(e)}",
+            )
             return Result.failure(
                 message=DocumentResult.TRAINING_FAILED.message,
                 code=DocumentResult.TRAINING_FAILED.code,
@@ -180,18 +193,17 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
         progress_message: str = None,
     ) -> None:
 
-        update_fields = {
-            k: v
-            for k, v in {
-                "status": status,
-                "progress": progress,
-                "progress_message": progress_message,
-            }.items()
-            if v is not None
-        }
+        # Update nested status fields giống upload handler
+        set_fields = {}
+        if status is not None:
+            set_fields["status.status"] = status
+        if progress is not None:
+            set_fields["status.progress"] = progress
+        if progress_message is not None:
+            set_fields["status.progress_message"] = progress_message
 
-        if update_fields:
+        if set_fields:
             await self.collections.document_jobs.update_one(
                 {"_id": ObjectId(document_job_id)},
-                {"$set": update_fields},
+                {"$set": set_fields},
             )

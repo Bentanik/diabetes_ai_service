@@ -13,6 +13,7 @@ File này cung cấp các REST API endpoints để thực hiện các thao tác 
 
 import urllib
 from typing import cast
+import mimetypes
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from app.feature.document import (
@@ -244,25 +245,9 @@ async def download_document(
         64 * 1024, ge=8192, le=1024 * 1024, description="Kích thước chunk"
     ),
 ):
-    """
-    Endpoint tải file tài liệu.
-
-    Args:
-        document_id (str): ID của tài liệu cần tải
-        request (Request): HTTP request object
-        compress (bool): Có nén file không
-        compression_type (str): Loại nén
-        chunk_size (int): Kích thước chunk để streaming
-
-    Returns:
-        StreamingResponse: File stream
-
-    Raises:
-        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
-    """
     logger.info(f"Tải tài liệu: {document_id}")
     try:
-        # Sử dụng Mediator để lấy thông tin document
+        # Lấy thông tin document
         query = GetDocumentQuery(id=document_id)
         result = await Mediator.send(query)
 
@@ -271,7 +256,7 @@ async def download_document(
 
         document_dto = cast(DocumentModelDTO, result.data)
 
-        # Parse file path từ storage
+        # Parse file path
         file_path_parts = document_dto.file.path.split("/", 1)
         bucket_name = file_path_parts[0]
         object_name = file_path_parts[1] if len(file_path_parts) > 1 else ""
@@ -284,13 +269,22 @@ async def download_document(
         filename = document_dto.title or stream_info["filename"]
         file_size = stream_info["size"]
 
-        # Xử lý compression nếu cần
+        # Nếu filename không có phần mở rộng, lấy từ stream_info["filename"]
+        if "." not in filename and "." in stream_info["filename"]:
+            filename = stream_info["filename"]
+
+        # Xác định MIME type
+        mime_type, _ = mimetypes.guess_type(filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        # Compression
         compression_method = None
         if compress and should_compress(filename, file_size):
             accept_encoding = request.headers.get("Accept-Encoding", "")
             compression_method = get_best_compression(accept_encoding, compression_type)
 
-        # Chuẩn bị headers và stream
+        # Headers
         if compression_method:
             processed_stream = compress_stream(
                 stream_info["stream"], compression_method
@@ -310,7 +304,7 @@ async def download_document(
 
         headers.update(
             {
-                "Content-Type": "application/octet-stream",
+                "Content-Type": mime_type,
                 "Cache-Control": "public, max-age=3600",
             }
         )
