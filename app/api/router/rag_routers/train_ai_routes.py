@@ -41,7 +41,7 @@ async def add_training_document(req: AddTrainingDocumentCommand) -> JSONResponse
 
 
 @router.get(
-    "get-retrieved-context",
+    "/get-retrieved-context",
     response_model=None,
     summary="Lấy context từ vector database",
     description="Lấy context từ vector database.",

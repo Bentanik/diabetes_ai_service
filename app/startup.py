@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from app.database import initialize_database, close_mongodb_connection
+from app.database.manager import get_collections
+from app.database.models.setting_model import SettingModel
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
@@ -49,9 +51,13 @@ async def lifespan(app: FastAPI):
         available_collections = vector_store_operations.get_available_collections()
         logger.info(f"Đã khởi tạo Qdrant với các collection: {available_collections}")
 
+        await init_setting()
+
         logger.info("Tất cả hệ thống đã sẵn sàng!")
 
         yield  # Ứng dụng đang chạy
+
+        # Khởi tạo cài đặt
 
     except Exception as e:
         logger.error(f"Lỗi khởi động: {e}")
@@ -62,3 +68,18 @@ async def lifespan(app: FastAPI):
         await worker_stop_all()
         await close_mongodb_connection()
         logger.info("Hoàn tất!")
+
+
+async def init_setting():
+    collections = get_collections()
+    if await collections.settings.count_documents({}) > 0:
+        return
+
+    setting_model = SettingModel(
+        number_of_passages=5,
+        search_accuracy=70,
+        list_knowledge_id=[],
+    )
+    await collections.settings.find_one_and_update(
+        {}, {"$set": setting_model.to_dict()}, upsert=True
+    )
