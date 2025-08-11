@@ -231,7 +231,12 @@ class CreateChatCommandHandler(CommandHandler):
                 )
                 await self.db.chat_sessions.insert_one(session.to_dict())
                 return str(session.id)
-
+            await self.db.chat_sessions.update_one(
+                {"_id": ObjectId(command.session_id)},
+                {"$set": {
+                    "updated_at": command.updated_at,
+                }}
+            )
             return command.session_id
 
         except Exception as e:

@@ -75,3 +75,35 @@ async def get_chat_histories(
     except Exception as e:
         logger.error(f"Lỗi khi lấy lịch sử cuộc trò chuyện: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/delete-chat-admin", 
+    response_model=None,
+    summary="Xóa cuộc trò chuyện của Admin",
+    description="Xóa cuộc trò chuyện của Admin.",
+)
+async def delete_chat_admin(user_id: str = Query(..., description="ID của người dùng")) -> JSONResponse:
+    """
+    Endpoint xóa cuộc trò chuyện của Admin.
+
+    Args:
+        user_id (str): ID của người dùng
+
+    Returns:
+        JSONResponse
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
+
+    logger.info(f"Xóa cuộc trò chuyện của Admin: {user_id}")
+    from app.database.manager import get_collections
+    
+    try:
+        collection = get_collections()
+        result = await collection.chat_histories.delete_many({"user_id": user_id})
+        return JSONResponse(
+            content={"message": f"Đã xóa {result.deleted_count} cuộc trò chuyện của Admin."},
+            status_code=200
+        )
+    except Exception as e:
+        logger.error(f"Lỗi khi xóa cuộc trò chuyện của Admin: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
