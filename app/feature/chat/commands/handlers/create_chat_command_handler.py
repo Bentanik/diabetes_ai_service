@@ -7,7 +7,6 @@ trò chuyện với AI sử dụng RAG (Retrieval-Augmented Generation).
 
 from typing import List
 from bson import ObjectId
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from app.database.enums import ChatRoleType
 from app.database.models import ChatHistoryModel
 from core.cqrs import CommandHandler

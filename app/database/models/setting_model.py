@@ -5,7 +5,7 @@ File này định nghĩa SettingModel để lưu trữ và quản lý thông tin
 về các cài đặt trong hệ thống.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from app.database.models import BaseModel
 
@@ -15,21 +15,35 @@ class SettingModel(BaseModel):
     Model quản lý cài đặt
 
     Attributes:
-        number_of_passages (str): Số lượng câu trong mỗi passage
-        search_accuracy (str): Độ chính xác của tìm kiếm
-        list_collection_name (list): Danh sách collection id
+        top_k (int): Số lượng câu trong mỗi passage
+        search_accuracy (float): Độ chính xác của tìm kiếm
+        temperature (float): Temperature của LLM
+        max_tokens (int): Số lượng token tối đa
+        system_prompt (str): System prompt của LLM
+        context_prompt (str): Context prompt của LLM
+        list_knowledge_ids (list): Danh sách knowledge id
     """
 
     def __init__(
         self,
-        number_of_passages: str,
-        search_accuracy: Optional[str] = "",
+        top_k: int,
+        search_accuracy: str,
+        temperature: str,
+        max_tokens: str,
+        system_prompt: str,
+        context_prompt: str,
+        list_knowledge_ids: Optional[List[str]] = [],
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        self.number_of_passages = number_of_passages
+        self.top_k = top_k
         self.search_accuracy = search_accuracy
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.system_prompt = system_prompt
+        self.context_prompt = context_prompt
+        self.list_knowledge_ids = list_knowledge_ids
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SettingModel":
@@ -39,11 +53,21 @@ class SettingModel(BaseModel):
 
         data = dict(data)
 
-        number_of_passages = data.pop("number_of_passages", "")
+        top_k = data.pop("top_k", "")
         search_accuracy = data.pop("search_accuracy", "")
+        temperature = data.pop("temperature", "")
+        max_tokens = data.pop("max_tokens", "")
+        system_prompt = data.pop("system_prompt", "")
+        context_prompt = data.pop("context_prompt", "")
+        list_knowledge_ids = data.pop("list_knowledge_ids", [])
 
         return cls(
-            number_of_passages=number_of_passages,
+            top_k=top_k,
             search_accuracy=search_accuracy,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            system_prompt=system_prompt,
+            context_prompt=context_prompt,
+            list_knowledge_ids=list_knowledge_ids,
             **data,
         )

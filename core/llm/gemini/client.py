@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiClient:
-    _instance: Optional["GeminiClient"] = None
+    _default_instance: Optional["GeminiClient"] = None
 
     def __init__(
         self,
@@ -35,7 +35,7 @@ class GeminiClient:
     def _init_llm(self):
         try:
             self.logger.info(
-                f"Khởi tạo Gemini LLM với model={self.model_name}, temperature={self.temperature}"
+                f"Khởi tạo Gemini LLM với model={self.model_name}, temperature={self.temperature}, max_tokens={self.max_tokens}"
             )
             self.llm = ChatGoogleGenerativeAI(
                 model=self.model_name,
@@ -49,17 +49,40 @@ class GeminiClient:
             raise
 
     @classmethod
+    def get_default_instance(cls) -> "GeminiClient":
+        """Lấy instance mặc định với cấu hình cố định"""
+        if cls._default_instance is None:
+            cls._default_instance = cls()
+        return cls._default_instance
+
+    @classmethod
+    def create_instance(
+        cls,
+        model_name: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> "GeminiClient":
+        """Tạo instance mới với cấu hình tùy chỉnh"""
+        return cls(
+            model_name=model_name, 
+            temperature=temperature, 
+            max_tokens=max_tokens
+        )
+
+    @classmethod
     def get_instance(
         cls,
         model_name: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> "GeminiClient":
-        if cls._instance is None:
-            cls._instance = cls(
-                model_name=model_name, temperature=temperature, max_tokens=max_tokens
-            )
-        return cls._instance
+        """Lấy instance - nếu có tham số thì tạo mới, không thì dùng default"""
+        if model_name is not None or temperature is not None or max_tokens is not None:
+            # Có tham số mới -> tạo instance mới
+            return cls.create_instance(model_name, temperature, max_tokens)
+        else:
+            # Không có tham số -> dùng default
+            return cls.get_default_instance()
 
     def invoke(self, messages: List[Message]) -> str:
         if not self.llm:

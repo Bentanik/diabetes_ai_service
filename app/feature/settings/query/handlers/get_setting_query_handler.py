@@ -34,21 +34,8 @@ class GetSettingQueryHandler(QueryHandler[Result[Any]]):
                 message=SettingResult.NOT_FOUND.message,
             )
 
-        if not result["list_knowledge_id"]:
-            return Result.success(
-                message=SettingResult.FETCHED.message,
-                code=SettingResult.FETCHED.code,
-                data={
-                    "number_of_passages": result["number_of_passages"],
-                    "search_accuracy": result["search_accuracy"],
-                },
-            )
-
         return Result.success(
             message=SettingResult.FETCHED.message,
             code=SettingResult.FETCHED.code,
-            data={
-                "number_of_passages": result["number_of_passages"],
-                "search_accuracy": result["search_accuracy"],
-            },
+            data=result
         )

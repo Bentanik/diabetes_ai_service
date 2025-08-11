@@ -24,6 +24,7 @@ from app.feature.document import (
     DeleteDocumentCommand,
 )
 from app.dto.models import DocumentModelDTO
+from app.feature.document.queries.get_document_parsers_query import GetDocumentParsersQuery
 from app.storage import MinioManager
 from core.cqrs import Mediator
 from utils import (
@@ -151,6 +152,44 @@ async def get_document(document_id: str) -> JSONResponse:
     logger.info(f"Lấy thông tin tài liệu: {document_id}")
     try:
         query = GetDocumentQuery(id=document_id)
+        result = await Mediator.send(query)
+        return result.to_response()
+    except Exception as e:
+        logger.error(f"Lỗi lấy thông tin tài liệu: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Không thể lấy thông tin tài liệu")
+
+@router.get(
+    "/{document_id}/parser",
+    response_model=None,
+    summary="Lấy thông tin phân tích tài liệu",
+    description="Lấy thông tin phân tích tài liệu theo ID.",
+)
+async def get_document_parser(
+    document_id: str,
+    page: int = Query(1, ge=1, description="Trang hiện tại"),
+    limit: int = Query(10, ge=1, le=100, description="Số lượng bản ghi mỗi trang"),
+    sort_by: str = Query("updated_at", description="Trường cần sắp xếp"),
+    sort_order: str = Query(
+        "desc",
+        pattern="^(asc|desc)$",
+        description="Thứ tự sắp xếp: asc hoặc desc",
+    ),
+) -> JSONResponse:
+    """
+    Endpoint lấy thông tin chi tiết một tài liệu.
+
+    Args:
+        document_id (str): ID của tài liệu cần lấy thông tin
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
+    logger.info(f"Lấy thông tin tài liệu: {document_id}")
+    try:
+        query = GetDocumentParsersQuery(document_id=document_id, page=page, limit=limit, sort_by=sort_by, sort_order=sort_order)
         result = await Mediator.send(query)
         return result.to_response()
     except Exception as e:
@@ -316,3 +355,23 @@ async def download_document(
     except Exception as e:
         logger.error(f"Lỗi tải tài liệu: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Tải tài liệu thất bại")
+
+@router.get("/{document_id}/view-file")
+async def view_file(document_id: str):
+    query = GetDocumentQuery(id=document_id)
+    result = await Mediator.send(query)
+    if not result.is_success:
+        return result.to_response()
+
+    document_dto = cast(DocumentModelDTO, result.data)
+    bucket_name, object_name = document_dto.file.path.split("/", 1)
+
+    stream_info = await MinioManager.get_instance().get_stream_async(bucket_name, object_name)
+
+    return StreamingResponse(
+        stream_info["stream"],
+        media_type=stream_info["content_type"],
+        headers={
+            "Content-Disposition": f"inline; filename*=UTF-8''{urllib.parse.quote(stream_info['filename'])}"
+        }
+    )

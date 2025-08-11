@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from app.database.models import DocumentModel
 from app.dto.enums import DocumentType
 from app.dto.value_objects import DocumentFileDTO
-
+from app.dto.models.document_parser_model_dto import DocumentParserModelDTO
 
 class DocumentModelDTO(BaseModel):
     """
@@ -41,7 +41,7 @@ class DocumentModelDTO(BaseModel):
     updated_at: Optional[datetime] = None
 
     @classmethod
-    def from_model(cls, model: DocumentModel) -> "DocumentModelDTO":
+    def from_model(cls, model: DocumentModel, document_parser: Optional[DocumentParserModelDTO] = None) -> "DocumentModelDTO":
         """Tạo DTO từ model"""
         return cls(
             id=model.id,

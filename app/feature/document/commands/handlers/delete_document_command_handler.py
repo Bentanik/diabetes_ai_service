@@ -115,7 +115,7 @@ class DeleteDocumentCommandHandler(CommandHandler):
 
                 # Xóa file từ MinIO
                 minio_client = MinioManager.get_instance()
-                minio_client.remove_object(bucket_name, object_name)
+                minio_client.delete_file(bucket_name, object_name)
 
                 self.logger.info(f"Đã xóa file từ storage: {file_path}")
 

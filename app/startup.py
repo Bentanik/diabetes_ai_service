@@ -28,9 +28,6 @@ async def lifespan(app: FastAPI):
         # Tải model
         await EmbeddingModel.get_instance()
 
-        # Khởi tạo LLM
-        GeminiClient.get_instance()
-
         # Khởi tạo scorer
         await get_scorer_async()
 
@@ -72,13 +69,29 @@ async def lifespan(app: FastAPI):
 
 async def init_setting():
     collections = get_collections()
-    if await collections.settings.count_documents({}) > 0:
+    setting = await collections.settings.find_one({})
+    if setting is not None:
+        GeminiClient.get_instance(
+            model_name="gemini-2.0-flash",
+            temperature=setting["temperature"],
+            max_tokens=setting["max_tokens"],
+        )
         return
 
     setting_model = SettingModel(
-        number_of_passages=5,
-        search_accuracy=70,
+        top_k=5,
+        search_accuracy=0.7,
+        temperature=0.5,
+        max_tokens=1000,
+        system_prompt="Bạn là một AI hỗ trợ trong lĩnh vực y tế, đặc biệt là lĩnh vực đái tháo đường",
+        context_prompt="Dựa vào những tài liệu được cung cấp hãy trả lời một cách đúng đắn và chính xác",
+        list_knowledge_ids=[],
     )
     await collections.settings.find_one_and_update(
         {}, {"$set": setting_model.to_dict()}, upsert=True
+    )
+    GeminiClient.get_instance(
+        model_name="gemini-2.0-flash",
+        temperature=setting_model.temperature,
+        max_tokens=setting_model.max_tokens,
     )

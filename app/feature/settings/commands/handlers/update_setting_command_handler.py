@@ -16,53 +16,58 @@ class UpdateSettingCommandHandler(CommandHandler):
     """
 
     def __init__(self):
-        """
-        Khởi tạo handler
-        """
         super().__init__()
         self.logger = get_logger(__name__)
         self.collections = get_collections()
 
     async def execute(self, command: UpdateSettingCommand) -> Result:
         try:
-            # Cập nhật number_of_passages và search_accuracy nếu có
-            if command.number_of_passages is not None or command.search_accuracy is not None:
+            update_fields = {}
+
+            # Cập nhật các trường trong collection settings nếu có giá trị
+            if command.top_k is not None:
+                update_fields["top_k"] = command.top_k
+            if command.temperature is not None:
+                update_fields["temperature"] = command.temperature
+            if command.max_tokens is not None:
+                update_fields["max_tokens"] = command.max_tokens
+            if command.system_prompt is not None:
+                update_fields["system_prompt"] = command.system_prompt
+            if command.context_prompt is not None:
+                update_fields["context_prompt"] = command.context_prompt
+            if command.search_accuracy is not None:
+                update_fields["search_accuracy"] = command.search_accuracy
+            if command.list_knowledge_ids is not None:
+                update_fields["list_knowledge_ids"] = command.list_knowledge_ids
+
+            if update_fields:
                 await self.collections.settings.find_one_and_update(
-                    {},
-                    {"$set": {
-                        "number_of_passages": command.number_of_passages,
-                        "search_accuracy": command.search_accuracy,
-                    }},
-                    return_document=ReturnDocument.AFTER,
+                    {}, {"$set": update_fields}, return_document=ReturnDocument.AFTER
                 )
 
-            # Xử lý list_knowledge_id
-            if command.list_knowledge_id is not None:
-                if len(command.list_knowledge_id) == 0:
-                    # Nếu mảng rỗng, reset select_training thành False cho tất cả knowledge
+            if command.list_knowledge_ids is not None:
+                if len(command.list_knowledge_ids) == 0:
+                    # Reset select_training thành False cho tất cả knowledge nếu mảng rỗng
                     await self.collections.knowledges.update_many(
-                        {},
-                        {"$set": {"select_training": False}}
+                        {}, {"$set": {"select_training": False}}
                     )
                 else:
-                    # Nếu có id, set select_training = True cho các id đó
                     object_ids = []
-                    for knowledge_id in command.list_knowledge_id:
+                    for knowledge_id in command.list_knowledge_ids:
                         try:
                             object_ids.append(ObjectId(knowledge_id))
                         except Exception:
                             self.logger.warning(f"Invalid knowledge_id ignored: {knowledge_id}")
 
                     if object_ids:
-                        # Trước tiên có thể reset hết select_training về False
+                        # Reset hết về False trước
                         await self.collections.knowledges.update_many(
-                            {},
-                            {"$set": {"select_training": False}}
+                            {}, {"$set": {"select_training": False}}
                         )
-                        # Sau đó set True cho những id được chọn
+                        # Set True cho các knowledge được chọn
                         await self.collections.knowledges.update_many(
                             {"_id": {"$in": object_ids}},
-                            {"$set": {"select_training": True}}
+                            {"$set": {"select_training": True}},
                         )
 
             return Result.success(
@@ -74,6 +79,5 @@ class UpdateSettingCommandHandler(CommandHandler):
             self.logger.error(f"Update setting error: {e}", exc_info=True)
             return Result.failure(
                 code="UPDATE_ERROR",
-                message=f"Lỗi cập nhật setting: {str(e)}"
+                message=f"Lỗi cập nhật setting: {str(e)}",
             )
-

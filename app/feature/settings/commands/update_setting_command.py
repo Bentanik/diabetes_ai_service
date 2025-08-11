@@ -9,11 +9,19 @@ class UpdateSettingCommand(Command):
     Command cập nhật cài đặt
 
     Attributes:
-        number_of_passages (Optional[int]): Số lượng câu trong mỗi passage
+        top_k (Optional[int]): Số lượng câu trong mỗi passage
+        temperature (Optional[float]): Nhiệt độ của LLM
+        max_tokens (Optional[int]): Số lượng token tối đa
+        system_prompt (Optional[str]): System prompt của LLM
+        context_prompt (Optional[str]): Context prompt của LLM
         search_accuracy (Optional[int]): Độ chính xác của tìm kiếm
-        list_knowledge_id (Optional[list[str]]): Danh sách collection id
+        list_knowledge_ids (Optional[list[str]]): Danh sách collection id
     """
 
-    number_of_passages: Optional[float] = None
+    top_k: Optional[int] = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+    system_prompt: Optional[str] = None
+    context_prompt: Optional[str] = None
     search_accuracy: Optional[float] = None
-    list_knowledge_id: Optional[list[str]] = None
+    list_knowledge_ids: Optional[list[str]] = None

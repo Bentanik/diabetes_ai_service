@@ -111,10 +111,9 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
             {"_id": ObjectId(command.id)}
         )
 
-        # Thực hiện xóa mềm trong document_jobs
-        await self.collection.document_jobs.update_many(
-            {"knowledge_id": command.id},
-            {"$set": {"is_document_delete": True}}
+        # Thực hiện xóa trong document_jobs
+        await self.collection.document_jobs.delete_many(
+            {"knowledge_id": command.id}
         )
 
         # Kiểm tra kết quả xóa

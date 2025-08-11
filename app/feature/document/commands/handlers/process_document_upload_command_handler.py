@@ -145,7 +145,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             cleaned_text, pages_data = await self._extract_and_clean_text(temp_path)
 
             if not cleaned_text:
-                self.logger.warning(f"Không thể extract text từ file: {temp_path}")
+                self.logger.warning(f"Không thể xử lý từ file: {temp_path}")
                 cleaned_text = ""
 
             # Tính điểm diabetes
@@ -153,7 +153,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 command.document_job_id,
                 status=DocumentJobStatus.PROCESSING,
                 progress=65,
-                progress_message="Đang phân tích nội dung diabetes",
+                progress_message="Đang phân tích nội dung đái tháo đường",
             )
 
             diabetes_score = await self._calculate_diabetes_score(cleaned_text)
@@ -167,7 +167,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 command.document_job_id,
                 status=DocumentJobStatus.PROCESSING,
                 progress=80,
-                progress_message="Đang lưu tài liệu vào database",
+                progress_message="Đang lưu tài liệu vào cơ sở dữ liệu",
             )
 
             file_size = os.path.getsize(temp_path)
