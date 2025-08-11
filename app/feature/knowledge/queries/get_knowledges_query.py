@@ -28,6 +28,7 @@ class GetKnowledgesQuery(Query):
     limit: int = field(default=10)
     sort_by: str = field(default="updated_at")
     sort_order: str = field(default="desc")
+    select_training: Optional[bool] = field(default=None)
 
     def __post_init__(self):
         """

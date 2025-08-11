@@ -10,6 +10,7 @@ File này cung cấp các REST API endpoints để thực hiện các thao tác 
 - DELETE /knowledges/{id}: Xóa cơ sở tri thức
 """
 
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from app.api.schemas import UpdateKnowledgeRequest
@@ -63,6 +64,7 @@ async def create_knowledge(kb_req: CreateKnowledgeCommand) -> JSONResponse:
 )
 async def get_knowledges(
     search: str = Query("", description="Tên cơ sở tri thức cần tìm kiếm"),
+    select_training: Optional[bool] = Query(None, description="Có được chọn để huấn luyện hay không"),
     page: int = Query(1, ge=1, description="Trang hiện tại"),
     limit: int = Query(10, ge=1, le=100, description="Số lượng bản ghi mỗi trang"),
     sort_by: str = Query("updated_at", description="Trường cần sắp xếp"),
@@ -96,6 +98,7 @@ async def get_knowledges(
             limit=limit,
             sort_by=sort_by,
             sort_order=sort_order,
+            select_training=select_training,
         )
         result = await Mediator.send(query)
         return result.to_response()

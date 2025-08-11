@@ -28,6 +28,7 @@ async def get_document_history(
     sort_order: str = Query(
         "desc", pattern="^(asc|desc)$", description="Thứ tự sắp xếp"
     ),
+    knowledge_id: Optional[str] = Query(None, description="ID cơ sở tri thức"),
     page: int = Query(1, ge=1, description="Trang hiện tại"),
     limit: int = Query(10, ge=1, le=100, description="Số lượng bản ghi mỗi trang"),
 ) -> JSONResponse:
@@ -41,6 +42,8 @@ async def get_document_history(
         query["status.status"] = status
     if search:
         query["title"] = {"$regex": search, "$options": "i"}
+    if knowledge_id:
+        query["knowledge_id"] = knowledge_id
 
     skip = (page - 1) * limit
     sort_direction = -1 if sort_order == "desc" else 1

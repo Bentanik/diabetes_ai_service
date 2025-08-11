@@ -24,14 +24,12 @@ class SettingModel(BaseModel):
         self,
         number_of_passages: str,
         search_accuracy: Optional[str] = "",
-        list_knowledge_id: Optional[list[str]] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
         self.number_of_passages = number_of_passages
         self.search_accuracy = search_accuracy
-        self.list_knowledge_id = list_knowledge_id
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SettingModel":
@@ -43,11 +41,9 @@ class SettingModel(BaseModel):
 
         number_of_passages = data.pop("number_of_passages", "")
         search_accuracy = data.pop("search_accuracy", "")
-        list_knowledge_id = data.pop("list_knowledge_id", None)
 
         return cls(
             number_of_passages=number_of_passages,
             search_accuracy=search_accuracy,
-            list_knowledge_id=list_knowledge_id,
             **data,
         )

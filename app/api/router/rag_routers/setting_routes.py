@@ -11,7 +11,6 @@ from utils import (
 router = APIRouter(prefix="/setting", tags=["Setting"])
 logger = get_logger(__name__)
 
-
 @router.put(
     "",
     response_model=None,

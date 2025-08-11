@@ -78,7 +78,6 @@ async def init_setting():
     setting_model = SettingModel(
         number_of_passages=5,
         search_accuracy=70,
-        list_knowledge_id=[],
     )
     await collections.settings.find_one_and_update(
         {}, {"$set": setting_model.to_dict()}, upsert=True

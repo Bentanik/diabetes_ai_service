@@ -41,20 +41,8 @@ class GetSettingQueryHandler(QueryHandler[Result[Any]]):
                 data={
                     "number_of_passages": result["number_of_passages"],
                     "search_accuracy": result["search_accuracy"],
-                    "knowledges": [],
                 },
             )
-
-        knowledges = await self.collections.knowledges.find(
-            {
-                "_id": {
-                    "$in": [
-                        ObjectId(knowledge_id)
-                        for knowledge_id in result["list_knowledge_id"]
-                    ]
-                }
-            },
-        ).to_list(length=None)
 
         return Result.success(
             message=SettingResult.FETCHED.message,
@@ -62,6 +50,5 @@ class GetSettingQueryHandler(QueryHandler[Result[Any]]):
             data={
                 "number_of_passages": result["number_of_passages"],
                 "search_accuracy": result["search_accuracy"],
-                "knowledges": knowledges,
             },
         )

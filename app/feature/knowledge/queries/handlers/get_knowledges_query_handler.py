@@ -54,6 +54,9 @@ class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeModelDTO
             if query.search:
                 filter_query["name"] = {"$regex": query.search, "$options": "i"}
 
+            if query.select_training is not None:
+                filter_query["select_training"] = query.select_training
+
             # Đếm tổng số bản ghi thỏa mãn điều kiện
             total = await collection.knowledges.count_documents(filter_query)
 
