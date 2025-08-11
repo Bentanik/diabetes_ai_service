@@ -8,6 +8,7 @@ from core.cqrs import Mediator
 from utils import (
     get_logger,
 )
+from typing import Optional
 
 # Khởi tạo router với prefix và tag
 router = APIRouter(prefix="/chat", tags=["Chat AI"])
@@ -50,7 +51,8 @@ async def create_chat(req: CreateChatCommand) -> JSONResponse:
     description="Lấy lịch sử cuộc trò chuyện.",
 )
 async def get_chat_histories(
-    session_id: str = Query(..., description="ID của phiên trò chuyện"),
+    session_id: Optional[str] = Query(None, description="ID của phiên trò chuyện"),
+    user_id: Optional[str] = Query(None, description="ID của người dùng")
 ) -> JSONResponse:
     """
     Endpoint lấy danh sách phiên trò chuyện.
@@ -67,7 +69,7 @@ async def get_chat_histories(
     logger.info(f"Lấy lịch sử cuộc trò chuyện: {session_id}")
 
     try:
-        get_chat_histories_query = GetChatHistoriesQuery(session_id=session_id)
+        get_chat_histories_query = GetChatHistoriesQuery(session_id=session_id, user_id=user_id)
         result = await Mediator.send(get_chat_histories_query)
         return result.to_response()
     except Exception as e:

@@ -45,7 +45,7 @@ class GetKnowledgeQueryHandler(QueryHandler[Result[KnowledgeModelDTO]]):
             # Kiểm tra tính hợp lệ của ID
             if not ObjectId.is_valid(query.id):
                 return Result.failure(
-                    message="ID không hợp lệ", code="invalid_id", data=None
+                    message="ID không hợp lệ", code="invalid_id"
                 )
 
             # Truy vấn database

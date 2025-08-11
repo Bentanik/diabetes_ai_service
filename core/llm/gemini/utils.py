@@ -4,10 +4,6 @@ from .config import GeminiConfig, GeminiConfigManager
 from .manager import GeminiChatManager
 
 
-def messages_to_dicts(messages: List[Message]) -> List[Dict[str, str]]:
-    return [{"role": msg.role, "content": msg.content} for msg in messages]
-
-
 def dicts_to_messages(dicts: List[Dict[str, str]]) -> List[Message]:
     return [Message(role=msg["role"], content=msg["content"]) for msg in dicts]
 
@@ -104,6 +100,41 @@ def validate_config(config: GeminiConfig) -> bool:
     except Exception:
         return False
 
+
+# Database settings utilities
+async def load_settings_from_database(db_collections) -> Optional[Dict[str, Any]]:
+    """
+    Load settings từ database
+    
+    Args:
+        db_collections: Database collections object
+        
+    Returns:
+        Dict chứa settings hoặc None nếu không tìm thấy
+    """
+    try:
+        setting = await db_collections.settings.find_one({})
+        return setting
+    except Exception as e:
+        print(f"Lỗi khi load settings từ database: {e}")
+        return None
+
+
+def create_llm_config_from_settings(settings: Dict[str, Any]) -> GeminiConfig:
+    """
+    Tạo GeminiConfig từ settings database
+    
+    Args:
+        settings: Dict chứa settings từ database
+        
+    Returns:
+        GeminiConfig object
+    """
+    return GeminiConfig(
+        model_name=settings.get("llm_model_name", "gemini-2.0-flash"),
+        temperature=settings.get("llm_temperature", 0.2),
+        max_tokens=settings.get("llm_max_tokens", 1024)
+    )
 
 # Cache management utilities
 def get_cache_stats(chat_manager: GeminiChatManager) -> Dict[str, Any]:

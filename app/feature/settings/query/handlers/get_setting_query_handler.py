@@ -1,6 +1,5 @@
 from typing import Any
 
-from bson import ObjectId
 from app.database.manager import get_collections
 from app.database.models.setting_model import SettingModel
 from ..get_setting_query import GetSettingQuery
@@ -25,9 +24,7 @@ class GetSettingQueryHandler(QueryHandler[Result[Any]]):
         self.collections = get_collections()
 
     async def execute(self, query: GetSettingQuery) -> Result[Any]:
-        result = await self.collections.settings.find_one(
-            {},
-        )
+        result = await self.collections.settings.find_one({})
         if not result:
             return Result.failure(
                 code=SettingResult.NOT_FOUND.code,
