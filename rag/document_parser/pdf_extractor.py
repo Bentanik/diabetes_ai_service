@@ -210,17 +210,16 @@ class PdfExtractor:
 
         return "paragraph"
 
-    def _calculate_merged_bbox(self, blocks: List[TextBlock]) -> BBox:
+    def _calculate_merged_bbox(self, blocks: List[TextBlock]) -> Dict:
         """Tính toán bbox sau khi merge các blocks"""
         if not blocks:
-            return BBox(left=0, top=0, right=0, bottom=0)
+            return {"left": 0, "top": 0, "right": 0, "bottom": 0}
 
-        left = min(block.metadata.bbox.left for block in blocks)
-        top = min(block.metadata.bbox.top for block in blocks)
-        right = max(block.metadata.bbox.right for block in blocks)
-        bottom = max(block.metadata.bbox.bottom for block in blocks)
-        
-        return BBox(left=left, top=top, right=right, bottom=bottom)
+        left = min(block.metadata.bbox["left"] for block in blocks)
+        top = min(block.metadata.bbox["top"] for block in blocks)
+        right = max(block.metadata.bbox["right"] for block in blocks)
+        bottom = max(block.metadata.bbox["bottom"] for block in blocks)
+        return {"left": left, "top": top, "right": right, "bottom": bottom}
 
     async def _merge_title_with_paragraph(
         self, blocks: List[TextBlock]
@@ -241,8 +240,8 @@ class PdfExtractor:
 
                 if (
                     abs(
-                        current_block.metadata.bbox.bottom
-                        - next_block.metadata.bbox.top
+                        current_block.metadata.bbox["bottom"]
+                        - next_block.metadata.bbox["top"]
                     )
                     < 20
                 ):
@@ -252,10 +251,8 @@ class PdfExtractor:
 
                     merged_text = await self._clean_text_for_chunking(merged_text)
 
-                    merged_bbox = self._calculate_merged_bbox([current_block, next_block])
-                    
                     merged_metadata = BlockMetadata(
-                        bbox=merged_bbox,
+                        bbox=self._calculate_merged_bbox([current_block, next_block]),
                         block_type="title_with_content",
                         num_lines=current_block.metadata.num_lines
                         + next_block.metadata.num_lines,
@@ -298,8 +295,8 @@ class PdfExtractor:
                     j < len(blocks)
                     and len(blocks[j].context) < self.max_block_length
                     and abs(
-                        blocks[j].metadata.bbox.top
-                        - short_blocks[-1].metadata.bbox.bottom
+                        blocks[j].metadata.bbox["top"]
+                        - short_blocks[-1].metadata.bbox["bottom"]
                     )
                     < self.max_bbox_distance
                 ):
@@ -319,10 +316,8 @@ class PdfExtractor:
                     block_types = {block.metadata.block_type for block in short_blocks}
                     merged_block_type = short_blocks[0].metadata.block_type if len(block_types) == 1 else "mixed"
 
-                    merged_bbox = self._calculate_merged_bbox(short_blocks)
-                    
                     merged_metadata = BlockMetadata(
-                        bbox=merged_bbox,
+                        bbox=self._calculate_merged_bbox(short_blocks),
                         block_type=merged_block_type,
                         num_lines=sum(
                             block.metadata.num_lines for block in short_blocks
@@ -366,8 +361,8 @@ class PdfExtractor:
                 while j < len(blocks) and blocks[j].metadata.block_type == "table":
                     if (
                         abs(
-                            blocks[j].metadata.bbox.top
-                            - table_blocks[-1].metadata.bbox.bottom
+                            blocks[j].metadata.bbox["top"]
+                            - table_blocks[-1].metadata.bbox["bottom"]
                         )
                         < 20
                     ):
@@ -385,10 +380,8 @@ class PdfExtractor:
                     # Chỉ clean basic
                     merged_text = await self._clean_text_for_chunking(merged_text)
 
-                    merged_bbox = self._calculate_merged_bbox(table_blocks)
-                    
                     merged_metadata = BlockMetadata(
-                        bbox=merged_bbox,
+                        bbox=self._calculate_merged_bbox(table_blocks),
                         block_type="table",
                         num_lines=sum(
                             block.metadata.num_lines for block in table_blocks
@@ -542,7 +535,7 @@ class PdfExtractor:
                     )
 
                     metadata = BlockMetadata(
-                        bbox=bbox,
+                        bbox=bbox.to_dict(),
                         block_type=block_type,
                         num_lines=len(block["lines"]),
                         num_spans=len(all_spans),

@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
 async def init_setting():
     collections = get_collections()
     setting = await collections.settings.find_one({})
-    if setting is not None:
+    if setting:
         GeminiClient.get_instance(
             model_name="gemini-2.0-flash",
             temperature=setting["temperature"],
