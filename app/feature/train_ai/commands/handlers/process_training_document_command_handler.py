@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from bson import ObjectId
 from app.database.models import DocumentJobModel
@@ -154,7 +155,7 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
 
             await self.collections.documents.update_one(
                 {"_id": ObjectId(document_job.document_id)},
-                {"$set": {"type": DocumentType.TRAINING}},
+                {"$set": {"type": DocumentType.TRAINING, "updated_at": datetime.now()}},
             )
 
             await self._update_document_job(

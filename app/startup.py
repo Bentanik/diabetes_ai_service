@@ -10,7 +10,6 @@ from app.config import MinioConfig
 from core.embedding import EmbeddingModel
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
-from core.llm.gemini.client import GeminiClient
 from rag.embedding import Embedding
 
 load_dotenv()
@@ -71,11 +70,6 @@ async def init_setting():
     collections = get_collections()
     setting = await collections.settings.find_one({})
     if setting:
-        GeminiClient.get_instance(
-            model_name="gemini-2.0-flash",
-            temperature=setting["temperature"],
-            max_tokens=setting["max_tokens"],
-        )
         return
 
     setting_model = SettingModel(
@@ -89,9 +83,4 @@ async def init_setting():
     )
     await collections.settings.find_one_and_update(
         {}, {"$set": setting_model.to_dict()}, upsert=True
-    )
-    GeminiClient.get_instance(
-        model_name="gemini-2.0-flash",
-        temperature=setting_model.temperature,
-        max_tokens=setting_model.max_tokens,
     )

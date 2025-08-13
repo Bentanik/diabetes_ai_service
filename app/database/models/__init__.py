@@ -11,6 +11,7 @@ from app.database.models.document_parser_model import DocumentParserModel
 from app.database.models.knowledge_model import KnowledgeModel
 from app.database.models.chat_history_model import ChatHistoryModel
 from app.database.models.chat_session_model import ChatSessionModel
+from app.database.models.setting_model import SettingModel
 
 __all__ = [
     "BaseModel",
@@ -20,4 +21,5 @@ __all__ = [
     "KnowledgeModel",
     "ChatHistoryModel",
     "ChatSessionModel",
+    "SettingModel"
 ]
