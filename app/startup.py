@@ -8,6 +8,7 @@ from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
 from core.embedding import EmbeddingModel
+from core.llm.gemini import GeminiClient
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
 from rag.embedding import Embedding
@@ -81,6 +82,8 @@ async def init_setting():
         context_prompt="Dựa vào những tài liệu được cung cấp hãy trả lời một cách đúng đắn và chính xác",
         list_knowledge_ids=[],
     )
+
+    GeminiClient()
     await collections.settings.find_one_and_update(
         {}, {"$set": setting_model.to_dict()}, upsert=True
     )
