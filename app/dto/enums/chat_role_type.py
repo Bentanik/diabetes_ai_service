@@ -16,5 +16,5 @@ class ChatRoleType(str, Enum):
         AI: AI
     """
 
-    USER = "user"
+    USER = "human"
     AI = "ai"
