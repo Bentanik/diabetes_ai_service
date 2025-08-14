@@ -1,4 +1,6 @@
 from typing import List, Optional
+
+from bson import ObjectId
 from app.database import get_collections
 from app.database.enums import ChatRoleType
 from app.database.models import SettingModel, ChatHistoryModel, ChatSessionModel
@@ -139,7 +141,7 @@ class CreateChatCommandHandler(CommandHandler):
 
         # Trường hợp session_id được truyền
         if session_id:
-            chat_session = await self.db.chat_sessions.find_one({"_id": session_id})
+            chat_session = await self.db.chat_sessions.find_one({"_id": ObjectId(session_id)})
             if chat_session:
                 return ChatSessionModel.from_dict(chat_session)
 
