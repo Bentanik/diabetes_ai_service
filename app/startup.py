@@ -7,7 +7,7 @@ from app.database.models.setting_model import SettingModel
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
-from core.embedding import EmbeddingModel
+from core.embedding import EmbeddingModel, RerankingModel
 from core.llm.gemini import GeminiClient
 from rag.vector_store import VectorStoreOperations
 from utils import get_logger, get_scorer_async
@@ -27,6 +27,8 @@ async def lifespan(app: FastAPI):
     try:
         # Tải model
         await EmbeddingModel.get_instance()
+
+        await RerankingModel.get_instance()
 
         # Khởi tạo scorer
         await get_scorer_async()

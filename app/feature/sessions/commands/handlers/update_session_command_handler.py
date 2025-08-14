@@ -39,10 +39,23 @@ class UpdateSessionCommandHandler(CommandHandler):
                 )
 
             # Kiểm tra xem phiên trò chuyện đã tồn tại chưa
-            is_session_exists = await self.db.chat_sessions.find_one_and_update(
-                {"_id": ObjectId(command.session_id)},
-                {"$set": {"title": command.title}},
-            )
+            update_data = {}
+            if command.title is not None:
+                update_data["title"] = command.title
+            if command.external_knowledge is not None:
+                update_data["external_knowledge"] = command.external_knowledge
+
+            if update_data:
+                is_session_exists = await self.db.chat_sessions.find_one_and_update(
+                    {"_id": ObjectId(command.session_id)},
+                    {"$set": update_data},
+                    return_document=True
+                )
+            else:
+                # Nếu không có gì để update, chỉ tìm document
+                is_session_exists = await self.db.chat_sessions.find_one(
+                    {"_id": ObjectId(command.session_id)}
+                )
 
             if is_session_exists is None:
                 return Result.failure(

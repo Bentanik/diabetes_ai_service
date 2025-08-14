@@ -20,13 +20,20 @@ class GetChatHistoriesQueryHandler(QueryHandler[Result[List[ChatHistoryModelDTO]
         self, query: GetChatHistoriesQuery
     ) -> Result[List[ChatHistoryModelDTO]]:
         try:
-            session_id: str = query.user_id is not None and query.user_id == "admin" and "session_admin" or query.session_id
+            chat_histories = []
 
-            chat_histories = (
-                await self.db.chat_histories.find({"session_id": session_id})
-                .sort("created_at", -1)
-                .to_list(length=None)
-            )
+            if query.user_id != "admin":
+                chat_histories = (
+                    await self.db.chat_histories.find({"session_id": query.session_id})
+                    .sort("created_at", -1)
+                    .to_list(length=None)
+                )
+            else:
+                chat_histories = (
+                    await self.db.chat_histories.find({"user_id": query.user_id})
+                    .sort("created_at", -1)
+                    .to_list(length=None)
+                )
 
             chat_histories = [
                 ChatHistoryModelDTO.from_model(ChatHistoryModel.from_dict(chat_history))
