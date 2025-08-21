@@ -57,10 +57,10 @@ async def process_document_upload_job(job: DocumentJob) -> None:
     """
     logger.info(f"Xử lý upload tài liệu: id={job.id}")
     try:
-        # from app.feature.document.commands import ProcessDocumentUploadCommand
+        from app.feature.document.commands import ProcessDocumentUploadCommand
 
-        # command = ProcessDocumentUploadCommand(document_job_id=job.id)
-        # await Mediator.send(command)
+        command = ProcessDocumentUploadCommand(document_job_id=job.id)
+        await Mediator.send(command)
         logger.info(f"Hoàn thành xử lý upload tài liệu: id={job.id}")
     except Exception as e:
         logger.error(f"Lỗi xử lý upload tài liệu {job.id}: {str(e)}", exc_info=True)

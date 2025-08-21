@@ -9,7 +9,7 @@ from core.result import Result
 from ..create_document_command import CreateDocumentCommand
 from shared.messages import KnowledgeMessage, DocumentMessage
 from app.database.enums import DocumentJobStatus, DocumentJobType, DocumentStatus
-from app.database.value_objects import DocumentJobFile, ProcessingStatus
+from app.database.value_objects import DocumentFile, ProcessingStatus
 from app.database.models import DocumentJobModel
 from utils import get_logger
 
@@ -100,7 +100,7 @@ class CreateDocumentCommandHandler(CommandHandler):
             knowledge_id=cmd.knowledge_id,
             title=cmd.title,
             description=cmd.description,
-            file=DocumentJobFile(
+            file=DocumentFile(
                 path=file_path,
                 size_bytes=0,
                 name=cmd.file.filename,

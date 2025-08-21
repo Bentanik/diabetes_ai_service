@@ -10,7 +10,7 @@ from typing import Dict, Any
 
 
 @dataclass
-class DocumentJobFile:
+class DocumentFile:
     """
     Value Object chứa thông tin về file của document job
 
@@ -30,6 +30,6 @@ class DocumentJobFile:
         return {
             "file_path": self.path,
             "file_size_bytes": self.size_bytes,
-            "file_name": self.file_name,
-            "file_type": self.file_type,
+            "file_name": self.name,
+            "file_type": self.type,
         }

@@ -8,7 +8,7 @@ xử lý các tài liệu trong hệ thống.
 from typing import Dict, Any
 from app.database.enums import DocumentJobType, DocumentStatus
 from app.database.models import BaseModel
-from app.database.value_objects import ProcessingStatus, DocumentJobFile
+from app.database.value_objects import ProcessingStatus, DocumentFile
 
 
 class DocumentJobModel(BaseModel):
@@ -21,7 +21,7 @@ class DocumentJobModel(BaseModel):
             knowledge_id (str): ID của cơ sở tri thức chứa tài liệu
             title (str): Tiêu đề tài liệu
             description (str): Mô tả tài liệu
-            file (DocumentJobFile): Thông tin file tài liệu
+            file (DocumentFile): Thông tin file tài liệu
             type (DocumentJobType): Loại công việc (upload/training)
             document_status (DocumentStatus): Trạng thái của tài liệu
 
@@ -38,7 +38,7 @@ class DocumentJobModel(BaseModel):
         knowledge_id: str,
         title: str,
         description: str,
-        file: DocumentJobFile,
+        file: DocumentFile,
         type: DocumentJobType = DocumentJobType.UPLOAD,
         processing_status: ProcessingStatus = ProcessingStatus(),
         priority_diabetes: float = 0.0,
@@ -115,14 +115,14 @@ class DocumentJobModel(BaseModel):
         # Xử lý nested file với fallback dữ liệu cũ
         file_data = data.pop("file", None)
         if isinstance(file_data, dict) and file_data:
-            file = DocumentJobFile(
+            file = DocumentFile(
                 path=file_data.get("file_path", file_data.get("path", "")),
                 size_bytes=file_data.get("file_size_bytes", file_data.get("size_bytes", 0)),
                 name=file_data.get("file_name", file_data.get("name", "")),
                 type=file_data.get("file_type", file_data.get("type", "")),
             )
         else:
-            file = DocumentJobFile(
+            file = DocumentFile(
                 path=data.pop("file_path", ""),
                 size_bytes=data.pop("file_size_bytes", 0),
                 name=data.pop("file_name", ""),

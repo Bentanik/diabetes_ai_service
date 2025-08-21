@@ -1,4 +1,3 @@
-import asyncio
 from typing import Union
 from pathlib import Path
 
@@ -26,7 +25,7 @@ class ParserFactory:
             ValueError: Nếu file extension không được support
         """
         parser = cls._get_parser(file_path)
-        return await asyncio.to_thread(parser.parse, file_path)
+        return await parser.parse_async(file_path)
     
     @classmethod
     def _get_parser(cls, file_path: Union[str, Path]) -> BaseParser:
@@ -64,4 +63,4 @@ async def parse_file(file_path: Union[str, Path]) -> ParsedContent:
     """
     Async-safe: parse file và trả về ParsedContent
     """
-    return await ParserFactory.parse_file(file_path)
+    return await ParserFactory.parse_file_async(file_path)

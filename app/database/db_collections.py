@@ -41,35 +41,37 @@ class DBCollections:
         """
         return self.db["knowledges"]
 
-    # @property
-    # def documents(self) -> AsyncIOMotorCollection:
-    #     """
-    #     Collection lưu trữ thông tin tài liệu
+    @property
+    def document_jobs(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin jobs xử lý tài liệu
 
-    #     Returns:
-    #         AsyncIOMotorCollection: Collection documents
-    #     """
-    #     return self.db["documents"]
+        Returns:
+            AsyncIOMotorCollection: Collection document_jobs
+        """
+        return self.db["document_jobs"]
 
-    # @property
-    # def document_parsers(self) -> AsyncIOMotorCollection:
-    #     """
-    #     Collection lưu trữ thông tin document parsers
+    @property
+    def documents(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin tài liệu
 
-    #     Returns:
-    #         AsyncIOMotorCollection: Collection document_parsers
-    #     """
-    #     return self.db["document_parsers"]
+        Returns:
+            AsyncIOMotorCollection: Collection documents
+        """
+        return self.db["documents"]
 
-    # @property
-    # def document_jobs(self) -> AsyncIOMotorCollection:
-    #     """
-    #     Collection lưu trữ thông tin jobs xử lý tài liệu
+    @property
+    def document_chunks(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin document chunks
 
-    #     Returns:
-    #         AsyncIOMotorCollection: Collection document_jobs
-    #     """
-    #     return self.db["document_jobs"]
+        Returns:
+            AsyncIOMotorCollection: Collection document_chunks
+        """
+        return self.db["document_chunks"]
+
+
 
     # @property
     # def settings(self) -> AsyncIOMotorCollection:

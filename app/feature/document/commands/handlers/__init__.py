@@ -1,5 +1,7 @@
 from .create_document_command_handler import CreateDocumentCommandHandler
+from .process_document_upload_command_handler import ProcessDocumentUploadCommandHandler
 
 __all__ = [
     "CreateDocumentCommandHandler",
+    "ProcessDocumentUploadCommandHandler",
 ]

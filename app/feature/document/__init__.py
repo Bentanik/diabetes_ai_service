@@ -1,29 +1,17 @@
 # Import từ commands
 from .commands import (
     CreateDocumentCommand,
+    CreateDocumentCommandHandler,
+    ProcessDocumentUploadCommand,
+    ProcessDocumentUploadCommandHandler,
 )
 
-# Import từ queries
-from .queries import (
-    GetDocumentQuery,
-    GetDocumentsQuery,
-    GetDocumentQueryHandler,
-    GetDocumentsQueryHandler,
-)
 
 __all__ = [
     # Commands
     "CreateDocumentCommand",
-    "UpdateDocumentCommand",
-    "DeleteDocumentCommand",
-    # Queries
-    "GetDocumentQuery",
-    "GetDocumentsQuery",
+    "ProcessDocumentUploadCommand",
     # Command Handlers
     "CreateDocumentCommandHandler",
-    "UpdateDocumentCommandHandler",
-    "DeleteDocumentCommandHandler",
-    # Query Handlers
-    "GetDocumentQueryHandler",
-    "GetDocumentsQueryHandler",
+    "ProcessDocumentUploadCommandHandler",
 ]
