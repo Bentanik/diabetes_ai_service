@@ -41,59 +41,59 @@ class DBCollections:
         """
         return self.db["knowledges"]
 
-    @property
-    def documents(self) -> AsyncIOMotorCollection:
-        """
-        Collection lưu trữ thông tin tài liệu
+    # @property
+    # def documents(self) -> AsyncIOMotorCollection:
+    #     """
+    #     Collection lưu trữ thông tin tài liệu
 
-        Returns:
-            AsyncIOMotorCollection: Collection documents
-        """
-        return self.db["documents"]
+    #     Returns:
+    #         AsyncIOMotorCollection: Collection documents
+    #     """
+    #     return self.db["documents"]
 
-    @property
-    def document_parsers(self) -> AsyncIOMotorCollection:
-        """
-        Collection lưu trữ thông tin document parsers
+    # @property
+    # def document_parsers(self) -> AsyncIOMotorCollection:
+    #     """
+    #     Collection lưu trữ thông tin document parsers
 
-        Returns:
-            AsyncIOMotorCollection: Collection document_parsers
-        """
-        return self.db["document_parsers"]
+    #     Returns:
+    #         AsyncIOMotorCollection: Collection document_parsers
+    #     """
+    #     return self.db["document_parsers"]
 
-    @property
-    def document_jobs(self) -> AsyncIOMotorCollection:
-        """
-        Collection lưu trữ thông tin jobs xử lý tài liệu
+    # @property
+    # def document_jobs(self) -> AsyncIOMotorCollection:
+    #     """
+    #     Collection lưu trữ thông tin jobs xử lý tài liệu
 
-        Returns:
-            AsyncIOMotorCollection: Collection document_jobs
-        """
-        return self.db["document_jobs"]
+    #     Returns:
+    #         AsyncIOMotorCollection: Collection document_jobs
+    #     """
+    #     return self.db["document_jobs"]
 
-    @property
-    def settings(self) -> AsyncIOMotorCollection:
-        """
-        Collection lưu trữ thông tin cài đặt
+    # @property
+    # def settings(self) -> AsyncIOMotorCollection:
+    #     """
+    #     Collection lưu trữ thông tin cài đặt
 
-        Returns:
-            AsyncIOMotorCollection: Collection settings
-        """
-        return self.db["settings"]
+    #     Returns:
+    #         AsyncIOMotorCollection: Collection settings
+    #     """
+    #     return self.db["settings"]
 
-    @property
-    def chat_sessions(self) -> AsyncIOMotorCollection:
-        """
-        Collection lưu trữ thông tin phiên trò chuyện
-        """
-        return self.db["chat_sessions"]
+    # @property
+    # def chat_sessions(self) -> AsyncIOMotorCollection:
+    #     """
+    #     Collection lưu trữ thông tin phiên trò chuyện
+    #     """
+    #     return self.db["chat_sessions"]
 
-    @property
-    def chat_histories(self) -> AsyncIOMotorCollection:
-        """
-        Collection lưu trữ thông tin lịch sử cuộc trò chuyện
+    # @property
+    # def chat_histories(self) -> AsyncIOMotorCollection:
+    #     """
+    #     Collection lưu trữ thông tin lịch sử cuộc trò chuyện
 
-        Returns:
-            AsyncIOMotorCollection: Collection chat_histories
-        """
-        return self.db["chat_histories"]
+    #     Returns:
+    #         AsyncIOMotorCollection: Collection chat_histories
+    #     """
+    #     return self.db["chat_histories"]

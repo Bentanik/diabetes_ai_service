@@ -15,7 +15,7 @@ from app.database.models import KnowledgeModel
 from core.result import Result
 from core.cqrs import CommandRegistry, CommandHandler
 from app.feature.knowledge.commands import CreateKnowledgeCommand
-from rag.vector_store import VectorStoreOperations
+from rag.vector_store import VectorStoreManager
 from shared.messages import KnowledgeResult
 from utils import get_logger
 
@@ -29,7 +29,7 @@ class CreateKnowledgeCommandHandler(CommandHandler):
     def __init__(self):
         """Khởi tạo handler"""
         super().__init__()
-        self.vector_operations = VectorStoreOperations.get_instance()
+        self.vector_store_manager = VectorStoreManager()
         self.logger = get_logger(__name__)
 
     async def execute(self, command: CreateKnowledgeCommand) -> Result[None]:
@@ -70,8 +70,8 @@ class CreateKnowledgeCommandHandler(CommandHandler):
         await collection.knowledges.insert_one(knowledge.to_dict())
 
         # Tạo collection VectorStore
-        await self.vector_operations.create_collection(
-            collection_name=knowledge.id,
+        await self.vector_store_manager.create_collection_async(
+            name=knowledge.id
         )
 
         self.logger.info(f"Cơ sở tri thức đã được tạo thành công: {command.name}")
