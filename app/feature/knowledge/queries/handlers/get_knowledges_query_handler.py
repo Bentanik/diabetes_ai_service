@@ -14,7 +14,7 @@ from app.dto.pagination import Pagination
 from ..get_knowledges_query import GetKnowledgesQuery
 from core.cqrs import QueryRegistry, QueryHandler
 from core.result import Result
-from shared.messages import KnowledgeResult
+from shared.messages import KnowledgeMessage
 from utils import get_logger
 
 
@@ -92,8 +92,8 @@ class GetKnowledgesQueryHandler(QueryHandler[Result[Pagination[KnowledgeModelDTO
 
             # Trả về kết quả thành công
             return Result.success(
-                message=KnowledgeResult.FETCHED.message,
-                code=KnowledgeResult.FETCHED.code,
+                message=KnowledgeMessage.FETCHED.message,
+                code=KnowledgeMessage.FETCHED.code,
                 data=pagination,
             )
         except Exception as e:

@@ -18,7 +18,7 @@ from core.cqrs import CommandRegistry, CommandHandler
 from core.result import Result
 from core.result.models import ErrorModel
 from rag.vector_store import VectorStoreManager
-from shared.messages.knowledge_message import KnowledgeResult
+from shared.messages.knowledge_message import KnowledgeMessage
 from utils import get_logger
 from app.storage import MinioManager
 
@@ -62,8 +62,8 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
         if not ObjectId.is_valid(command.id):
             self.logger.warning(f"ID không hợp lệ: {command.id}")
             return Result.failure(
-                message=KnowledgeResult.NOT_FOUND.message,
-                code=KnowledgeResult.NOT_FOUND.code,
+                message=KnowledgeMessage.NOT_FOUND.message,
+                code=KnowledgeMessage.NOT_FOUND.code,
             )
 
         # Thực hiện xóa
@@ -88,7 +88,7 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
 
         # Kiểm tra kết quả xóa
         if delete_result.deleted_count == 0:
-            return Result.failure(code=KnowledgeResult.NOT_FOUND.code, message=KnowledgeResult.NOT_FOUND.message)
+            return Result.failure(code=KnowledgeMessage.NOT_FOUND.code, message=KnowledgeMessage.NOT_FOUND.message)
 
         # Xóa collection từ VectorStore
         await self.vector_store_manager.delete_collection_async(command.id)
@@ -96,8 +96,8 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
         self.logger.info(f"Cơ sở tri thức đã được xóa: {command.id}")
 
         return Result.success(
-            message=KnowledgeResult.DELETED.message,
-            code=KnowledgeResult.DELETED.code,
+            message=KnowledgeMessage.DELETED.message,
+            code=KnowledgeMessage.DELETED.code,
             data=None,
         )
 

@@ -18,7 +18,7 @@ from app.database import get_collections
 from app.feature.knowledge.commands import UpdateKnowledgeCommand
 from core.cqrs import CommandRegistry, CommandHandler
 from core.result import Result
-from shared.messages import KnowledgeResult
+from shared.messages import KnowledgeMessage
 from utils import get_logger
 
 
@@ -56,8 +56,8 @@ class UpdateKnowledgeCommandHandler(CommandHandler):
         if not ObjectId.is_valid(command.id):
             self.logger.warning(f"ID không hợp lệ: {command.id}")
             return Result.failure(
-                message=KnowledgeResult.NOT_FOUND.message,
-                code=KnowledgeResult.NOT_FOUND.code,
+                message=KnowledgeMessage.NOT_FOUND.message,
+                code=KnowledgeMessage.NOT_FOUND.code,
             )
 
         # Lấy collection để thao tác với database
@@ -76,8 +76,8 @@ class UpdateKnowledgeCommandHandler(CommandHandler):
         if not update_fields:
             self.logger.info(f"Không có trường nào để cập nhật cho ID: {command.id}")
             return Result.success(
-                message=KnowledgeResult.NO_UPDATE.message,
-                code=KnowledgeResult.NO_UPDATE.code,
+                message=KnowledgeMessage.NO_UPDATE.message,
+                code=KnowledgeMessage.NO_UPDATE.code,
                 data=None,
             )
 
@@ -95,15 +95,15 @@ class UpdateKnowledgeCommandHandler(CommandHandler):
         if not updated_doc:
             self.logger.warning(f"Không tìm thấy cơ sở tri thức với id: {command.id}")
             return Result.failure(
-                message=KnowledgeResult.NOT_FOUND.message,
-                code=KnowledgeResult.NOT_FOUND.code,
+                message=KnowledgeMessage.NOT_FOUND.message,
+                code=KnowledgeMessage.NOT_FOUND.code,
             )
 
         self.logger.info(f"Cơ sở tri thức đã được cập nhật: {command.id}")
 
         # Trả về kết quả thành công
         return Result.success(
-            message=KnowledgeResult.UPDATED.message,
-            code=KnowledgeResult.UPDATED.code,
+            message=KnowledgeMessage.UPDATED.message,
+            code=KnowledgeMessage.UPDATED.code,
             data=None,
         )

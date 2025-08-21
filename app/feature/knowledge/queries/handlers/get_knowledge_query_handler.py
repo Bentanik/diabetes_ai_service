@@ -12,7 +12,7 @@ from app.dto.models import KnowledgeModelDTO
 from ..get_knowledge_query import GetKnowledgeQuery
 from core.cqrs import QueryHandler, QueryRegistry
 from core.result import Result
-from shared.messages import KnowledgeResult
+from shared.messages import KnowledgeMessage
 from utils import get_logger
 
 
@@ -55,8 +55,8 @@ class GetKnowledgeQueryHandler(QueryHandler[Result[KnowledgeModelDTO]]):
             # Kiểm tra kết quả tìm kiếm
             if not doc:
                 return Result.failure(
-                    message=KnowledgeResult.NOT_FOUND.message,
-                    code=KnowledgeResult.NOT_FOUND.code,
+                    message=KnowledgeMessage.NOT_FOUND.message,
+                    code=KnowledgeMessage.NOT_FOUND.code,
                 )
 
             # Chuyển đổi dữ liệu sang DTO
@@ -65,8 +65,8 @@ class GetKnowledgeQueryHandler(QueryHandler[Result[KnowledgeModelDTO]]):
 
             # Trả về kết quả thành công
             return Result.success(
-                message=KnowledgeResult.FETCHED.message,
-                code=KnowledgeResult.FETCHED.code,
+                message=KnowledgeMessage.FETCHED.message,
+                code=KnowledgeMessage.FETCHED.code,
                 data=dto,
             )
 

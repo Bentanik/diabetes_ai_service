@@ -16,7 +16,7 @@ from core.result import Result
 from core.cqrs import CommandRegistry, CommandHandler
 from app.feature.knowledge.commands import CreateKnowledgeCommand
 from rag.vector_store import VectorStoreManager
-from shared.messages import KnowledgeResult
+from shared.messages import KnowledgeMessage
 from utils import get_logger
 
 
@@ -59,8 +59,8 @@ class CreateKnowledgeCommandHandler(CommandHandler):
         if exists:
             self.logger.warning(f"Tên cơ sở tri thức đã tồn tại: {command.name}")
             return Result.failure(
-                message=KnowledgeResult.NAME_EXISTS.message,
-                code=KnowledgeResult.NAME_EXISTS.code,
+                message=KnowledgeMessage.NAME_EXISTS.message,
+                code=KnowledgeMessage.NAME_EXISTS.code,
             )
 
         # Tạo KnowledgeModel từ command
@@ -78,7 +78,7 @@ class CreateKnowledgeCommandHandler(CommandHandler):
 
         # Trả về kết quả thành công
         return Result.success(
-            message=KnowledgeResult.CREATED.message,
-            code=KnowledgeResult.CREATED.code,
+            message=KnowledgeMessage.CREATED.message,
+            code=KnowledgeMessage.CREATED.code,
             data=None,
         )

@@ -1,7 +1,7 @@
 from shared.messages.base import BaseResultCode
 
 
-class KnowledgeResult(BaseResultCode):
+class KnowledgeMessage(BaseResultCode):
     CREATED = ("KNOWLEDGE_CREATED", "Cơ sở tri thức đã được tạo thành công")
     NAME_EXISTS = ("KNOWLEDGE_NAME_EXISTS", "Tên cơ sở tri thức đã tồn tại")
     FETCHED = ("KNOWLEDGE_FETCHED", "Cơ sở tri thức đã được lấy thành công")

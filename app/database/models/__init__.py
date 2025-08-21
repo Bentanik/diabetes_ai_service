@@ -1,7 +1,7 @@
 from app.database.models.base_model import BaseModel
 from app.database.models.knowledge_model import KnowledgeModel
+from app.database.models.document_job_model import DocumentJobModel
 # from app.database.models.document_model import DocumentModel
-# from app.database.models.document_job_model import DocumentJobModel
 # from app.database.models.document_parser_model import DocumentParserModel
 # from app.database.models.knowledge_model import KnowledgeModel
 # from app.database.models.chat_history_model import ChatHistoryModel
@@ -11,8 +11,8 @@ from app.database.models.knowledge_model import KnowledgeModel
 __all__ = [
     "BaseModel",
     "KnowledgeModel",
+    "DocumentJobModel",
     # "DocumentModel",
-    # "DocumentJobModel",
     # "DocumentParserModel",
     # "ChatHistoryModel",
     # "ChatSessionModel",
