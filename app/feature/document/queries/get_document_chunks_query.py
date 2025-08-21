@@ -10,7 +10,7 @@ from core.cqrs import Query
 
 
 @dataclass
-class GetDocumentParsersQuery(Query):
+class GetDocumentChunksQuery(Query):
     """
     Query lấy thông tin phân tích tài liệu
 

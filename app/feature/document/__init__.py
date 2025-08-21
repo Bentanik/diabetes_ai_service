@@ -6,6 +6,17 @@ from .commands import (
     ProcessDocumentUploadCommandHandler,
 )
 
+# Import từ queries
+from .queries import (
+    GetDocumentsQuery,
+    GetDocumentQuery,
+    GetDocumentChunksQuery,
+    GetDocumentChunksQueryHandler,
+    GetDocumentQueryHandler,
+    GetDocumentsQueryHandler,
+    GetDocumentChunksQueryHandler,
+)
+
 
 __all__ = [
     # Commands
@@ -14,4 +25,13 @@ __all__ = [
     # Command Handlers
     "CreateDocumentCommandHandler",
     "ProcessDocumentUploadCommandHandler",
+
+    # Queries
+    "GetDocumentsQuery",
+    "GetDocumentQuery",
+    "GetDocumentChunksQuery",
+    # Query Handlers
+    "GetDocumentsQueryHandler",
+    "GetDocumentQueryHandler",
+    "GetDocumentChunksQueryHandler",
 ]

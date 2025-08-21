@@ -77,8 +77,8 @@ class DocumentModel(BaseModel):
         file = DocumentFile(
             path=data.pop("file_path", ""),
             size_bytes=data.pop("file_size_bytes", 0),
-            hash=data.pop("file_hash", None),
-            file_type=data.pop("file_type", None),
+            name=data.pop("file_name", None),
+            type=data.pop("file_type", None),
         )
 
         return cls(
@@ -88,6 +88,6 @@ class DocumentModel(BaseModel):
             document_type=document_type,
             priority_diabetes=priority_diabetes,
             file=file,
-            file_hash=file_hash
+            file_hash=file_hash,
             **data
         )

@@ -36,62 +36,58 @@ class GetDocumentsQueryHandler(
     async def execute(
         self, query: GetDocumentsQuery
     ) -> Result[Pagination[List[DocumentModelDTO]]]:
-        """
-        Thực thi truy vấn lấy danh sách tài liệu
-
-        Args:
-            query (GetDocumentsQuery): Query chứa các tham số tìm kiếm và phân trang
-
-        Returns:
-            Result[PaginationDTO[List[DocumentModelDTO]]]: Kết quả phân trang với danh sách tài liệu
-        """
         try:
             self.logger.info(
                 f"Lấy danh sách tài liệu - knowledge_id={query.knowledge_id}, "
                 f"search={query.search}, page={query.page}"
             )
 
-            # Xây dựng filter query
-            filter_query = self._build_filter_query(query)
+            # Validate knowledge_id
+            if not query.knowledge_id or not query.knowledge_id.strip():
+                return Result.failure("Thiếu knowledge_id", "knowledge_id_required")
 
-            # Xây dựng sort query
-            sort_query = self._build_sort_query(query)
+            if not ObjectId.is_valid(query.knowledge_id):
+                return Result.failure("knowledge_id không hợp lệ", "invalid_knowledge_id")
 
-            # Tính toán offset cho phân trang
-            offset = (query.page - 1) * query.limit
-
-            # Truy vấn database
             collections = get_collections()
+            knowledge_id = ObjectId(query.knowledge_id)
 
-            # Lấy tổng số bản ghi thỏa mãn điều kiện
+            # Kiểm tra knowledge có tồn tại không
+            if not await collections.knowledges.find_one({"_id": knowledge_id}):
+                return Result.failure(DocumentMessage.NOT_FOUND.code, DocumentMessage.NOT_FOUND.message)
+
+            # Filter + sort
+            filter_query = {"knowledge_id": query.knowledge_id}
+            if query.search and query.search.strip():
+                filter_query["title"] = {"$regex": query.search.strip(), "$options": "i"}
+
+            sort_field = query.sort_by if query.sort_by in [
+                "title", "created_at", "updated_at", "priority_diabetes", "file_size_bytes"
+            ] else "updated_at"
+            sort_query = [(sort_field, 1 if query.sort_order.lower() == "asc" else -1)]
+
+            # Phân trang
+            offset = (query.page - 1) * query.limit
             total_count = await collections.documents.count_documents(filter_query)
 
-            # Lấy dữ liệu với phân trang
-            cursor = (
+            docs = await (
                 collections.documents.find(filter_query)
                 .sort(sort_query)
                 .skip(offset)
                 .limit(query.limit)
+                .to_list(length=query.limit)
             )
-            docs = await cursor.to_list(length=query.limit)
 
-            # Chuyển đổi sang DTO
-            document_dtos = []
-            for doc in docs:
-                model = DocumentModel.from_dict(doc)
-                dto = DocumentModelDTO.from_model(model)
-                document_dtos.append(dto)
+            document_dtos = [
+                DocumentModelDTO.from_model(DocumentModel.from_dict(doc)) for doc in docs
+            ]
 
-            # Tính toán số trang
-            total_pages = (total_count + query.limit - 1) // query.limit
-
-            # Tạo pagination result
             pagination_result = Pagination(
                 items=document_dtos,
                 total=total_count,
                 page=query.page,
                 limit=query.limit,
-                total_pages=total_pages,
+                total_pages=(total_count + query.limit - 1) // query.limit,
             )
 
             return Result.success(
@@ -102,58 +98,5 @@ class GetDocumentsQueryHandler(
 
         except Exception as e:
             self.logger.error(f"Lỗi khi lấy danh sách tài liệu: {e}", exc_info=True)
-            return Result.failure(message="Lỗi hệ thống", code="error")
+            return Result.failure("Lỗi hệ thống", "error")
 
-    def _build_filter_query(self, query: GetDocumentsQuery) -> Dict[str, Any]:
-        """
-        Xây dựng filter query cho MongoDB
-
-        Args:
-            query (GetDocumentsQuery): Query parameters
-
-        Returns:
-            Dict[str, Any]: MongoDB filter query
-        """
-        filter_query = {}
-
-        # Filter theo knowledge_id nếu có
-        if query.knowledge_id and query.knowledge_id.strip():
-            if ObjectId.is_valid(query.knowledge_id):
-                filter_query["knowledge_id"] = query.knowledge_id
-            else:
-                self.logger.warning(
-                    f"Invalid knowledge_id format: {query.knowledge_id}"
-                )
-
-        # Tìm kiếm theo title (case-insensitive)
-        if query.search and query.search.strip():
-            search_term = query.search.strip()
-            filter_query["title"] = {"$regex": search_term, "$options": "i"}
-
-        return filter_query
-
-    def _build_sort_query(self, query: GetDocumentsQuery) -> List[tuple]:
-        """
-        Xây dựng sort query cho MongoDB
-
-        Args:
-            query (GetDocumentsQuery): Query parameters
-
-        Returns:
-            List[tuple]: MongoDB sort query
-        """
-        # Validate sort field để tránh injection
-        allowed_sort_fields = [
-            "title",
-            "created_at",
-            "updated_at",
-            "priority_diabetes",
-            "file_size_bytes",
-        ]
-
-        sort_field = (
-            query.sort_by if query.sort_by in allowed_sort_fields else "updated_at"
-        )
-        sort_direction = 1 if query.sort_order.lower() == "asc" else -1
-
-        return [(sort_field, sort_direction)]

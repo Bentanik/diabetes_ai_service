@@ -1,21 +1,21 @@
 # Queries
 from .get_document_query import GetDocumentQuery
 from .get_documents_query import GetDocumentsQuery
-from .get_document_parsers_query import GetDocumentParsersQuery
+from .get_document_chunks_query import GetDocumentChunksQuery
 # Handlers
 from .handlers import (
     GetDocumentQueryHandler,
     GetDocumentsQueryHandler,
-    GetDocumentParsersQueryHandler,
+    GetDocumentChunksQueryHandler,
 )
 
 __all__ = [
     # Queries
     "GetDocumentQuery",
     "GetDocumentsQuery",
-    "GetDocumentParsersQuery",
+    "GetDocumentChunksQuery",
     # Handlers
     "GetDocumentQueryHandler",
     "GetDocumentsQueryHandler",
-    "GetDocumentParsersQueryHandler",
+    "GetDocumentChunksQueryHandler",
 ]
