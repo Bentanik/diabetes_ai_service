@@ -77,10 +77,10 @@ async def process_document_training_job(job: DocumentJob) -> None:
     logger.info(f"Bắt đầu training tài liệu: id={job.id}")
 
     try:
-        # from app.feature.train_ai.commands import ProcessTrainingDocumentCommand
+        from app.feature.train_ai.commands import ProcessTrainingDocumentCommand
 
-        # command = ProcessTrainingDocumentCommand(document_job_id=job.id)
-        # await Mediator.send(command)
+        command = ProcessTrainingDocumentCommand(document_job_id=job.id)
+        await Mediator.send(command)
         logger.info(f"Hoàn thành training tài liệu: id={job.id}")
     except Exception as e:
         logger.error(f"Lỗi training tài liệu {job.id}: {str(e)}", exc_info=True)
