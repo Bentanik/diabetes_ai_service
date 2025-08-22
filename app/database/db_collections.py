@@ -71,7 +71,22 @@ class DBCollections:
         """
         return self.db["document_chunks"]
 
+    @property
+    def chat_sessions(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin phiên trò chuyện
+        """
+        return self.db["chat_sessions"]
 
+    @property
+    def chat_histories(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin lịch sử cuộc trò chuyện
+
+        Returns:
+            AsyncIOMotorCollection: Collection chat_histories
+        """
+        return self.db["chat_histories"]
 
     # @property
     # def settings(self) -> AsyncIOMotorCollection:
@@ -83,19 +98,6 @@ class DBCollections:
     #     """
     #     return self.db["settings"]
 
-    # @property
-    # def chat_sessions(self) -> AsyncIOMotorCollection:
-    #     """
-    #     Collection lưu trữ thông tin phiên trò chuyện
-    #     """
-    #     return self.db["chat_sessions"]
 
-    # @property
-    # def chat_histories(self) -> AsyncIOMotorCollection:
-    #     """
-    #     Collection lưu trữ thông tin lịch sử cuộc trò chuyện
 
-    #     Returns:
-    #         AsyncIOMotorCollection: Collection chat_histories
-    #     """
-    #     return self.db["chat_histories"]
+   

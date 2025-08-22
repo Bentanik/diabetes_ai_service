@@ -26,12 +26,12 @@ COLLECTION_INDEX_CONFIG = {
         {"fields": [("document_id", 1)], "name": "idx_document_id"},
         {"fields": [("is_active", 1)], "name": "idx_is_active"},
     ],
-    # "chat_sessions": [
-    #     {"fields": [("user_id", 1)], "name": "idx_user_id"},
-    #     {"fields": [("title", 1)], "name": "idx_title"},
-    # ],
-    # "chat_histories": [
-    #     {"fields": [("session_id", 1)], "name": "idx_session_id"},
-    #     {"fields": [("created_at", -1)], "name": "idx_created_at"},
-    # ],
+    "chat_sessions": [
+        {"fields": [("user_id", 1)], "name": "idx_user_id"},
+        {"fields": [("title", 1)], "name": "idx_title"},
+    ],
+    "chat_histories": [
+        {"fields": [("session_id", 1)], "name": "idx_session_id"},
+        {"fields": [("created_at", -1)], "name": "idx_created_at"},
+    ],
 }
