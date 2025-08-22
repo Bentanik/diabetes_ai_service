@@ -88,15 +88,15 @@ class DBCollections:
         """
         return self.db["chat_histories"]
 
-    # @property
-    # def settings(self) -> AsyncIOMotorCollection:
-    #     """
-    #     Collection lưu trữ thông tin cài đặt
+    @property
+    def settings(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin cài đặt
 
-    #     Returns:
-    #         AsyncIOMotorCollection: Collection settings
-    #     """
-    #     return self.db["settings"]
+        Returns:
+            AsyncIOMotorCollection: Collection settings
+        """
+        return self.db["settings"]
 
 
 

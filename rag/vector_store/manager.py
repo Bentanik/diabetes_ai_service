@@ -40,7 +40,7 @@ class VectorStoreManager:
             return ids
         return await asyncio.to_thread(_insert)
 
-    async def search_async(self, collections: List[str], query_vector: List[float], top_k: int = 5) -> Dict[str, List[Dict]]:
+    async def search_async(self, collections: List[str], query_vector: List[float], top_k: int = 5, search_accuracy: float = 0.7) -> Dict[str, List[Dict]]:
         """Search vector trong nhiều collection cùng lúc"""
         def _search():
             results = {}
@@ -48,8 +48,10 @@ class VectorStoreManager:
                 res = self.client.search(
                     collection_name=col,
                     query_vector=query_vector,
-                    limit=top_k
+                    limit=top_k,
+                    score_threshold=search_accuracy
                 )
                 results[col] = [{"id": r.id, "payload": r.payload, "score": r.score} for r in res]
             return results
+
         return await asyncio.to_thread(_search)

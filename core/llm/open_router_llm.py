@@ -30,8 +30,8 @@ class OpenRouterLLM:
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=kwargs.get("max_tokens", 500),
-            temperature=kwargs.get("temperature", 0.5),
+            max_tokens=kwargs.get("max_tokens", 1500),
+            temperature=kwargs.get("temperature", 0.6),
         )
         if not response.choices or len(response.choices) == 0:
             raise RuntimeError("No choices returned from OpenRouter API")
@@ -72,8 +72,8 @@ class OpenRouterLLM:
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=kwargs.get("max_tokens", 500),
-            temperature=kwargs.get("temperature", 0.5),
+            max_tokens=kwargs.get("max_tokens", 1500),
+            temperature=kwargs.get("temperature", 0.4),
         )
         if not response.choices or len(response.choices) == 0:
             raise RuntimeError("No choices returned from OpenRouter API")

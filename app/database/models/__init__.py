@@ -5,7 +5,7 @@ from app.database.models.document_model import DocumentModel
 from app.database.models.document_chunk_model import DocumentChunkModel
 from app.database.models.chat_session_model import ChatSessionModel
 from app.database.models.chat_history_model import ChatHistoryModel
-# from app.database.models.setting_model import SettingModel
+from app.database.models.setting_model import SettingModel
 
 __all__ = [
     "BaseModel",
@@ -15,5 +15,5 @@ __all__ = [
     "DocumentChunkModel",
     "ChatSessionModel",
     "ChatHistoryModel",
-    # "SettingModel"
+    "SettingModel"
 ]
