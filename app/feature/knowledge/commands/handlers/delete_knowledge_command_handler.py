@@ -16,12 +16,11 @@ from app.database.manager import get_collections
 from app.feature.knowledge.commands import DeleteKnowledgeCommand
 from core.cqrs import CommandRegistry, CommandHandler
 from core.result import Result
-from core.result.models import ErrorModel
 from rag.vector_store import VectorStoreManager
 from shared.messages.knowledge_message import KnowledgeMessage
 from utils import get_logger
 from app.storage import MinioManager
-
+from core.cqrs import Mediator
 
 @CommandRegistry.register_handler(DeleteKnowledgeCommand)
 class DeleteKnowledgeCommandHandler(CommandHandler):
@@ -82,6 +81,7 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
         Returns:
             Result[None]: Kết quả thành công hoặc lỗi với message và code tương ứng
         """
+
         delete_result = await self.collection.knowledges.delete_one(
             {"_id": ObjectId(command.id)}
         )
@@ -89,6 +89,9 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
         # Kiểm tra kết quả xóa
         if delete_result.deleted_count == 0:
             return Result.failure(code=KnowledgeMessage.NOT_FOUND.code, message=KnowledgeMessage.NOT_FOUND.message)
+
+        # Xóa tài liệu trong cơ sở tri thức
+        # await self.delete_document()
 
         # Xóa collection từ VectorStore
         await self.vector_store_manager.delete_collection_async(command.id)
@@ -101,5 +104,12 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
             data=None,
         )
 
-    async def delete_document(self) -> bool:
-        return True
+    # async def delete_document(self) -> bool:
+    #     from app.feature.document.commands import DeleteDocumentCommand
+    #     try:
+    #         command = DeleteDocumentCommand(knowledge_id=command.id)
+    #         await Mediator.send(command)
+    #         return True
+    #     except Exception as e:
+    #         self.logger.error(f"Lỗi xóa tài liệu: {str(e)}", exc_info=True)
+    #         return False

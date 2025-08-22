@@ -11,16 +11,22 @@ File này cung cấp các REST API endpoints để thực hiện các thao tác 
 - GET /documents/{id}/download: Tải file tài liệu
 """
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
 from app.feature.document import (
     CreateDocumentCommand,
     GetDocumentsQuery,
     GetDocumentQuery,
     GetDocumentChunksQuery,
+    DeleteDocumentCommand,
 )
 from core.cqrs import Mediator
-from utils import get_logger
+from utils import get_logger, should_compress, compress_stream, get_best_compression
+from typing import cast
+from app.dto.models import DocumentModelDTO
+from app.storage import MinioManager
+import mimetypes
+import urllib
 
 # Khởi tạo router với prefix và tag
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -182,3 +188,118 @@ async def get_document_chunks(
     except Exception as e:
         logger.error(f"Lỗi lấy thông tin tài liệu: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Không thể lấy thông tin tài liệu")
+
+@router.delete(
+    "/{document_id}",
+    response_model=None,
+    summary="Xóa tài liệu",
+    description="Xóa một tài liệu khỏi hệ thống theo ID.",
+)
+async def delete_document(document_id: str) -> JSONResponse:
+    """
+    Endpoint xóa tài liệu.
+
+    Args:
+        document_id (str): ID của tài liệu cần xóa
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
+    logger.info(f"Xóa tài liệu: {document_id}")
+    try:
+        command = DeleteDocumentCommand(id=document_id)
+        result = await Mediator.send(command)
+        return result.to_response()
+    except Exception as e:
+        logger.error(f"Lỗi xóa tài liệu: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Xóa tài liệu thất bại")
+
+
+@router.get(
+    "/{document_id}/download",
+    summary="Tải tài liệu",
+    description="Tải file tài liệu từ storage với hỗ trợ compression.",
+)
+async def download_document(
+    document_id: str,
+    request: Request,
+    compress: bool = Query(False, description="Có nén file không"),
+    compression_type: str = Query("gzip", description="Loại nén (gzip, deflate)"),
+    chunk_size: int = Query(
+        64 * 1024, ge=8192, le=1024 * 1024, description="Kích thước chunk"
+    ),
+):
+    logger.info(f"Tải tài liệu: {document_id}")
+    try:
+        # Lấy thông tin document
+        query = GetDocumentQuery(id=document_id)
+        result = await Mediator.send(query)
+
+        if not result.is_success:
+            return result.to_response()
+
+        document_dto = cast(DocumentModelDTO, result.data)
+
+        # Parse file path
+        file_path_parts = document_dto.file.path.split("/", 1)
+        bucket_name = file_path_parts[0]
+        object_name = file_path_parts[1] if len(file_path_parts) > 1 else ""
+
+        # Lấy stream từ MinIO
+        stream_info = await MinioManager.get_instance().get_stream_async(
+            bucket_name, object_name, chunk_size
+        )
+
+        filename = document_dto.title or stream_info["filename"]
+        file_size = stream_info["size"]
+
+        # Nếu filename không có phần mở rộng, lấy từ stream_info["filename"]
+        if "." not in filename and "." in stream_info["filename"]:
+            filename = stream_info["filename"]
+
+        # Xác định MIME type
+        mime_type, _ = mimetypes.guess_type(filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        # Compression
+        compression_method = None
+        if compress and should_compress(filename, file_size):
+            accept_encoding = request.headers.get("Accept-Encoding", "")
+            compression_method = get_best_compression(accept_encoding, compression_type)
+
+        # Headers
+        if compression_method:
+            processed_stream = compress_stream(
+                stream_info["stream"], compression_method
+            )
+            headers = {
+                "Content-Disposition": f"attachment; filename*=UTF-8''{urllib.parse.quote(filename)}",
+                "Content-Encoding": compression_method,
+                "Transfer-Encoding": "chunked",
+                "X-Original-Size": str(file_size),
+            }
+        else:
+            processed_stream = stream_info["stream"]
+            headers = {
+                "Content-Disposition": f"attachment; filename*=UTF-8''{urllib.parse.quote(filename)}",
+                "Content-Length": str(file_size),
+            }
+
+        headers.update(
+            {
+                "Content-Type": mime_type,
+                "Cache-Control": "public, max-age=3600",
+            }
+        )
+
+        return StreamingResponse(processed_stream, headers=headers)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Lỗi tải tài liệu: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Tải tài liệu thất bại")

@@ -72,13 +72,14 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             scores = await self._score_chunks_async(command.document_job_id, chunks)
 
             # Lưu vào database
-            await self._save_document_async(command.document_job_id, document_job, temp_path, chunks, scores)
+            await self._save_document_async(command.document_job_id, document_job, temp_path, document_job.file.path, chunks, scores)
             await self._update_status_async(
                 job_id=command.document_job_id, 
                 status=DocumentJobStatus.COMPLETED, 
                 progress=100,
                 priority_diabetes=sum(scores) / len(scores) if scores else 0.0,
-                message="Hoàn tất xử lý"
+                file_size=os.path.getsize(temp_path),
+                message="Hoàn tất xử lý",
             )
 
             self.logger.info(f"Xử lý tài liệu thành công: {command.document_job_id}")
@@ -267,7 +268,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         self.logger.info(f"Hoàn tất đánh giá tất cả chunks, điểm trung bình: {avg_score:.3f}")
         return all_scores
 
-    async def _save_document_async(self, job_id: str, document_job: DocumentJobModel, temp_path: str, 
+    async def _save_document_async(self, job_id: str, document_job: DocumentJobModel, temp_path: str, file_path: str,
                                  chunks: List, scores: List[float]):
         """Lưu tài liệu và chunks vào database bất đồng bộ"""
         await self._update_status_async(
@@ -297,7 +298,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             description=document_job.description,
             document_type=DocumentType.UPLOADED,
             file=DocumentFile(
-                path=temp_path,
+                path=file_path,
                 size_bytes=os.path.getsize(temp_path),
                 name=os.path.basename(temp_path),
                 type=document_job.file.type,
@@ -306,7 +307,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             file_hash=file_hash,
         )
 
-        document.id = document_job.id
+        document.id = document_job.document_id
         
         # Lưu document
         await self.collections.documents.insert_one(document.to_dict())
@@ -331,7 +332,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             for j, chunk in enumerate(chunks[i:i + batch_size]):
                 index = i + j
                 chunk_model = DocumentChunkModel(
-                    document_id=document_job.id,
+                    document_id=document_job.document_id,
                     knowledge_id=document_job.knowledge_id,
                     content=chunk.content,
                     diabetes_score=scores[index],
@@ -361,7 +362,8 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
     async def _update_status_async(self, job_id: str, status: DocumentJobStatus, progress: float = None, 
                                  message: str = None,
                                  priority_diabetes: float = None,
-                                 document_status: DocumentStatus = DocumentStatus.NORMAL):
+                                 document_status: DocumentStatus = DocumentStatus.NORMAL,
+                                 file_size: int = None):
         """Cập nhật trạng thái document job bất đồng bộ"""
         update_fields = {
             "processing_status.status": status,
@@ -374,6 +376,8 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             update_fields["processing_status.progress_message"] = message
         if priority_diabetes is not None:
             update_fields["priority_diabetes"] = priority_diabetes
+        if file_size is not None:
+            update_fields["file.file_size_bytes"] = file_size
         
         await self.collections.document_jobs.update_one(
             {"_id": ObjectId(job_id)},

@@ -55,3 +55,23 @@ class VectorStoreManager:
             return results
 
         return await asyncio.to_thread(_search)
+
+    async def delete_by_payload_async(
+        self,
+        collection_name: str,
+        document_id: str = None,
+    ) -> None:
+        """Xóa các điểm theo document_id hoặc knowledge_id bằng filter"""
+        if not document_id:
+            raise ValueError("Phải truyền document_id.")
+
+        filters = []
+        if document_id:
+            filters.append(models.FieldCondition(
+                key="document_id",
+                match=models.MatchValue(value=document_id)
+            ))
+
+        filter_obj = models.Filter(must=filters)
+
+        await asyncio.to_thread(self.client.delete, collection_name=collection_name, filter=filter_obj)
