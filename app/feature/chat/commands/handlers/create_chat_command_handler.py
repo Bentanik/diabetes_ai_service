@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from datetime import datetime
 from bson import ObjectId
 from app.database import get_collections
 from app.database.enums import ChatRoleType
@@ -80,7 +81,10 @@ class CreateChatCommandHandler(CommandHandler):
             role=ChatRoleType.AI
         )
         await self.save_data(data=chat_ai)
-        
+
+        # Cập nhật thời gian của session
+        await self.update_session(session_id=session.id)
+
         chat_history_dto = ChatHistoryModelDTO.from_model(chat_ai)
 
         return Result.success(
@@ -118,6 +122,22 @@ class CreateChatCommandHandler(CommandHandler):
         )
         await self.db.chat_sessions.insert_one(session.to_dict())
         return session
+
+    async def update_session(self, session_id: str) -> bool:
+        """Update session với thời gian mới nhất"""
+        try:
+            await self.db.chat_sessions.update_one(
+                {"_id": ObjectId(session_id)},
+                {
+                    "$set": {
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            return True
+        except Exception as e:
+            self.logger.error(f"Error updating session {session_id}: {str(e)}")
+            return False
 
     async def enhance_query(self, content: str) -> str:
         return content
