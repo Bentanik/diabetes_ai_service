@@ -10,8 +10,10 @@ Chức năng chính:
 - Trả về kết quả thành công hoặc lỗi
 """
 
+import asyncio
 from bson import ObjectId
 
+from app.database.enums import DocumentStatus
 from app.database.manager import get_collections
 from app.feature.knowledge.commands import DeleteKnowledgeCommand
 from core.cqrs import CommandRegistry, CommandHandler
@@ -20,7 +22,7 @@ from rag.vector_store import VectorStoreManager
 from shared.messages.knowledge_message import KnowledgeMessage
 from utils import get_logger
 from app.storage import MinioManager
-from core.cqrs import Mediator
+from app.database.models import DocumentJobModel
 
 @CommandRegistry.register_handler(DeleteKnowledgeCommand)
 class DeleteKnowledgeCommandHandler(CommandHandler):
@@ -91,10 +93,10 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
             return Result.failure(code=KnowledgeMessage.NOT_FOUND.code, message=KnowledgeMessage.NOT_FOUND.message)
 
         # Xóa tài liệu trong cơ sở tri thức
-        # await self.delete_document()
+        await self.delete_document(command)
 
         # Xóa collection từ VectorStore
-        await self.vector_store_manager.delete_collection_async(command.id)
+        await self.vector_store_manager.delete_collection_async(name=command.id)
 
         self.logger.info(f"Cơ sở tri thức đã được xóa: {command.id}")
 
@@ -104,12 +106,36 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
             data=None,
         )
 
-    # async def delete_document(self) -> bool:
-    #     from app.feature.document.commands import DeleteDocumentCommand
-    #     try:
-    #         command = DeleteDocumentCommand(knowledge_id=command.id)
-    #         await Mediator.send(command)
-    #         return True
-    #     except Exception as e:
-    #         self.logger.error(f"Lỗi xóa tài liệu: {str(e)}", exc_info=True)
-    #         return False
+    async def delete_document(self, command: DeleteKnowledgeCommand) -> bool:
+        try:
+            # Xóa dữ liệu trong Mongo song song
+            await asyncio.gather(
+                self.collection.documents.delete_many({"knowledge_id": command.id}),
+                self.collection.document_chunks.delete_many({"knowledge_id": command.id}),
+                self.collection.document_jobs.update_many(
+                    {"knowledge_id": command.id},
+                    {"$set": {"document_status": DocumentStatus.DELETED}}
+                )
+            )
+
+            # Lấy danh sách document jobs
+            document_jobs_cursor = self.collection.document_jobs.find({"knowledge_id": command.id})
+            document_jobs = [
+                DocumentJobModel.from_dict(doc)
+                async for doc in document_jobs_cursor
+            ]
+
+            # Xóa file trong MinIO
+            for job in document_jobs:
+                if job.file and job.file.path:
+                    try:
+                        bucket, obj = job.file.path.split("/", 1)
+                        self.minio_manager.delete_file(bucket_name=bucket, object_name=obj)
+                    except Exception as minio_err:
+                        self.logger.warning(f"Lỗi khi xóa file {job.file.path} trong MinIO: {minio_err}")
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Lỗi xóa tài liệu: {e}", exc_info=True)
+            return False
