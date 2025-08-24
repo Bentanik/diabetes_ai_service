@@ -1,32 +1,25 @@
 import asyncio
-from typing import List, Union, Dict, Any
-from pathlib import Path
 import logging
 import re
+import unicodedata
+from pathlib import Path
+from typing import List, Union, Dict, Any
 
-from .base import BaseParser, ParsedContent
-from rag.dataclasses import FileType
+from pdfminer.high_level import extract_pages
+from pdfminer.layout import LAParams, LTTextContainer, LTChar
+import pdfplumber
 
-from pdfminer.high_level import extract_pages, extract_text
-from pdfminer.layout import LAParams, LTTextContainer
+from .base import BaseParser
+from ..dataclasses import ParsedContent, FileType
 
 
 class PDFParser(BaseParser):
-    """Parser cho file PDF sử dụng PDFMiner"""
-    
     def __init__(self, **engine_kwargs):
-        """
-        Khởi tạo PDF parser
-        
-        Args:
-            **engine_kwargs: Các tham số cho PDFMiner LAParams
-        """
         self.engine_kwargs = engine_kwargs
         self.logger = logging.getLogger(__name__)
         self._init_engine()
-    
+
     def _init_engine(self):
-        """Khởi tạo PDFMiner engine"""
         default_params = {
             'line_overlap': 0.5,
             'char_margin': 2.0,
@@ -38,128 +31,115 @@ class PDFParser(BaseParser):
         }
         params = {**default_params, **self.engine_kwargs}
         self.layout_params = LAParams(**params)
-    
-    def get_file_type(self) -> FileType:
-        return FileType.PDF
-    
+
     def get_file_extensions(self) -> List[str]:
-        return FileType.PDF.extensions
+        return FileType.extensions[FileType.PDF]
+
+    def get_file_type(self) -> str:
+        return FileType.PDF
 
     async def parse_async(self, file_path: Union[str, Path]) -> ParsedContent:
         return await asyncio.to_thread(self._parse, file_path)
-    
+
     def _parse(self, file_path: Union[str, Path]) -> ParsedContent:
-        """
-        Parse một file PDF từ đường dẫn
-        
-        Args:
-            file_path: Đường dẫn tới file PDF
-            
-        Returns:
-            ParsedContent: Object chứa content và metadata
-        """
+        file_path = self._validate_file(file_path)
+
         try:
-            file_path = Path(file_path)
-            if not file_path.exists():
-                raise FileNotFoundError(f"File PDF không tồn tại: {file_path}")
-            
-            # Validate PDF file
-            if not self._is_valid_pdf(file_path):
-                raise ValueError(f"File không phải là PDF hợp lệ: {file_path}")
-            
-            # Parse content
-            content = self._parse_with_pdfminer(file_path)
-            
-            # Extract metadata
-            metadata = self._extract_metadata(file_path)
-            
-            file_type = self.get_file_type()
-            
+            content, tables = self._extract_text_and_tables(file_path)
+            content = self._clean_text(content)
+            metadata = self._build_metadata(file_path, tables)
+
+            assert isinstance(metadata, dict), f"metadata must be dict, got {type(metadata)}"
+
             return ParsedContent(
                 content=content,
                 metadata=metadata,
-                file_type=file_type,
-                file_path=str(file_path)
+                file_type=self.get_file_type(),
+                file_path=str(file_path),
+                tables=tables
             )
-        
         except Exception as e:
-            self.logger.error(f"Lỗi khi parse file {file_path}: {str(e)}")
-            raise Exception(f"Lỗi khi parse file {file_path}: {str(e)}") from e
-    
-    def _is_valid_pdf(self, file_path: Path) -> bool:
-        """Kiểm tra file có phải PDF hợp lệ không"""
+            self.logger.error(f"Failed to parse PDF {file_path}: {str(e)}")
+            raise
+
+    def _extract_text_and_tables(self, file_path: Path) -> tuple[str, List[List[List[str]]]]:
+        text_parts = []
+        tables = []
+
+        # Extract tables
         try:
-            with open(file_path, 'rb') as file:
-                header = file.read(4)
-                return header == b'%PDF'
-        except Exception:
-            return False
-    
-    def _parse_with_pdfminer(self, file_path: Path) -> str:
-        """Parse PDF với PDFMiner engine"""
+            with pdfplumber.open(file_path) as pdf:
+                for page in pdf.pages:
+                    page_tables = page.extract_tables()
+                    if page_tables:
+                        tables.extend(page_tables)
+        except Exception as e:
+            self.logger.warning(f"Table extraction failed: {e}")
+
+        # Extract text
         try:
             pages = extract_pages(str(file_path), laparams=self.layout_params)
-            
-            page_texts = []
-            for page_num, page in enumerate(pages, 1):
-                text = ""
-                for container in page:
-                    if isinstance(container, LTTextContainer):
-                        container_text = container.get_text().strip()
-                        if container_text and len(container_text) > 1:  # Filter out single chars
-                            text += container_text + "\n"
-                
-                # Clean up text
-                text = self._clean_text(text)
-                if text.strip():  # Only add non-empty pages
-                    page_texts.append(text.strip())
-            
-            return "\f".join(page_texts)
-        
+            for page in pages:
+                page_lines = []
+                for elem in page:
+                    if isinstance(elem, LTTextContainer):
+                        text = elem.get_text().strip()
+                        if not text:
+                            continue
+
+                        # Detect heading by font size
+                        try:
+                            # Lấy tất cả ký tự trong container
+                            chars = []
+                            for text_line in elem:
+                                if hasattr(text_line, '__iter__'):
+                                    for char in text_line:
+                                        if isinstance(char, LTChar):
+                                            chars.append(char)
+                                elif isinstance(text_line, LTChar):
+                                    chars.append(text_line)
+
+                            if chars:
+                                max_size = max(char.size for char in chars)
+                                if max_size > 14:
+                                    text = f"\n[HEADING]{text}[/HEADING]\n"
+                        except Exception as e:
+                            self.logger.debug(f"Font size detection failed for: {text[:30]}... Error: {e}")
+
+                        page_lines.append(text)
+                if page_lines:
+                    text_parts.append("\n".join(page_lines))
         except Exception as e:
-            self.logger.warning(f"PDFMiner detailed parsing failed, fallback to simple extraction: {e}")
-            # Fallback to simple text extraction
-            try:
-                content = extract_text(str(file_path))
-                return self._clean_text(content)
-            except Exception as fallback_error:
-                raise Exception(f"Both detailed and simple PDF parsing failed: {fallback_error}") from e
-    
+            self.logger.error(f"Text extraction failed: {e}")
+            raise ValueError(f"Cannot extract text from PDF: {e}")
+
+        full_text = "\f[PAGE_BREAK]\f".join(text_parts)
+        return full_text, tables
+
     def _clean_text(self, text: str) -> str:
-        """Clean và chuẩn hóa text"""
         if not text:
             return ""
-        
-        # Remove excessive whitespace
-        lines = []
-        for line in text.split('\n'):
-            line = line.strip()
-            if line:
-                lines.append(line)
-        
-        # Join lines with single newline
-        cleaned = '\n'.join(lines)
-        
-        # Remove multiple consecutive newlines
+        text = re.sub(r'\r\n|\r', '\n', text)
+        text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
+        text = re.sub(r'([a-z,;:])\n([a-z])', r'\1 \2', text)
+        lines = [line.strip() for line in text.split('\n')]
+        cleaned = '\n'.join(line if line else "" for line in lines)
         cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
-        
-        return cleaned
-    
-    def _extract_metadata(self, file_path: Path) -> Dict[str, Any]:
-        """Extract metadata từ PDF"""
-        metadata = {
-            'file_size': file_path.stat().st_size,
-            'file_name': file_path.name,
-            'parser_engine': 'pdfminer'
-        }
-        
+        cleaned = unicodedata.normalize('NFC', cleaned)
+        return cleaned.strip()
+
+    def _build_metadata(self, file_path: Path, tables: List) -> Dict[str, Any]:
         try:
-            # Count pages by extracting all pages
-            pages = list(extract_pages(str(file_path), maxpages=None))
-            metadata['num_pages'] = len(pages)
-            
+            with pdfplumber.open(file_path) as pdf:
+                num_pages = len(pdf.pages)
         except Exception as e:
-            self.logger.warning(f"Không thể extract metadata: {e}")
-            metadata['num_pages'] = 'unknown'
-        
-        return metadata
+            self.logger.warning(f"Cannot get num_pages: {e}")
+            num_pages = 'unknown'
+
+        return {
+            'file_name': file_path.name,
+            'file_size': file_path.stat().st_size,
+            'num_pages': num_pages,
+            'num_tables': len(tables),
+            'parser': 'pdfminer+pdfplumber'
+        }

@@ -1,386 +1,280 @@
-import asyncio
-from typing import List
+# rag/chunkers/semantic_chunker.py
 import re
-import logging
-import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
+import numpy as np
+from typing import List
+from sklearn.metrics.pairwise import cosine_similarity
+from transformers import PreTrainedTokenizerFast
 
-from rag.dataclasses import ChunkMetadata, DocumentChunk
+from rag.dataclasses import ParsedContent
 
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
+from .base import BaseChunker
+from ..dataclasses import DocumentChunk, ChunkMetadata
 
-
-class Chunker:
+class Chunker(BaseChunker):
     """
-    Semantic chunker that preserves sentence boundaries and meaning.
-    Optimized for embedding and retrieval tasks.
+    Hỗ trợ:
+    - Tiếng Việt và tiếng Anh
+    - Xử lý bảng (được chèn dưới dạng [TABLE])
+    - Tách chunk tại điểm thay đổi chủ đề
+    - Giữ nguyên câu và cấu trúc (heading, page break)
+    - Dùng token count chính xác
     """
-    
+
     def __init__(
         self,
-        chunk_size: int = 512,
-        chunk_overlap: int = 128,
-        min_chunk_size: int = 100,
-        max_chunk_size: int = 1024,
-        preserve_paragraphs: bool = True
+        embedding_model,
+        tokenizer: PreTrainedTokenizerFast = None,
+        max_tokens: int = 512,
+        min_tokens: int = 100,
+        overlap_tokens: int = 64,
+        similarity_threshold: float = 0.6,
     ):
         """
-        Initialize the chunker.
-        
         Args:
-            chunk_size: Target number of words for each chunk
-            chunk_overlap: Number of words to overlap between chunks
-            min_chunk_size: Minimum number of words for a chunk
-            max_chunk_size: Maximum number of words for a chunk
-            preserve_paragraphs: Try to keep paragraphs together when possible
+            embedding_model: Instance của EmbeddingModel (singleton)
+            tokenizer: Tokenizer tương ứng (nếu không truyền, tự load từ model)
+            max_tokens: Số token tối đa mỗi chunk
+            min_tokens: Số token tối thiểu để tạo chunk
+            overlap_tokens: Số token overlap giữa các chunk
+            similarity_threshold: Ngưỡng similarity để coi là "thay đổi chủ đề"
         """
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.min_chunk_size = min_chunk_size
-        self.max_chunk_size = max_chunk_size
-        self.preserve_paragraphs = preserve_paragraphs
-        self.logger = logging.getLogger(__name__)
-        
-    async def chunk_async(self, text: str) -> List[DocumentChunk]:
-        return await asyncio.to_thread(self.chunk_text, text)
-    
-    def chunk_text(self, text: str) -> List[DocumentChunk]:
-        """
-        Split text into semantic chunks.
-        
-        Args:
-            text: The text to chunk
-            
-        Returns:
-            List of DocumentChunk objects
-        """
+        self.embedding_model = embedding_model
+        self.tokenizer = tokenizer or embedding_model.model.tokenizer
+        self.max_tokens = max_tokens
+        self.min_tokens = min_tokens
+        self.overlap_tokens = overlap_tokens
+        self.similarity_threshold = similarity_threshold
+
+        # Setup sentence tokenizer cho tiếng Việt
+        try:
+            from underthesea import sent_tokenize as viet_sent_tokenize
+            self.viet_sent_tokenize = viet_sent_tokenize
+        except ImportError:
+            self.viet_sent_tokenize = None
+
+    def _count_tokens(self, text: str) -> int:
+        """Đếm số subword token"""
+        return len(self.tokenizer.encode(text))
+
+    def _split_sentences(self, text: str) -> List[str]:
+        """Tách câu, tự động detect ngôn ngữ"""
         if not text or not text.strip():
             return []
-        
-        # Split by pages if present (PDF page separator)
-        pages = text.split('\f')
-        
-        all_chunks = []
-        
-        for page_text in pages:
-            if not page_text.strip():
-                continue
-                
-            # Process each page
-            page_chunks = self._chunk_page(page_text, len(all_chunks))
-            all_chunks.extend(page_chunks)
-            
-        return all_chunks
-    
-    def _chunk_page(self, text: str, chunk_index_start: int) -> List[DocumentChunk]:
-        """Chunk a single page of text"""
-        
-        # Split into paragraphs if preserve_paragraphs is True
-        if self.preserve_paragraphs:
-            paragraphs = self._split_paragraphs(text)
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # Detect language
+        vi_chars = set('àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ')
+        sample = ''.join(filter(str.isalpha, text.lower()[:100]))
+        is_vietnamese = any(c in vi_chars for c in sample)
+
+        if is_vietnamese and self.viet_sent_tokenize:
+            sentences = self.viet_sent_tokenize(text)
         else:
-            paragraphs = [text]
-        
-        chunks = []
-        current_chunk_text = ""
-        current_word_count = 0
-        chunk_index = chunk_index_start
-        
-        for paragraph in paragraphs:
-            if not paragraph.strip():
-                continue
-                
-            # Split paragraph into sentences
-            sentences = self._split_sentences(paragraph)
-            
-            for sent_idx, sentence in enumerate(sentences):
-                if not sentence.strip():
-                    continue
-                
-                sentence_words = word_tokenize(sentence)
-                sentence_word_count = len(sentence_words)
-                
-                # Check if adding this sentence would exceed chunk size
-                if current_word_count + sentence_word_count > self.chunk_size and current_chunk_text:
-                    # Save current chunk
-                    chunk = self._create_chunk(
-                        content=current_chunk_text.strip(),
-                        chunk_index=chunk_index,
-                        word_count=current_word_count
-                    )
-                    chunks.append(chunk)
-                    chunk_index += 1
-                    
-                    # Start new chunk with overlap
-                    overlap_text, overlap_word_count = self._get_overlap_text(
-                        sentences[:sent_idx], 
-                        current_chunk_text
-                    )
-                    
-                    current_chunk_text = overlap_text + (" " if overlap_text else "") + sentence
-                    current_word_count = overlap_word_count + sentence_word_count
-                else:
-                    # Add sentence to current chunk
-                    if current_chunk_text:
-                        current_chunk_text += " " + sentence
-                    else:
-                        current_chunk_text = sentence
-                    current_word_count += sentence_word_count
-                
-                # Handle maximum chunk size
-                if current_word_count > self.max_chunk_size:
-                    # Split the current chunk if it's too long
-                    sub_chunks = self._split_long_chunk(
-                        current_chunk_text,
-                        chunk_index
-                    )
-                    chunks.extend(sub_chunks)
-                    chunk_index += len(sub_chunks)
-                    current_chunk_text = ""
-                    current_word_count = 0
-                    
-            # Add paragraph separator if we're preserving paragraphs
-            if self.preserve_paragraphs and current_chunk_text:
-                current_chunk_text += "\n\n"
-                    
-        # Don't forget the last chunk
-        if current_chunk_text.strip() and current_word_count >= self.min_chunk_size:
-            chunk = self._create_chunk(
-                content=current_chunk_text.strip(),
-                chunk_index=chunk_index,
-                word_count=current_word_count
-            )
-            chunks.append(chunk)
-            
-        return chunks
-    
-    def _split_paragraphs(self, text: str) -> List[str]:
-        """Split text into paragraphs"""
-        # Split by double newlines or more
-        paragraphs = re.split(r'\n\s*\n', text)
-        return [p.strip() for p in paragraphs if p.strip()]
-    
-    def _split_sentences(self, text: str) -> List[str]:
-        """Split text into sentences with improved handling"""
-        # Use NLTK sentence tokenizer
-        sentences = sent_tokenize(text)
-        
-        # Post-process sentences to handle common edge cases
-        processed_sentences = []
-        
-        for i, sent in enumerate(sentences):
-            sent = sent.strip()
-            if not sent:
-                continue
-                
-            # Check if this sentence should be merged with the previous one
-            if processed_sentences and self._should_merge_sentences(
-                processed_sentences[-1], sent
-            ):
-                processed_sentences[-1] = processed_sentences[-1] + " " + sent
-            else:
-                processed_sentences.append(sent)
-                
-        return processed_sentences
-    
-    def _should_merge_sentences(self, sent1: str, sent2: str) -> bool:
-        """Check if two sentences should be merged"""
-        # Common abbreviations that don't end sentences
-        abbreviations = [
-            'Dr.', 'Mr.', 'Mrs.', 'Ms.', 'Prof.', 'Sr.', 'Jr.', 
-            'Ph.D', 'M.D', 'B.A', 'M.A', 'B.S', 'M.S',
-            'i.e.', 'e.g.', 'etc.', 'vs.', 'Inc.', 'Ltd.', 'Co.'
-        ]
-        
-        # Check if first sentence ends with an abbreviation
-        for abbr in abbreviations:
-            if sent1.endswith(abbr):
-                return True
-        
-        # Check if second sentence starts with lowercase (continuation)
-        if sent2 and sent2[0].islower():
-            return True
-        
-        # Check for very short sentences that might be fragments
-        if len(sent1.split()) < 3 or len(sent2.split()) < 3:
-            # But don't merge if they look like complete sentences
-            if not (sent1.endswith('.') and sent2[0].isupper()):
-                return True
-                
-        return False
-    
-    def _get_overlap_text(
-        self, 
-        previous_sentences: List[str], 
-        current_chunk: str
-    ) -> tuple[str, int]:
-        """Get overlap text from the end of current chunk"""
-        if not previous_sentences or not self.chunk_overlap:
-            return "", 0
-            
-        # Get sentences from the end of current chunk
-        chunk_sentences = self._split_sentences(current_chunk)
-        if not chunk_sentences:
-            return "", 0
-            
-        overlap_sentences = []
-        overlap_word_count = 0
-        
-        # Go backwards and collect sentences until we reach overlap size
-        for sent in reversed(chunk_sentences):
-            sent_word_count = len(word_tokenize(sent))
-            
-            if overlap_word_count + sent_word_count > self.chunk_overlap:
+            import nltk
+            try:
+                sentences = nltk.sent_tokenize(text)
+            except LookupError:
+                nltk.download('punkt')
+                sentences = nltk.sent_tokenize(text)
+        return [s.strip() for s in sentences if s.strip()]
+
+    def _table_to_markdown(self, table: List[List[str]]) -> str:
+        """Chuyển bảng thành markdown table"""
+        if not table or not table[0]:
+            return ""
+        try:
+            header = "| " + " | ".join(table[0]) + " |"
+            separator = "| " + " | ".join(["---"] * len(table[0])) + " |"
+            rows = [
+                "| " + " | ".join(row) + " |"
+                for row in table[1:] if row
+            ]
+            return "\n".join([header, separator] + rows)
+        except Exception:
+            return "\n".join(["\t".join(row) for row in table if row])
+
+    def _inject_tables(self, text: str, tables: List[List[List[str]]]) -> str:
+        table_iter = iter(tables)
+        while '[TABLE]' in text:
+            try:
+                table = next(table_iter)
+                md_table = self._table_to_markdown(table)
+                text = text.replace('[TABLE]', md_table, 1)
+            except StopIteration:
                 break
-                
-            overlap_sentences.insert(0, sent)
-            overlap_word_count += sent_word_count
-            
-        return " ".join(overlap_sentences), overlap_word_count
-    
-    def _split_long_chunk(self, text: str, chunk_index: int) -> List[DocumentChunk]:
-        """Split a chunk that's too long into smaller chunks"""
-        chunks = []
-        sentences = self._split_sentences(text)
-        
-        current_chunk = ""
-        current_word_count = 0
-        
-        for sentence in sentences:
-            sentence_words = word_tokenize(sentence)
-            sentence_word_count = len(sentence_words)
-            
-            if sentence_word_count > self.max_chunk_size:
-                # Handle very long sentences by splitting at punctuation
-                sub_sentences = self._split_long_sentence(sentence)
-                
-                for sub_sent in sub_sentences:
-                    sub_word_count = len(word_tokenize(sub_sent))
-                    
-                    if current_word_count + sub_word_count > self.max_chunk_size:
-                        if current_chunk:
-                            chunks.append(self._create_chunk(
-                                current_chunk.strip(),
-                                chunk_index + len(chunks),
-                                current_word_count
-                            ))
-                            current_chunk = sub_sent
-                            current_word_count = sub_word_count
-                    else:
-                        current_chunk += " " + sub_sent if current_chunk else sub_sent
-                        current_word_count += sub_word_count
+        return text
+
+    def _split_by_structure(self, text: str) -> List[str]:
+        """
+        Tách text theo cấu trúc: heading, page break
+        Trả về danh sách các block
+        """
+        # Tách theo heading và page break
+        parts = re.split(r'(\[PAGE_BREAK\]|\[HEADING\][^\[]*\[/HEADING\])', text)
+        blocks = []
+        current_block = ""
+
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+
+            if re.match(r'\[PAGE_BREAK\]|\[HEADING\]', part):
+                # Đóng block hiện tại
+                if current_block:
+                    blocks.append(current_block.strip())
+                    current_block = ""
+                # Thêm block cấu trúc
+                blocks.append(part)
             else:
-                if current_word_count + sentence_word_count > self.max_chunk_size:
-                    if current_chunk:
-                        chunks.append(self._create_chunk(
-                            current_chunk.strip(),
-                            chunk_index + len(chunks),
-                            current_word_count
-                        ))
-                        current_chunk = sentence
-                        current_word_count = sentence_word_count
-                else:
-                    current_chunk += " " + sentence if current_chunk else sentence
-                    current_word_count += sentence_word_count
-        
-        if current_chunk:
-            chunks.append(self._create_chunk(
-                current_chunk.strip(),
-                chunk_index + len(chunks),
-                current_word_count
-            ))
-            
-        return chunks
-    
-    def _split_long_sentence(self, sentence: str) -> List[str]:
-        """Split a very long sentence at natural breaking points"""
-        # Try to split at punctuation marks that often indicate clauses
-        split_patterns = [
-            (r'; ', '; '),
-            (r', ', ', '),
-            (r' - ', ' - '),
-            (r' — ', ' — '),
-            (r' \(', ' ('),
-            (r'\) ', ') '),
-        ]
-        
-        parts = [sentence]
-        
-        for pattern, separator in split_patterns:
-            new_parts = []
-            for part in parts:
-                if len(word_tokenize(part)) > self.max_chunk_size:
-                    # Split and keep the separator
-                    splits = re.split(f'({pattern})', part)
-                    # Reconstruct with separators
-                    temp = ""
-                    for split in splits:
-                        if split.strip():
-                            if re.match(pattern, split):
-                                temp += split
-                            else:
-                                if temp:
-                                    new_parts.append(temp)
-                                temp = split
-                    if temp:
-                        new_parts.append(temp)
-                else:
-                    new_parts.append(part)
-            parts = new_parts
-            
-        return parts
-    
-    def _create_chunk(
-        self,
-        content: str,
-        chunk_index: int,
-        word_count: int
-    ) -> DocumentChunk:
-        """Create a DocumentChunk object"""
-        metadata = ChunkMetadata(
-            chunk_index=chunk_index,
-            word_count=word_count,
-            chunking_strategy="semantic"
-        )
-        
+                current_block += " " + part
+
+        if current_block.strip():
+            blocks.append(current_block.strip())
+
+        return blocks
+
+    def _get_overlap_text(self, text: str, max_tokens: int) -> str:
+        """Lấy overlap từ cuối text"""
+        sentences = self._split_sentences(text)
+        overlap = ""
+        for sent in reversed(sentences):
+            candidate = sent + " " + overlap
+            if self._count_tokens(candidate) > max_tokens:
+                break
+            overlap = candidate
+        return overlap.strip()
+
+    def _make_chunk(self, content: str, chunk_index: int) -> DocumentChunk:
+        """Tạo DocumentChunk"""
         return DocumentChunk(
-            content=content,
-            metadata=metadata
+            content=content.strip(),
+            metadata=ChunkMetadata(
+                chunk_index=chunk_index,
+                word_count=len(content.split()),
+                chunking_strategy="semantic_chunk"
+            )
         )
 
+    async def _embed_sentences(self, sentences: List[str]) -> np.ndarray:
+        """Embed danh sách câu bằng EmbeddingModel"""
+        if not sentences:
+            return np.array([])
+        try:
+            embeddings = await self.embedding_model.embed_batch(sentences)
+            return np.array(embeddings)
+        except Exception as e:
+            raise RuntimeError(f"Embedding failed: {e}")
 
-# Example usage
-if __name__ == "__main__":
-    # Create chunker instance
-    chunker = Chunker(
-        chunk_size=512,      # Target 512 words per chunk
-        chunk_overlap=128,   # 128 words overlap
-        min_chunk_size=100,  # Minimum 100 words
-        max_chunk_size=1024, # Maximum 1024 words
-        preserve_paragraphs=True
-    )
-    
-    # Example text
-    sample_text = """
-    This is the first paragraph of the document. It contains multiple sentences. 
-    Each sentence should be kept together when possible.
-    
-    This is the second paragraph. Dr. Smith and Mr. Johnson discussed the project.
-    The meeting was productive. They decided to proceed with the implementation.
-    
-    The third paragraph contains technical details about the system architecture.
-    It includes various components and their interactions.
-    """
-    
-    # Chunk the text
-    chunks = chunker.chunk_text(sample_text)
-    # Print results
-    for chunk in chunks:
-        print(f"Chunk {chunk.metadata.chunk_index}:")
-        print(f"  Words: {chunk.metadata.word_count}")
-        print(f"  Strategy: {chunk.metadata.chunking_strategy}")
-        print(f"  Content: {chunk.content[:100]}...")
-        print()
+    async def _find_semantic_breaks(self, sentences: List[str]) -> List[int]:
+        """Tìm điểm ngắt ngữ nghĩa dựa trên similarity"""
+        if len(sentences) < 2:
+            return []
+
+        embeddings = await self._embed_sentences(sentences)
+        breaks = []
+
+        for i in range(1, len(embeddings)):
+            sim = cosine_similarity([embeddings[i-1]], [embeddings[i]])[0][0]
+            if sim < self.similarity_threshold:
+                breaks.append(i)
+
+        return breaks
+
+    async def chunk_async(self, parsed_content: ParsedContent) -> List[DocumentChunk]:
+        """
+        Chia parsed_content thành các chunk ngữ nghĩa.
+
+        Args:
+            parsed_content: Output từ parser (có .content, .tables)
+
+        Returns:
+            List[DocumentChunk]
+        """
+        text = parsed_content.content
+        tables = parsed_content.tables or []
+
+        # === BƯỚC 1: Inject bảng vào text ===
+        if tables:
+            # Đảm bảo có placeholder
+            text = re.sub(r'\[TABLE_PLACEHOLDER\]', '[TABLE]', text)
+            text = self._inject_tables(text, tables)
+
+        # === BƯỚC 2: Tách theo cấu trúc (heading, page break) ===
+        blocks = self._split_by_structure(text)
+
+        # === BƯỚC 3: Chunk từng block ===
+        chunks = []
+        current_chunk = ""
+        current_token_count = 0
+        chunk_index = 0
+
+        for block in blocks:
+            block = block.strip()
+            if not block:
+                continue
+
+            if block == "[PAGE_BREAK]":
+                if current_chunk and current_token_count >= self.min_tokens:
+                    chunks.append(self._make_chunk(current_chunk, chunk_index))
+                    chunk_index += 1
+                    current_chunk = ""
+                    current_token_count = 0
+                continue
+
+            if block.startswith("[HEADING]") and block.endswith("[/HEADING]"):
+                # Tạo chunk riêng cho heading
+                if current_chunk:
+                    chunks.append(self._make_chunk(current_chunk, chunk_index))
+                    chunk_index += 1
+                    current_chunk = ""
+                    current_token_count = 0
+                # Heading thành 1 chunk riêng
+                chunks.append(self._make_chunk(block, chunk_index))
+                chunk_index += 1
+                continue
+
+            # === Xử lý nội dung thường ===
+            sentences = self._split_sentences(block)
+            if not sentences:
+                continue
+
+            # Tìm điểm ngắt ngữ nghĩa
+            semantic_breaks = await self._find_semantic_breaks(sentences)
+            split_points = sorted(set(semantic_breaks + [len(sentences)]))
+
+            start = 0
+            for end in split_points:
+                segment = " ".join(sentences[start:end])
+                segment_token_count = self._count_tokens(segment)
+
+                # Kiểm tra nếu thêm vào sẽ vượt quá giới hạn
+                if current_chunk and current_token_count + segment_token_count > self.max_tokens:
+                    # Đóng chunk hiện tại
+                    if current_token_count >= self.min_tokens:
+                        chunks.append(self._make_chunk(current_chunk, chunk_index))
+                        chunk_index += 1
+
+                        # Overlap: lấy phần cuối của chunk trước
+                        overlap_text = self._get_overlap_text(current_chunk, self.overlap_tokens)
+                        current_chunk = overlap_text + " " + segment
+                        current_token_count = self._count_tokens(current_chunk)
+                    else:
+                        # Nếu chunk hiện tại quá nhỏ, thay bằng segment mới
+                        current_chunk = segment
+                        current_token_count = segment_token_count
+                else:
+                    # Thêm vào chunk hiện tại
+                    if current_chunk:
+                        current_chunk += " " + segment
+                    else:
+                        current_chunk = segment
+                    current_token_count += segment_token_count
+
+                start = end
+
+        # Đóng chunk cuối cùng
+        if current_chunk and self._count_tokens(current_chunk) >= self.min_tokens:
+            chunks.append(self._make_chunk(current_chunk, chunk_index))
+
+        return chunks

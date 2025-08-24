@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
 from rag.dataclasses import ParsedContent, DocumentChunk
-from rag.config import ChunkingConfig
 
 class BaseChunker(ABC):
     """
@@ -10,9 +9,6 @@ class BaseChunker(ABC):
     Định nghĩa interface chung mà tất cả parser phải implement:
     - Chunk text thành danh sách DocumentChunk
     """
-
-    def __init__(self, config: ChunkingConfig):
-        self.config = config
 
     @abstractmethod
     async def chunk_async(self, parsed_content: ParsedContent) -> List[DocumentChunk]:

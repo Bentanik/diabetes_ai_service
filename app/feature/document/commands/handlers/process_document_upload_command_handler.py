@@ -16,6 +16,7 @@ from app.database.value_objects import DocumentFile
 from app.storage import MinioManager
 from core.cqrs import CommandHandler, CommandRegistry
 from bson import ObjectId
+from core.embedding import EmbeddingModel
 from rag.parser import parse_file
 from rag.chunking import Chunker
 from shared.messages import DocumentMessage
@@ -34,13 +35,11 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         self.logger = get_logger(__name__)
         self.collections = get_collections()
         self.minio_manager = MinioManager.get_instance()
-        self.chunker = Chunker()
         self.diabetes_classifier = DiabetesClassifier()
         self.file_hash_utils = FileHashUtils()
 
     async def execute(self, command: ProcessDocumentUploadCommand) -> Result[None]:
         """Thực thi xử lý upload tài liệu một cách bất đồng bộ"""
-        # Kiểm tra đầu vào
         if not command.document_job_id or not ObjectId.is_valid(command.document_job_id):
             return Result.failure(message="ID công việc tài liệu không hợp lệ", code="INVALID_INPUT")
 
@@ -48,6 +47,16 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         temp_dir = None
 
         try:
+            embedding_model = await EmbeddingModel.get_instance()
+            self.chunker = Chunker(
+                embedding_model=embedding_model,
+                tokenizer=embedding_model.model.tokenizer,
+                max_tokens=512,
+                min_tokens=100,
+                overlap_tokens=64,
+                similarity_threshold=0.6,
+            )
+
             # Lấy thông tin document job
             document_job = await self._get_document_job(command.document_job_id)
             if not document_job:
@@ -230,7 +239,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
         self.logger.info(f"Bắt đầu chia nhỏ nội dung, độ dài: {len(content.content)} ký tự")
         
         # Chunk bất đồng bộ
-        chunks = await self.chunker.chunk_async(text=content.content)
+        chunks = await self.chunker.chunk_async(parsed_content=content)
         
         self.logger.info(f"Chia nhỏ thành công, số lượng chunks: {len(chunks)}")
         return chunks

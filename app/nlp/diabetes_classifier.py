@@ -27,102 +27,118 @@ class DiabetesClassifier:
                 "zero-shot-classification",
                 model=model_name,
                 device=self.device,
-                torch_dtype=torch.float16 if self.device >= 0 else torch.float32
+                torch_dtype=torch.float16 if self.device >= 0 else torch.float32,
+                truncation=True  # Quan trọng: tránh lỗi với text dài
             )
-            print(f"Model loaded on {'GPU' if self.device >= 0 else 'CPU'}")
+            logger.info(f"✅ Model loaded on {'GPU' if self.device >= 0 else 'CPU'}")
         except Exception as e:
             logger.error(f"Model loading failed: {e}")
             raise
 
+    def _has_negation(self, text: str, keyword: str) -> bool:
+        """Kiểm tra phủ định trong phạm vi gần keyword"""
+        text_lower = text.lower()
+        idx = text_lower.find(keyword)
+        if idx == -1:
+            return False
+        start = max(0, idx - 100)
+        context = text_lower[start:idx]
+        negations = ['not', 'no', 'non-', 'without', 'never', 'rarely', 'không', 'chưa', 'chẳng']
+        return any(neg in context for neg in negations)
+
     def _score_batch_sync(self, texts: List[str]) -> List[float]:
         if not texts:
             return []
-            
+
         try:
             with torch.no_grad():
                 scores = []
-                
                 for text in texts:
-                    # Step 1: Check if it's specifically about diabetes
-                    diabetes_result = self.classifier(
-                        text,
-                        candidate_labels=[
-                            "diabetes, blood sugar, insulin, diabetic complications",
-                            "other medical conditions and general health topics",
-                            "non-medical content"
-                        ]
-                    )
-                    
-                    diabetes_score = diabetes_result['scores'][0]
-                    medical_score = diabetes_result['scores'][1]
-                    non_medical_score = diabetes_result['scores'][2]
-                    
+                    if not text.strip():
+                        scores.append(0.0)
+                        continue
+
+                    text_lower = text.lower()
+
+                    # === 1. Zero-shot classification ===
+                    try:
+                        result = self.classifier(
+                            text,
+                            candidate_labels=[
+                                "diabetes, insulin, HbA1c, diabetic complications",
+                                "other diseases and general health",
+                                "lifestyle, nutrition, exercise"
+                            ],
+                            hypothesis_template="The text is about {}."
+                        )
+                        diabetes_score = result['scores'][0]
+                        other_medical_score = result['scores'][1]
+                        lifestyle_score = result['scores'][2]
+                    except Exception as e:
+                        logger.warning(f"Zero-shot failed for text: {e}")
+                        diabetes_score = 0.0
+                        other_medical_score = 0.0
+                        lifestyle_score = 0.0
+
+                    # === 2. Keyword matching (cả tiếng Việt + Anh) ===
                     diabetes_keywords = [
+                        # English
                         'diabetes', 'diabetic', 'insulin', 'glucose', 'blood sugar',
                         'hyperglycemia', 'hypoglycemia', 'type 1', 'type 2',
-                        'diabetic ketoacidosis', 'hba1c', 'glycemic', 'metformin',
+                        'ketoacidosis', 'hba1c', 'glycemic', 'metformin',
                         'glycosylated hemoglobin', 'pancreas', 'islet cells',
-                        'diabetic neuropathy', 'diabetic retinopathy', 'diabetic nephropathy'
+                        'neuropathy', 'retinopathy', 'nephropathy',
+                        # Vietnamese
+                        'tiểu đường', 'đái tháo đường', 'tăng đường huyết',
+                        'hba1c', 'insulin', 'metformin', 'biến chứng tiểu đường',
+                        'suy thận', 'tổn thương thần kinh', 'bệnh võng mạc'
                     ]
-                    
-                    text_lower = text.lower()
-                    keyword_count = sum(1 for keyword in diabetes_keywords if keyword in text_lower)
-                    
-                    # Step 3: Use all 3 scores for better logic
-                    # If non-medical dominates, reject immediately
-                    if non_medical_score > 0.6:
+
+                    keyword_count = 0
+                    keyword_weight = 0.0
+                    for kw in diabetes_keywords:
+                        if kw in text_lower:
+                            if not self._has_negation(text_lower, kw):
+                                keyword_count += 1
+                                # Tăng trọng số cho từ chuyên sâu
+                                if kw in ['hba1c', 'insulin', 'metformin', 'ketoacidosis', 'HbA1c']:
+                                    keyword_weight += 0.3
+                                elif kw in ['type 1', 'type 2', 'neuropathy', 'retinopathy']:
+                                    keyword_weight += 0.2
+                                else:
+                                    keyword_weight += 0.15
+
+                    # === 3. Logic scoring — ưu tiên keyword nếu model không chắc ===
+                    if lifestyle_score > 0.6:
+                        final_score = 0.0  # Rõ ràng không liên quan
+                    elif diabetes_score < 0.3 and keyword_count == 0:
                         final_score = 0.0
-                    
-                    # If medical but not diabetes-specific enough
-                    elif medical_score > diabetes_score + 0.15 and keyword_count == 0:
-                        final_score = 0.0
-                    
-                    # Strong diabetes signals
-                    elif diabetes_score > 0.35 and keyword_count > 0 and diabetes_score > non_medical_score:
-                        # Strong diabetes signal + keywords → boost to 80-95%
-                        base_boost = 0.4
-                        keyword_boost = min(keyword_count * 0.15, 0.35)
-                        # Extra boost if diabetes clearly beats non-medical
-                        dominance_boost = 0.1 if diabetes_score > non_medical_score + 0.2 else 0.0
-                        final_score = min(diabetes_score + base_boost + keyword_boost + dominance_boost, 0.95)
-                        
-                    elif diabetes_score > 0.45 and diabetes_score > medical_score + 0.1 and diabetes_score > non_medical_score:
-                        # Diabetes clearly dominates both medical and non-medical
-                        dominance_boost = 0.15 if diabetes_score > max(medical_score, non_medical_score) + 0.2 else 0.1
-                        final_score = min(diabetes_score + 0.3 + dominance_boost, 0.9)
-                        
-                    elif keyword_count >= 3 and diabetes_score > 0.25 and diabetes_score >= non_medical_score:
-                        # Many diabetes keywords + not non-medical
-                        final_score = min(diabetes_score + 0.45, 0.85)
-                        
-                    elif keyword_count >= 2 and diabetes_score > 0.3 and diabetes_score > non_medical_score + 0.1:
-                        # Multiple diabetes keywords + clearly medical
-                        final_score = min(diabetes_score + 0.35, 0.8)
-                        
-                    elif keyword_count >= 1 and diabetes_score > 0.4 and diabetes_score > non_medical_score:
-                        # Some keywords + good diabetes score + not non-medical
-                        final_score = min(diabetes_score + 0.25, 0.75)
-                        
+                    elif keyword_count >= 3:
+                        # Nhiều keyword → chắc chắn liên quan
+                        final_score = min(0.4 + keyword_weight, 1.0)
+                    elif keyword_count >= 2 and diabetes_score > 0.25:
+                        final_score = min(diabetes_score + 0.3 + keyword_weight, 0.9)
+                    elif keyword_count >= 1 and diabetes_score > 0.4:
+                        final_score = min(diabetes_score + 0.25 + keyword_weight, 0.8)
                     else:
-                        # Not diabetes-specific enough or too non-medical
-                        final_score = 0.0
-                    
-                    scores.append(final_score)
-                
+                        # Dù model score thấp, nhưng có keyword → không loại hoàn toàn
+                        final_score = max(diabetes_score * 0.7, keyword_weight * 0.8)
+
+                    scores.append(round(final_score, 3))
+
                 return scores
-                
+
         except torch.cuda.OutOfMemoryError:
-            logger.warning("OOM detected, splitting batch")
+            logger.warning("OOM: splitting batch")
             torch.cuda.empty_cache()
-            
             if len(texts) > 1:
                 mid = len(texts) // 2
-                return (self._score_batch_sync(texts[:mid]) + 
-                    self._score_batch_sync(texts[mid:]))
+                left = self._score_batch_sync(texts[:mid])
+                right = self._score_batch_sync(texts[mid:])
+                return left + right
             return [0.0]
-            
         except Exception as e:
-            logger.error(f"Scoring error: {e}")
+            logger.error(f"Scoring error: {e}", exc_info=True)
             return [0.0] * len(texts)
         finally:
             if self.device >= 0:
@@ -130,27 +146,27 @@ class DiabetesClassifier:
             gc.collect()
 
     async def score_chunk(self, chunk_text: str) -> float:
-        if not chunk_text.strip():
+        if not chunk_text or not chunk_text.strip():
             return 0.0
         loop = asyncio.get_running_loop()
         try:
-            scores = await loop.run_in_executor(
+            result = await loop.run_in_executor(
                 self.executor, self._score_batch_sync, [chunk_text]
             )
-            return scores[0] if scores else 0.0
-        except Exception:
+            return result[0] if result else 0.0
+        except Exception as e:
+            logger.warning(f"Score chunk failed: {e}")
             return 0.0
 
-    async def score_chunks(self, chunks: List[DocumentChunk], batch_size: int = 2) -> List[float]:
+    async def score_chunks(self, chunks: List[DocumentChunk], batch_size: int = 4) -> List[float]:
         if not chunks:
             return []
-            
+
         all_scores = []
-        # Giảm batch size vì giờ xử lý phức tạp hơn
         for i in range(0, len(chunks), batch_size):
             batch = chunks[i:i + batch_size]
             texts = [c.content for c in batch if c.content.strip()]
-            
+
             if texts:
                 loop = asyncio.get_running_loop()
                 try:
@@ -158,11 +174,12 @@ class DiabetesClassifier:
                         self.executor, self._score_batch_sync, texts
                     )
                     all_scores.extend(batch_scores)
-                except Exception:
+                except Exception as e:
+                    logger.error(f"Batch scoring failed: {e}")
                     all_scores.extend([0.0] * len(texts))
             else:
                 all_scores.extend([0.0] * len(batch))
-                
+
         return all_scores
 
     def cleanup(self):
