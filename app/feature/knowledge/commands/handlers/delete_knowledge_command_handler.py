@@ -92,6 +92,12 @@ class DeleteKnowledgeCommandHandler(CommandHandler):
         if delete_result.deleted_count == 0:
             return Result.failure(code=KnowledgeMessage.NOT_FOUND.code, message=KnowledgeMessage.NOT_FOUND.message)
 
+        # Xóa ids của cơ sở tri thức khỏi setting
+        await self.collection.settings.update_one(
+            {},
+            {"$pull": {"list_knowledge_ids": command.id}}
+        )
+
         # Xóa tài liệu trong cơ sở tri thức
         await self.delete_document(command)
 

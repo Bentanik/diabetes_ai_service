@@ -66,6 +66,13 @@ class UpdateKnowledgeCommandHandler(CommandHandler):
         # Xây dựng update fields - chỉ cập nhật các field có giá trị
         update_fields = {}
         if command.name is not None:
+            # Kiểm tra tên cơ sở tri thức đã tồn tại chưa
+            exists = await collection.knowledges.count_documents({"name": command.name}) > 0
+            if exists:
+                return Result.failure(
+                    message=KnowledgeMessage.NAME_EXISTS.message,
+                    code=KnowledgeMessage.NAME_EXISTS.code,
+                )
             update_fields["name"] = command.name
         if command.description is not None:
             update_fields["description"] = command.description
