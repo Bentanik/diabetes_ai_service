@@ -38,6 +38,7 @@ class DocumentModelDTO(BaseModel):
     priority_diabetes: float = 0.0,
     file: Optional[DocumentFileDTO] = None,
     file_hash: Optional[str] = None,
+    is_active: Optional[bool] = True,
     created_at: Optional[datetime] = None,
     updated_at: Optional[datetime] = None
 
@@ -53,6 +54,7 @@ class DocumentModelDTO(BaseModel):
             priority_diabetes=model.priority_diabetes,
             file=DocumentFileDTO.from_value_object(model.file),
             file_hash=model.file_hash,
+            is_active=model.is_active,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

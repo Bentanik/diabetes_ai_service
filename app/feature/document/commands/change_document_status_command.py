@@ -3,7 +3,7 @@ from core.cqrs import Command
 
 
 @dataclass
-class ChangeDocumentStatusCommand(Command):
+class ChangeDocumentChunkStatusCommand(Command):
     """
     Thay đổi trạng thái của tài liệu
     Attributes:

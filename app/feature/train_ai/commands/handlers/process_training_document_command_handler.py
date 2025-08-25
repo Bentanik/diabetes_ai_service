@@ -138,7 +138,8 @@ class ProcessTrainingDocumentCommandHandler(CommandHandler):
                         "document_id": str(document_job.document_id),
                         "knowledge_id": str(document_job.knowledge_id),
                         "is_active": chunk.is_active,
-                    }
+                    },
+                    "document_is_active": True,
                 }
                 for chunk in document_chunks
             ]

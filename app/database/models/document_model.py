@@ -23,6 +23,7 @@ class DocumentModel(BaseModel):
             description (str): Mô tả về tài liệu
             document_type (DocumentType): Loại tài liệu (uploaded, training, trained)
             priority_diabetes (float): Độ ưu tiên liên quan đến bệnh tiểu đường (0.0-1.0)
+            is_active (bool): Trạng thái hoạt động của tài liệu
 
         Thông tin file:
             file (DocumentFile): Đối tượng chứa thông tin về file
@@ -40,6 +41,7 @@ class DocumentModel(BaseModel):
         priority_diabetes: float = 0.0,
         file: Optional[DocumentFile] = None,
         file_hash: Optional[str] = None,
+        is_active: Optional[bool] = True,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -49,7 +51,7 @@ class DocumentModel(BaseModel):
         self.description = description
         self.document_type = document_type
         self.priority_diabetes = priority_diabetes
-
+        self.is_active = is_active
         # Thông tin file
         self.file = file or DocumentFile()
 
@@ -72,7 +74,8 @@ class DocumentModel(BaseModel):
         document_type = data.pop("document_type", DocumentType.UPLOADED)
         priority_diabetes = data.pop("priority_diabetes", 0.0)
         file_hash = data.pop("file_hash", None)
-
+        is_active = data.pop("is_active", True)
+        
         # Tạo DocumentFile từ dữ liệu
         file = DocumentFile(
             path=data.pop("file_path", ""),
@@ -89,5 +92,6 @@ class DocumentModel(BaseModel):
             priority_diabetes=priority_diabetes,
             file=file,
             file_hash=file_hash,
+            is_active=is_active,
             **data
         )

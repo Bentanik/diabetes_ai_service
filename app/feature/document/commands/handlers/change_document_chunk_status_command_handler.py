@@ -4,18 +4,18 @@ from core.cqrs import CommandHandler, CommandRegistry
 from core.result import Result
 from rag.vector_store import VectorStoreManager
 from utils import get_logger
-from ..change_document_status_command import ChangeDocumentStatusCommand
+from ..change_document_status_command import ChangeDocumentChunkStatusCommand
 
 
-@CommandRegistry.register_handler(ChangeDocumentStatusCommand)
-class ChangeDocumentStatusCommandHandler(CommandHandler):
+@CommandRegistry.register_handler(ChangeDocumentChunkStatusCommand)
+class ChangeDocumentChunkStatusCommandHandler(CommandHandler):
     def __init__(self):
         super().__init__()
         self.db = get_collections()
         self.vector_store_manager = VectorStoreManager()
         self.logger = get_logger(__name__)
 
-    async def execute(self, command: ChangeDocumentStatusCommand) -> Result[None]:
+    async def execute(self, command: ChangeDocumentChunkStatusCommand) -> Result[None]:
         if not command.document_chunk_ids:
             return Result.failure("Danh sách document_chunk_ids không được rỗng")
 

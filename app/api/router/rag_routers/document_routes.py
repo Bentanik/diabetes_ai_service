@@ -19,8 +19,9 @@ from app.feature.document import (
     GetDocumentQuery,
     GetDocumentChunksQuery,
     DeleteDocumentCommand,
+    UpdateDocumentCommand,
 )
-from app.feature.document.commands.change_document_status_command import ChangeDocumentStatusCommand
+from app.feature.document.commands.change_document_status_command import ChangeDocumentChunkStatusCommand
 from core.cqrs import Mediator
 from utils import get_logger, should_compress, compress_stream, get_best_compression
 from typing import cast
@@ -192,6 +193,33 @@ async def get_document_chunks(
         logger.error(f"Lỗi lấy thông tin tài liệu: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Không thể lấy thông tin tài liệu")
 
+@router.put(
+    "",
+    response_model=None,
+    summary="Cập nhật trạng thái tài liệu",
+    description="Cập nhật trạng thái tài liệu theo ID.",
+)
+
+async def update_document(request: UpdateDocumentCommand) -> JSONResponse:
+    """
+    Endpoint cập nhật trạng thái tài liệu.
+
+    Args:
+        document_id (str): ID của tài liệu cần cập nhật trạng thái
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
+    try:
+        result = await Mediator.send(request)
+        return result.to_response()
+    except Exception as e:
+        logger.error(f"Lỗi cập nhật trạng thái tài liệu: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Cập nhật trạng thái tài liệu thất bại")
+
 @router.delete(
     "/{document_id}",
     response_model=None,
@@ -221,13 +249,13 @@ async def delete_document(document_id: str) -> JSONResponse:
         raise HTTPException(status_code=500, detail="Xóa tài liệu thất bại")
 
 @router.put(
-    "/change-status",
+    "/chunks/change-status",
     response_model=None,
     summary="Cập nhật trạng thái tài liệu",
     description="Cập nhật trạng thái tài liệu theo ID.",
 )
 
-async def update_document_status(request: ChangeDocumentStatusCommand) -> JSONResponse:
+async def update_document_status(request: ChangeDocumentChunkStatusCommand) -> JSONResponse:
     """
     Endpoint cập nhật trạng thái tài liệu.
 
