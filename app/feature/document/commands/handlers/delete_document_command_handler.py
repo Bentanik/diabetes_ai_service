@@ -75,8 +75,8 @@ class DeleteDocumentCommandHandler(CommandHandler):
             )
 
             # Xóa tài liệu từ vector store
-            # await self._delete_document_from_vector_store(
-            #     document_id=str(document["_id"]), knowledge_id=document["knowledge_id"])
+            await self._delete_document_from_vector_store(
+                document_id=str(document["_id"]), knowledge_id=document["knowledge_id"])
 
             # Xóa tài liệu làm sạch
             await collections.document_chunks.delete_many({"document_id": command.id})
@@ -132,17 +132,19 @@ class DeleteDocumentCommandHandler(CommandHandler):
             self.logger.error(f"Lỗi khi xóa file từ storage: {e}")
             raise
 
-    # async def _delete_document_from_vector_store(self, document_id: str, knowledge_id: str):
-    #     """
-    #     Xóa document từ vector store
-    #     """
-    #     try:
-    #         await self.vector_store_manager.delete_by_payload_async(
-    #             collection_name=knowledge_id, document_id=document_id)
-    #         self.logger.info(f"Đã xóa document từ vector store: {document_id}")
-    #     except Exception as e:
-    #         self.logger.error(f"Lỗi khi xóa document từ vector store: {e}")
-    #         raise
+    async def _delete_document_from_vector_store(self, document_id: str, knowledge_id: str):
+        """
+        Xóa document từ vector store
+        """
+        try:
+            await self.vector_store_manager.delete_by_metadata_async(
+                collection_name=knowledge_id,
+                metadata__document_id=document_id
+            )
+            self.logger.info(f"Đã xóa document từ vector store: {document_id}")
+        except Exception as e:
+            self.logger.error(f"Lỗi khi xóa document từ vector store: {e}")
+            raise
 
     async def _update_knowledge_stats(self, knowledge_id: str, collections):
         """

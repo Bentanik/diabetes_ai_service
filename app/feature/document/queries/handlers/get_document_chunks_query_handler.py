@@ -1,15 +1,7 @@
-"""
-Get Document Parsers Query Handler - Xử lý truy vấn lấy thông tin phân tích tài liệu
-
-File này định nghĩa handler để xử lý GetDocumentParsersQuery, thực hiện việc
-lấy danh sách thông tin phân tích của một tài liệu với tính năng phân trang và sắp xếp.
-"""
-
-from typing import Dict, Any, List
+from typing import List
 from bson import ObjectId
 from app.database import get_collections
 from app.database.models import DocumentChunkModel
-from app.dto.models import DocumentChunkModelDTO
 from app.dto.models.document_chunk_dto import DocumentChunkModelDTO
 from app.dto.pagination import Pagination
 from ..get_document_chunks_query import GetDocumentChunksQuery
@@ -48,15 +40,34 @@ class GetDocumentChunksQueryHandler(
 
             # Check document tồn tại
             if not await collections.documents.find_one({"_id": document_id}):
-                return Result.failure(DocumentMessage.NOT_FOUND.code, DocumentMessage.NOT_FOUND.message)
+                return Result.failure(
+                    DocumentMessage.NOT_FOUND.message,
+                    DocumentMessage.NOT_FOUND.code,
+                )
 
-            # Filter + sort
+            # Filter
             filter_query = {"document_id": query.document_id}
 
-            sort_field = query.sort_by if query.sort_by in [
-                "page", "block_index", "created_at", "updated_at", "content"
-            ] else "updated_at"
-            sort_query = [(sort_field, 1 if query.sort_order.lower() == "asc" else -1)]
+            if query.min_diabetes_score is not None:
+                filter_query["diabetes_score"] = {"$gte": query.min_diabetes_score}
+            if query.max_diabetes_score is not None:
+                filter_query.setdefault("diabetes_score", {})
+                filter_query["diabetes_score"]["$lte"] = query.max_diabetes_score
+
+            # Sort với tie-breaker là _id để đảm bảo ổn định
+            sort_field = (
+                query.sort_by
+                if query.sort_by in ["page", "block_index", "created_at", "updated_at", "content"]
+                else "updated_at"
+            )
+            sort_order = (query.sort_order or "desc").lower()
+            sort_direction = 1 if sort_order == "asc" else -1
+
+            # ✅ Thêm _id để đảm bảo không bị trùng/trượt trang
+            sort_query = [
+                (sort_field, sort_direction),
+                ("_id", 1)  # Tie-breaker: đảm bảo thứ tự nhất quán
+            ]
 
             # Phân trang
             offset = (query.page - 1) * query.limit
@@ -75,12 +86,14 @@ class GetDocumentChunksQueryHandler(
                 for doc in docs
             ]
 
+            total_pages = (total_count + query.limit - 1) // query.limit
+
             pagination_result = Pagination(
                 items=parser_dtos,
                 total=total_count,
                 page=query.page,
                 limit=query.limit,
-                total_pages=(total_count + query.limit - 1) // query.limit,
+                total_pages=total_pages,
             )
 
             return Result.success(

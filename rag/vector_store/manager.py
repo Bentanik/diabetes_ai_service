@@ -40,38 +40,120 @@ class VectorStoreManager:
             return ids
         return await asyncio.to_thread(_insert)
 
-    async def search_async(self, collections: List[str], query_vector: List[float], top_k: int = 5, search_accuracy: float = 0.7) -> Dict[str, List[Dict]]:
-        """Search vector trong nhiều collection cùng lúc"""
+    async def search_async(
+        self,
+        collections: List[str],
+        query_vector: List[float],
+        top_k: int = 5,
+        search_accuracy: float = 0.7,
+        **filters
+    ) -> Dict[str, List[Dict]]:
         def _search():
             results = {}
             for col in collections:
+                must_conditions = []
+                for key, value in filters.items():
+                    field_key = key.replace("__", ".")
+                    must_conditions.append(
+                        models.FieldCondition(
+                            key=field_key,
+                            match=models.MatchValue(value=value)
+                        )
+                    )
+
+                query_filter = models.Filter(must=must_conditions) if must_conditions else None
+
                 res = self.client.search(
                     collection_name=col,
                     query_vector=query_vector,
                     limit=top_k,
-                    score_threshold=search_accuracy
+                    score_threshold=search_accuracy,
+                    query_filter=query_filter
                 )
-                results[col] = [{"id": r.id, "payload": r.payload, "score": r.score} for r in res]
+
+                results[col] = [
+                    {
+                        "id": r.id,
+                        "payload": r.payload,
+                        "score": r.score
+                    }
+                    for r in res
+                ]
             return results
 
         return await asyncio.to_thread(_search)
 
-    async def delete_by_payload_async(
+    async def delete_by_metadata_async(self, collection_name: str, **conditions) -> None:
+        if not conditions:
+            raise ValueError("Phải có ít nhất một điều kiện để xóa.")
+
+        def _delete():
+            must_conditions = []
+            for key, value in conditions.items():
+                field_key = key.replace("__", ".")
+                must_conditions.append(
+                    models.FieldCondition(
+                        key=field_key,
+                        match=models.MatchValue(value=value)
+                    )
+                )
+
+            query_filter = models.Filter(must=must_conditions)
+
+            self.client.delete(
+                collection_name=collection_name,
+                points_selector=models.FilterSelector(filter=query_filter)
+            )
+
+        await asyncio.to_thread(_delete)
+
+    async def update_payload_async(
         self,
         collection_name: str,
-        document_id: str = None,
+        payload_updates: Dict,
+        point_id: str = None,
+        **filter_conditions
     ) -> None:
-        """Xóa các điểm theo document_id hoặc knowledge_id bằng filter"""
-        if not document_id:
-            raise ValueError("Phải truyền document_id.")
+        if not point_id and not filter_conditions:
+            raise ValueError("Phải cung cấp 'point_id' hoặc ít nhất một điều kiện filter.")
 
-        filters = []
-        if document_id:
-            filters.append(models.FieldCondition(
-                key="document_id",
-                match=models.MatchValue(value=document_id)
-            ))
+        def _update():
+            if point_id:
+                self.client.set_payload(
+                    collection_name=collection_name,
+                    payload=payload_updates,
+                    points=[point_id]
+                )
+            else:
+                must_conditions = []
+                for key, value in filter_conditions.items():
+                    field_key = key.replace("__", ".")
+                    must_conditions.append(
+                        models.FieldCondition(
+                            key=field_key,
+                            match=models.MatchValue(value=value)
+                        )
+                    )
 
-        filter_obj = models.Filter(must=filters)
+                query_filter = models.Filter(must=must_conditions)
 
-        await asyncio.to_thread(self.client.delete, collection_name=collection_name, filter=filter_obj)
+                search_result = self.client.scroll(
+                    collection_name=collection_name,
+                    scroll_filter=query_filter,
+                    limit=1000,
+                    with_payload=False,
+                    with_vectors=False
+                )
+
+                points = [point.id for point in search_result[0]]
+
+                if not points:
+                    return
+
+                self.client.set_payload(
+                    collection_name=collection_name,
+                    payload=payload_updates,
+                    points=points
+                )
+
+        await asyncio.to_thread(_update)

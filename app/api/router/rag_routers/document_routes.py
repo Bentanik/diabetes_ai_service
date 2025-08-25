@@ -20,6 +20,7 @@ from app.feature.document import (
     GetDocumentChunksQuery,
     DeleteDocumentCommand,
 )
+from app.feature.document.commands.change_document_status_command import ChangeDocumentStatusCommand
 from core.cqrs import Mediator
 from utils import get_logger, should_compress, compress_stream, get_best_compression
 from typing import cast
@@ -159,6 +160,8 @@ async def get_document(document_id: str) -> JSONResponse:
 )
 async def get_document_chunks(
     document_id: str,
+    min_diabetes_score: float = Query(None, description="Điểm diabetes tối thiểu"),
+    max_diabetes_score: float = Query(None, description="Điểm diabetes tối đa"),
     page: int = Query(1, ge=1, description="Trang hiện tại"),
     limit: int = Query(10, ge=1, le=100, description="Số lượng bản ghi mỗi trang"),
     sort_by: str = Query("updated_at", description="Trường cần sắp xếp"),
@@ -182,7 +185,7 @@ async def get_document_chunks(
     """
     logger.info(f"Lấy thông tin tài liệu: {document_id}")
     try:
-        query = GetDocumentChunksQuery(document_id=document_id, page=page, limit=limit, sort_by=sort_by, sort_order=sort_order)
+        query = GetDocumentChunksQuery(document_id=document_id, page=page, limit=limit, sort_by=sort_by, sort_order=sort_order, min_diabetes_score=min_diabetes_score, max_diabetes_score=max_diabetes_score)
         result = await Mediator.send(query)
         return result.to_response()
     except Exception as e:
@@ -217,6 +220,32 @@ async def delete_document(document_id: str) -> JSONResponse:
         logger.error(f"Lỗi xóa tài liệu: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Xóa tài liệu thất bại")
 
+@router.put(
+    "/change-status",
+    response_model=None,
+    summary="Cập nhật trạng thái tài liệu",
+    description="Cập nhật trạng thái tài liệu theo ID.",
+)
+
+async def update_document_status(request: ChangeDocumentStatusCommand) -> JSONResponse:
+    """
+    Endpoint cập nhật trạng thái tài liệu.
+
+    Args:
+        document_id (str): ID của tài liệu cần cập nhật trạng thái
+
+    Returns:
+        JSONResponse
+
+    Raises:
+        HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
+    """
+    try:
+        result = await Mediator.send(request)
+        return result.to_response()
+    except Exception as e:
+        logger.error(f"Lỗi cập nhật trạng thái tài liệu: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Cập nhật trạng thái tài liệu thất bại")
 
 @router.get(
     "/{document_id}/download",

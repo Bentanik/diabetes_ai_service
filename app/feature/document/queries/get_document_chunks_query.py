@@ -16,6 +16,8 @@ class GetDocumentChunksQuery(Query):
 
     Attributes:
         document_id (str): ID của tài liệu cần lấy thông tin
+        min_diabetes_score (float): Điểm diabetes tối thiểu
+        max_diabetes_score (float): Điểm diabetes tối đa
         page (int): Số trang hiện tại (bắt đầu từ 1)
         limit (int): Số lượng bản ghi mỗi trang
         sort_by (str): Trường dùng để sắp xếp
@@ -23,6 +25,8 @@ class GetDocumentChunksQuery(Query):
     """
 
     document_id: str
+    min_diabetes_score: float = None
+    max_diabetes_score: float = None
     page: int = 1
     limit: int = 10
     sort_by: str = "updated_at"
