@@ -19,7 +19,6 @@ from rag.vector_store import VectorStoreManager
 from shared.messages import KnowledgeMessage
 from utils import get_logger
 
-
 @CommandRegistry.register_handler(CreateKnowledgeCommand)
 class CreateKnowledgeCommandHandler(CommandHandler):
     """
