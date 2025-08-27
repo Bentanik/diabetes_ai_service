@@ -1,103 +1,165 @@
-# main.py
+# test_pipeline.py
 import asyncio
-import json
 import logging
 from pathlib import Path
 
-# Giả sử các module ở đúng vị trí
 from rag.parser.pdf_parser import PDFParser
 from rag.chunking.chunker import Chunker
 from core.embedding import EmbeddingModel
-from rag.dataclasses import ParsedContent
-
+from rag.vector_store.manager import VectorStoreManager
+from rag.retrieval.retriever import Retriever
 
 # Cấu hình logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)-8s | %(name)s | %(message)s'
+)
+logger = logging.getLogger("test_pdf_pipeline")
+
+# Cấu hình
+PDF_PATH = Path("diabetes.pdf")
+COLLECTION_NAME = "diabetes_kb"
+DOCUMENT_ID = "diabetes_main_page"
+KNOWLEDGE_ID = "diabetes_2025_vn"
+EMBEDDING_MODEL = None
 
 
-async def main():
-    # === 1. Đường dẫn file ===
-    pdf_path = "diabetes.pdf"
-    output_json = "output_chunks.json"
+# --- HÀM 1: Ingest PDF (Parse → Chunk → Embed → Save) ---
+async def ingest_pdf_document():
+    """
+    Pipeline xử lý PDF: parse → chunk → embed → lưu vào Qdrant
+    """
+    global EMBEDDING_MODEL
 
-    if not Path(pdf_path).exists():
-        logger.error(f"File không tồn tại: {pdf_path}")
+    if not PDF_PATH.exists():
+        logger.error(f"❌ File PDF không tồn tại: {PDF_PATH}")
         return
 
-    logger.info(f"Bắt đầu xử lý file: {pdf_path}")
+    logger.info(f"📄 Bắt đầu xử lý PDF: {PDF_PATH}")
+
+    # 1. Khởi tạo parser
+    parser = PDFParser()
 
     try:
-        # === 2. Khởi tạo các thành phần ===
-        parser = PDFParser()
-        embedding_model = await EmbeddingModel.get_instance()
+        # 2. Parse PDF
+        logger.info("🔍 Đang parse PDF...")
+        parsed = await parser.parse_async(PDF_PATH)
+        logger.info(f"✅ Parse thành công. Độ dài nội dung: {len(parsed.content)} ký tự")
 
-        chunker = Chunker(
-            embedding_model=embedding_model,
-            max_tokens=512,
-            min_tokens=100,
-            overlap_tokens=64,
-            similarity_threshold=0.6
+        # 3. Chunk
+        logger.info("✂️  Đang chunking nội dung...")
+        if EMBEDDING_MODEL is None:
+            EMBEDDING_MODEL = await EmbeddingModel.get_instance()
+        chunker = Chunker(embedding_model=EMBEDDING_MODEL, max_tokens=512, min_tokens=50)
+        chunks = await chunker.chunk_async(parsed)
+        logger.info(f"✅ Tạo được {len(chunks)} chunks")
+
+        # 4. Tạo embedding
+        logger.info("🧠 Đang tạo embedding...")
+        texts = [chunk.content for chunk in chunks]
+        embeddings = await EMBEDDING_MODEL.embed_batch(texts, max_batch_size=8)
+        logger.info(f"✅ Tạo xong {len(embeddings)} embeddings")
+
+        # 5. Tạo payloads
+        payloads = []
+        for chunk in chunks:
+            payloads.append({
+                "content": chunk.content,
+                "metadata": {
+                    "document_id": DOCUMENT_ID,
+                    "knowledge_id": KNOWLEDGE_ID,
+                    "chunk_index": chunk.metadata.chunk_index,
+                    "chunking_strategy": chunk.metadata.chunking_strategy
+                },
+                "document_is_active": True,
+                "metadata": {
+                    "is_active": True
+                }
+            })
+
+        # 6. Lưu vào Qdrant
+        vector_store = VectorStoreManager()
+        await vector_store.create_collection_async(COLLECTION_NAME, size=768)
+        await vector_store.insert_async(
+            name=COLLECTION_NAME,
+            embeddings=embeddings,
+            payloads=payloads
         )
 
-        logger.info("🔄 Đang parse PDF...")
-        parsed_content = await parser.parse_async(pdf_path)
-
-        logger.info(f"✅ Parse thành công: {parsed_content.metadata['num_pages']} trang, {len(parsed_content.tables)} bảng")
-
-        logger.info("✂️  Đang chia nhỏ văn bản theo ngữ nghĩa...")
-        chunks = await chunker.chunk_async(parsed_content)
-
-        logger.info(f"✅ Tạo được {len(chunks)} chunk")
-
-        # === 5. (Tùy chọn) Tạo embedding cho từng chunk ===
-        # Nếu bạn muốn lưu luôn embedding
-        generate_embeddings = False  # Đặt True nếu muốn
-        chunk_dicts = []
-
-        for i, chunk in enumerate(chunks):
-            chunk_data = {
-                "chunk_index": chunk.metadata.chunk_index,
-                "content": chunk.content,
-                "word_count": chunk.metadata.word_count,
-                "chunking_strategy": chunk.metadata.chunking_strategy
-            }
-
-            if generate_embeddings:
-                try:
-                    emb = await embedding_model.embed(chunk.content)
-                    chunk_data["embedding"] = emb
-                except Exception as e:
-                    logger.warning(f"Embedding failed for chunk {i}: {e}")
-                    chunk_data["embedding"] = None
-
-            chunk_dicts.append(chunk_data)
-
-        # === 6. Metadata tổng hợp ===
-        result = {
-            "source_file": parsed_content.file_path,
-            "file_type": parsed_content.file_type,
-            "metadata": parsed_content.metadata,
-            "tables_extracted": len(parsed_content.tables),
-            "total_chunks": len(chunk_dicts),
-            "chunks": chunk_dicts
-        }
-
-        # === 7. Lưu ra file JSON ===
-        with open(output_json, "w", encoding="utf-8") as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
-
-        logger.info(f"✅ Đã lưu kết quả vào: {output_json}")
-
-        # === 8. In thử 2 chunk đầu ===
-        print("\n--- Ví dụ chunk đầu tiên ---")
-        if chunks:
-            print(chunks[0].content[:500] + ("..." if len(chunks[0].content) > 500 else ""))
-        else:
-            print("(Không có chunk nào)")
+        logger.info(f"✅ Đã lưu {len(chunks)} chunks vào collection '{COLLECTION_NAME}'")
 
     except Exception as e:
-        logger.error(f"❌ Lỗi xử lý: {str(e)}", exc_info=True)
+        logger.error(f"❌ Lỗi trong quá trình ingest: {e}", exc_info=True)
+        raise
+
+
+# --- HÀM 2: Search Retrieval ---
+async def search_retrieval():
+    """
+    Test phần retrieval: tạo embedding + tìm kiếm + in kết quả.
+    Không phụ thuộc vào parser, chunk, hay ingest.
+    """
+    global EMBEDDING_MODEL
+
+    try:
+        # 1. Khởi tạo embedding model (singleton)
+        if EMBEDDING_MODEL is None:
+            EMBEDDING_MODEL = await EmbeddingModel.get_instance()
+        logger.info("✅ Đã khởi tạo EmbeddingModel")
+
+        # 2. Khởi tạo Retriever
+        retriever = Retriever(collections=[COLLECTION_NAME])
+        logger.info(f"✅ Đã khởi tạo Retriever cho collection: {COLLECTION_NAME}")
+
+        # 3. Các câu hỏi test
+        queries = [
+            "Bệnh tiểu đường là gì?",
+            "Đái tháo đường loại 2 là gì?",
+            "Bệnh tiểu đường có thể được phòng ngừa bằng cách nào?",
+            "Bệnh tiểu đường có thể gây ra những hậu quả gì?",
+            "Bệnh tiểu đường có thể được điều trị bằng cách nào?",
+        ]
+
+        # 4. Tìm kiếm cho từng query
+        for query in queries:
+            logger.info(f"\n❓ Câu hỏi: {query}")
+
+            # Tạo embedding
+            query_vector = await EMBEDDING_MODEL.embed(query)
+            logger.debug(f"🧠 Đã tạo embedding (size: {len(query_vector)})")
+
+            # Gọi retrieve
+            results = await retriever.retrieve(
+                query_vector=query_vector,
+                top_k=3,
+                score_threshold=0.6,
+                document_is_active=True,
+                metadata__is_active=True
+            )
+
+            # Hiển thị kết quả
+            if not results:
+                logger.info("  ❌ Không tìm thấy kết quả phù hợp.")
+            else:
+                for i, r in enumerate(results):
+                    content = r["payload"]["content"]
+                    score = r["score"]
+                    collection = r["collection"]
+                    print(f"  [{i+1}] (Score: {score:.3f}) | (Col: {collection})")
+                    print(f"      {content[:200]}...")
+
+    except Exception as e:
+        logger.error(f"❌ Lỗi trong quá trình search: {e}", exc_info=True)
+        raise
+
+
+# --- Hàm main ---
+async def main():
+    # Bước 1: Ingest
+    # await ingest_pdf_document()
+
+    # Bước 2: Search
+    await search_retrieval()
 
 
 if __name__ == "__main__":

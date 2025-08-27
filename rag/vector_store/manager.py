@@ -7,10 +7,25 @@ from .client import VectorStoreClient
 
 logger = logging.getLogger(__name__)
 
-class VectorStoreManager:
 
+class VectorStoreManager:
     def __init__(self):
         self.client = VectorStoreClient().connection
+
+    def _build_filter(self, **conditions) -> Optional[models.Filter]:
+        """Xây dựng filter từ kwargs, hỗ trợ nested field với __"""
+        if not conditions:
+            return None
+        must_conditions = []
+        for key, value in conditions.items():
+            field_key = key.replace("__", ".")  # metadata__is_active → metadata.is_active
+            must_conditions.append(
+                models.FieldCondition(
+                    key=field_key,
+                    match=models.MatchValue(value=value)
+                )
+            )
+        return models.Filter(must=must_conditions)
 
     async def create_collection_async(
         self,
@@ -26,15 +41,16 @@ class VectorStoreManager:
             try:
                 collections = self.client.get_collections().collections
                 if name in [c.name for c in collections]:
+                    logger.info(f"Collection '{name}' already exists.")
                     return False
                 self.client.create_collection(
                     collection_name=name,
                     vectors_config=models.VectorParams(size=size, distance=distance)
                 )
-                logger.info(f"Created collection '{name}' with {distance} on {size}D vectors.")
+                logger.info(f"✅ Created collection '{name}' with {distance} on {size}D vectors.")
                 return True
             except Exception as e:
-                logger.error(f"Failed to create collection '{name}': {e}")
+                logger.error(f"❌ Failed to create collection '{name}': {e}")
                 raise
 
         return await asyncio.to_thread(_create)
@@ -44,9 +60,9 @@ class VectorStoreManager:
         def _delete():
             try:
                 self.client.delete_collection(collection_name=name)
-                logger.info(f"Deleted collection '{name}'.")
+                logger.info(f"🗑️ Deleted collection '{name}'.")
             except Exception as e:
-                logger.warning(f"Failed to delete collection '{name}': {e}")
+                logger.warning(f"⚠️ Failed to delete collection '{name}': {e}")
 
         await asyncio.to_thread(_delete)
 
@@ -61,11 +77,16 @@ class VectorStoreManager:
         :return: Danh sách ID đã tạo.
         """
         if not embeddings:
+            logger.warning("No embeddings to insert.")
             return []
+
+        if payloads and len(embeddings) != len(payloads):
+            raise ValueError("embeddings và payloads phải có cùng độ dài")
 
         def _insert():
             ids = [str(uuid.uuid4()) for _ in embeddings]
             final_payloads = payloads or [{} for _ in embeddings]
+
             try:
                 self.client.upsert(
                     collection_name=name,
@@ -75,10 +96,10 @@ class VectorStoreManager:
                         payloads=final_payloads
                     )
                 )
-                logger.debug(f"Inserted {len(ids)} points into '{name}'.")
+                logger.info(f"✅ Inserted {len(ids)} points into '{name}'.")
                 return ids
             except Exception as e:
-                logger.error(f"Insert failed in '{name}': {e}")
+                logger.error(f"❌ Insert failed in '{name}': {e}")
                 raise
 
         return await asyncio.to_thread(_insert)
@@ -100,6 +121,7 @@ class VectorStoreManager:
         :param filters: Điều kiện lọc, ví dụ: user_id="user_123", metadata__doc_type="manual"
         :return: Dict với key là tên collection, value là danh sách kết quả.
         """
+        # Validate input
         if not collections:
             raise ValueError("collections không được rỗng.")
         if top_k <= 0:
@@ -109,20 +131,10 @@ class VectorStoreManager:
 
         def _search():
             results = {}
+            query_filter = self._build_filter(**filters)  # Tái sử dụng
+
             for col in collections:
                 try:
-                    # Xây dựng filter
-                    must_conditions = []
-                    for key, value in filters.items():
-                        field_key = key.replace("__", ".")
-                        must_conditions.append(
-                            models.FieldCondition(
-                                key=field_key,
-                                match=models.MatchValue(value=value)
-                            )
-                        )
-                    query_filter = models.Filter(must=must_conditions) if must_conditions else None
-
                     hits = self.client.search(
                         collection_name=col,
                         query_vector=query_vector,
@@ -141,9 +153,12 @@ class VectorStoreManager:
                         }
                         for hit in hits
                     ]
+                    logger.debug(f"🔍 Found {len(hits)} results in '{col}'")
+
                 except Exception as e:
-                    logger.warning(f"Search failed on collection '{col}': {e}")
-                    results[col] = []  # Trả về mảng rỗng thay vì lỗi
+                    logger.warning(f"⚠️ Search failed on collection '{col}': {e}")
+                    results[col] = []
+
             return results
 
         return await asyncio.to_thread(_search)
@@ -157,25 +172,16 @@ class VectorStoreManager:
             raise ValueError("Phải có ít nhất một điều kiện để xóa.")
 
         def _delete():
-            must_conditions = []
-            for key, value in conditions.items():
-                field_key = key.replace("__", ".")
-                must_conditions.append(
-                    models.FieldCondition(
-                        key=field_key,
-                        match=models.MatchValue(value=value)
-                    )
-                )
-            query_filter = models.Filter(must=must_conditions)
+            query_filter = self._build_filter(**conditions)
 
             try:
-                self.client.delete(
+                operation_info = self.client.delete(
                     collection_name=collection_name,
                     points_selector=models.FilterSelector(filter=query_filter)
                 )
-                logger.info(f"Deleted points from '{collection_name}' with {conditions}")
+                logger.info(f"🗑️ Deleted {operation_info.deleted_count} points from '{collection_name}' with {conditions}")
             except Exception as e:
-                logger.error(f"Delete failed in '{collection_name}': {e}")
+                logger.error(f"❌ Delete failed in '{collection_name}': {e}")
                 raise
 
         await asyncio.to_thread(_delete)
@@ -203,23 +209,14 @@ class VectorStoreManager:
                         payload=payload_updates,
                         points=[point_id]
                     )
-                    logger.debug(f"Updated point {point_id} in '{collection_name}'")
+                    logger.info(f"✏️ Updated point {point_id} in '{collection_name}'")
                 else:
-                    # Tìm tất cả điểm khớp filter
-                    must_conditions = []
-                    for key, value in filter_conditions.items():
-                        field_key = key.replace("__", ".")
-                        must_conditions.append(
-                            models.FieldCondition(
-                                key=field_key,
-                                match=models.MatchValue(value=value)
-                            )
-                        )
-                    query_filter = models.Filter(must=must_conditions)
-
+                    query_filter = self._build_filter(**filter_conditions)
                     all_points = []
+
                     offset = None
-                    while True:
+                    max_iterations = 100  # Tránh loop vô hạn
+                    for _ in range(max_iterations):
                         result, next_offset = self.client.scroll(
                             collection_name=collection_name,
                             scroll_filter=query_filter,
@@ -232,9 +229,11 @@ class VectorStoreManager:
                         if not next_offset:
                             break
                         offset = next_offset
+                    else:
+                        logger.warning(f"⚠️ Reached max iterations while scrolling. Only processed {len(all_points)} points.")
 
                     if not all_points:
-                        logger.debug(f"No points matched filter {filter_conditions}")
+                        logger.debug(f"🔍 No points matched filter {filter_conditions}")
                         return
 
                     self.client.set_payload(
@@ -242,9 +241,9 @@ class VectorStoreManager:
                         payload=payload_updates,
                         points=all_points
                     )
-                    logger.info(f"Updated {len(all_points)} points in '{collection_name}'")
+                    logger.info(f"✏️ Updated {len(all_points)} points in '{collection_name}'")
             except Exception as e:
-                logger.error(f"Update payload failed: {e}")
+                logger.error(f"❌ Update payload failed: {e}")
                 raise
 
         await asyncio.to_thread(_update)

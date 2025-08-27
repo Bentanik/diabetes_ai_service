@@ -1,10 +1,10 @@
 class FileType:
-    PDF = "PDF"
-    TXT = "TXT"
-    DOCX = "DOCX"
+    PDF = "pdf"
+    DOCX = "docx"
+    PPTX = "pptx"
 
     extensions = {
         PDF: [".pdf"],
-        TXT: [".txt"],
-        DOCX: [".docx"]
+        DOCX: [".docx"],
+        PPTX: [".pptx"]
     }

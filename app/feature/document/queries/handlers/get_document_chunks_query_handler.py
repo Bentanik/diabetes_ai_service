@@ -63,7 +63,7 @@ class GetDocumentChunksQueryHandler(
             sort_order = (query.sort_order or "desc").lower()
             sort_direction = 1 if sort_order == "asc" else -1
 
-            # ✅ Thêm _id để đảm bảo không bị trùng/trượt trang
+            # Thêm _id để đảm bảo không bị trùng/trượt trang
             sort_query = [
                 (sort_field, sort_direction),
                 ("_id", 1)  # Tie-breaker: đảm bảo thứ tự nhất quán

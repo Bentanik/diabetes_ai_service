@@ -4,6 +4,7 @@ from .document_message import DocumentMessage
 from .session_chat_message import SessionChatMessage
 from .chat_message import ChatMessage
 from .setting_message import SettingMessage
+from .retrieval_message import RetrievalMessage
 
 __all__ = [
     "KnowledgeMessage",
@@ -11,5 +12,6 @@ __all__ = [
     "DocumentMessage",
     "SessionChatMessage",
     "ChatMessage",
-    "SettingMessage"
+    "SettingMessage",
+    "RetrievalMessage"
 ]

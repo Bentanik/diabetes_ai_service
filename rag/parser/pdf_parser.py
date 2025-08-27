@@ -1,9 +1,8 @@
 import asyncio
 import logging
 import re
-import unicodedata
 from pathlib import Path
-from typing import List, Union, Dict, Any
+from typing import List, Union
 
 from pdfminer.high_level import extract_pages
 from pdfminer.layout import LAParams, LTTextContainer, LTChar
@@ -11,6 +10,7 @@ import pdfplumber
 
 from .base import BaseParser
 from ..dataclasses import ParsedContent, FileType
+from .cleaners import clean_text
 
 
 class PDFParser(BaseParser):
@@ -41,105 +41,132 @@ class PDFParser(BaseParser):
     async def parse_async(self, file_path: Union[str, Path]) -> ParsedContent:
         return await asyncio.to_thread(self._parse, file_path)
 
+    def _is_heading(self, elem: LTTextContainer) -> bool:
+        """Chỉ coi là heading nếu có font lớn hoặc in đậm"""
+        try:
+            chars = []
+            for text_line in elem:
+                if hasattr(text_line, '__iter__'):
+                    for char in text_line:
+                        if isinstance(char, LTChar):
+                            chars.append(char)
+                elif isinstance(char, LTChar):
+                    chars.append(char)
+
+            if not chars:
+                return False
+
+            sizes = [c.size for c in chars if c.size]
+            fonts = [c.fontname for c in chars if c.fontname]
+
+            if not sizes:
+                return False
+
+            avg_size = sum(sizes) / len(sizes)
+            is_bold = any('Bold' in (font or '') or 'B' in (font or '') for font in fonts)
+
+            return avg_size > 14 or is_bold
+        except Exception:
+            return False
+
+    def _is_valid_heading_text(self, text: str) -> bool:
+        """Kiểm tra xem text có phù hợp làm heading không"""
+        if not text.strip():
+            return False
+        # Nếu quá dài → không phải heading
+        if len(text) > 100:
+            return False
+        # Nếu chứa từ như "là một", "được", "năm" → có vẻ là nội dung
+        noise_keywords = ['là một', 'được', 'sinh', 'mất', 'năm', 'là một', 'với', 'tại', 'khi']
+        if any(kw in text.lower() for kw in noise_keywords):
+            return False
+        # Nếu có dấu chấm, phẩy dài → không phải heading
+        if text.count(',') > 1 or text.count('.') > 0:
+            return False
+        return True
+
+    def _is_noise_block(self, text: str) -> bool:
+        """Kiểm tra có phải là block không mong muốn"""
+        noise_patterns = [
+            r'\[.*Đọc tiếp.*\]',
+            r'Mới chọn:',
+            r'Ấn phẩm:',
+            r'Từ những bài viết mới của Wikipedia',
+            r'Wikipedia là dự án bách khoa toàn thư mở'
+        ]
+        return any(re.search(pattern, text, re.IGNORECASE) for pattern in noise_patterns)
+
     def _parse(self, file_path: Union[str, Path]) -> ParsedContent:
         file_path = self._validate_file(file_path)
 
-        try:
-            content, tables = self._extract_text_and_tables(file_path)
-            content = self._clean_text(content)
-            metadata = self._build_metadata(file_path, tables)
-
-            assert isinstance(metadata, dict), f"metadata must be dict, got {type(metadata)}"
-
-            return ParsedContent(
-                content=content,
-                metadata=metadata,
-                file_type=self.get_file_type(),
-                file_path=str(file_path),
-                tables=tables
-            )
-        except Exception as e:
-            self.logger.error(f"Failed to parse PDF {file_path}: {str(e)}")
-            raise
-
-    def _extract_text_and_tables(self, file_path: Path) -> tuple[str, List[List[List[str]]]]:
         text_parts = []
         tables = []
 
-        # Extract tables
         try:
             with pdfplumber.open(file_path) as pdf:
                 for page in pdf.pages:
                     page_tables = page.extract_tables()
                     if page_tables:
-                        tables.extend(page_tables)
-        except Exception as e:
-            self.logger.warning(f"Table extraction failed: {e}")
+                        for table in page_tables:
+                            cleaned_table = [
+                                [cell if cell is not None else "" for cell in row]
+                                for row in table if row
+                            ]
+                            if cleaned_table:
+                                tables.append(cleaned_table)
+                                text_parts.append("[TABLE]")
 
-        # Extract text
-        try:
             pages = extract_pages(str(file_path), laparams=self.layout_params)
+            current_heading = None
+
             for page in pages:
-                page_lines = []
                 for elem in page:
                     if isinstance(elem, LTTextContainer):
                         text = elem.get_text().strip()
                         if not text:
                             continue
 
-                        # Detect heading by font size
-                        try:
-                            # Lấy tất cả ký tự trong container
-                            chars = []
-                            for text_line in elem:
-                                if hasattr(text_line, '__iter__'):
-                                    for char in text_line:
-                                        if isinstance(char, LTChar):
-                                            chars.append(char)
-                                elif isinstance(text_line, LTChar):
-                                    chars.append(text_line)
+                        # Làm sạch sơ bộ để kiểm tra
+                        clean_for_check = re.sub(r'\s+', ' ', text).strip()
 
-                            if chars:
-                                max_size = max(char.size for char in chars)
-                                if max_size > 14:
-                                    text = f"\n[HEADING]{text}[/HEADING]\n"
-                        except Exception as e:
-                            self.logger.debug(f"Font size detection failed for: {text[:30]}... Error: {e}")
+                        # Kiểm tra có phải noise
+                        if self._is_noise_block(clean_for_check):
+                            continue
 
-                        page_lines.append(text)
-                if page_lines:
-                    text_parts.append("\n".join(page_lines))
+                        # Phát hiện heading
+                        if self._is_heading(elem) and self._is_valid_heading_text(text):
+                            # Nếu có heading cũ đang chờ, gán nó
+                            if current_heading:
+                                text_parts.append(f"[HEADING]{current_heading}[/HEADING]")
+                            current_heading = text
+                        else:
+                            # Đây là nội dung → gán vào sau heading
+                            if current_heading:
+                                text_parts.append(f"[HEADING]{current_heading}[/HEADING]")
+                                current_heading = None
+                            text_parts.append(text)
+
+            # Đóng heading cuối nếu còn
+            if current_heading:
+                text_parts.append(f"[HEADING]{current_heading}[/HEADING]")
+
         except Exception as e:
-            self.logger.error(f"Text extraction failed: {e}")
-            raise ValueError(f"Cannot extract text from PDF: {e}")
+            self.logger.error(f"Parse failed: {e}")
+            raise
 
-        full_text = "\f[PAGE_BREAK]\f".join(text_parts)
-        return full_text, tables
+        full_text = "\n".join(filter(None, text_parts))
+        full_text = clean_text(full_text)  # Làm sạch cuối cùng
 
-    def _clean_text(self, text: str) -> str:
-        if not text:
-            return ""
-        text = re.sub(r'\r\n|\r', '\n', text)
-        text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
-        text = re.sub(r'([a-z,;:])\n([a-z])', r'\1 \2', text)
-        lines = [line.strip() for line in text.split('\n')]
-        cleaned = '\n'.join(line if line else "" for line in lines)
-        cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
-        cleaned = unicodedata.normalize('NFC', cleaned)
-        return cleaned.strip()
-
-    def _build_metadata(self, file_path: Path, tables: List) -> Dict[str, Any]:
-        try:
-            with pdfplumber.open(file_path) as pdf:
-                num_pages = len(pdf.pages)
-        except Exception as e:
-            self.logger.warning(f"Cannot get num_pages: {e}")
-            num_pages = 'unknown'
-
-        return {
+        metadata = {
             'file_name': file_path.name,
             'file_size': file_path.stat().st_size,
-            'num_pages': num_pages,
-            'num_tables': len(tables),
             'parser': 'pdfminer+pdfplumber'
         }
+
+        return ParsedContent(
+            content=full_text,
+            metadata=metadata,
+            file_type=self.get_file_type(),
+            file_path=str(file_path),
+            tables=tables
+        )

@@ -16,6 +16,7 @@ class EmbeddingModel:
             cls._instance.model_name = model_name
             cls._instance.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
             cls._instance.model = None
+            cls._instance.tokenizer = None
             cls._instance._is_loaded = False
         return cls._instance
 
@@ -26,19 +27,20 @@ class EmbeddingModel:
         def _load():
             try:
                 self.model = SentenceTransformer(
-                    self.model_name, 
-                    device=self.device, 
+                    self.model_name,
+                    device=self.device,
                     trust_remote_code=True
                 )
+                self.tokenizer = self.model.tokenizer  # ← Gán tokenizer
             except Exception as e:
                 logger.warning(f"Failed to load on {self.device}: {e}")
-                # Fallback to CPU
                 self.device = "cpu"
                 self.model = SentenceTransformer(
-                    self.model_name, 
-                    device="cpu", 
+                    self.model_name,
+                    device="cpu",
                     trust_remote_code=True
                 )
+                self.tokenizer = self.model.tokenizer
 
         await asyncio.to_thread(_load)
         self._is_loaded = True
@@ -54,10 +56,8 @@ class EmbeddingModel:
     async def embed(self, text: str) -> List[float]:
         if not self._is_loaded:
             await self.load()
-        
         try:
             result = await asyncio.to_thread(lambda: self.model.encode(text, convert_to_numpy=True).tolist())
-            # Cleanup GPU memory
             if self.device == "cuda":
                 torch.cuda.empty_cache()
             return result
@@ -69,8 +69,6 @@ class EmbeddingModel:
     async def embed_batch(self, texts: List[str], max_batch_size: int = 5) -> List[List[float]]:
         if not self._is_loaded:
             await self.load()
-        
-        # Split into smaller batches for GPU safety
         if len(texts) > max_batch_size:
             all_embeddings = []
             for i in range(0, len(texts), max_batch_size):
@@ -78,7 +76,6 @@ class EmbeddingModel:
                 batch_embeddings = await self.embed_batch(batch, max_batch_size)
                 all_embeddings.extend(batch_embeddings)
             return all_embeddings
-        
         try:
             result = await asyncio.to_thread(lambda: self.model.encode(texts, convert_to_numpy=True).tolist())
             if self.device == "cuda":
@@ -86,5 +83,4 @@ class EmbeddingModel:
             return result
         except torch.cuda.OutOfMemoryError:
             logger.warning("GPU OOM in batch, processing individually...")
-            # Fallback to individual processing
             return [await self.embed(text) for text in texts]

@@ -1,51 +1,32 @@
-# rag/chunkers/semantic_chunker.py
 import re
 import numpy as np
-from typing import List
+from typing import List, Tuple
 from sklearn.metrics.pairwise import cosine_similarity
-from transformers import PreTrainedTokenizerFast
 
-from rag.dataclasses import ParsedContent
-
+from rag.dataclasses import ParsedContent, DocumentChunk, ChunkMetadata
+from rag.parser.cleaners import is_noisy_chunk
 from .base import BaseChunker
-from ..dataclasses import DocumentChunk, ChunkMetadata
+
 
 class Chunker(BaseChunker):
-    """
-    Hỗ trợ:
-    - Tiếng Việt và tiếng Anh
-    - Xử lý bảng (được chèn dưới dạng [TABLE])
-    - Tách chunk tại điểm thay đổi chủ đề
-    - Giữ nguyên câu và cấu trúc (heading, page break)
-    - Dùng token count chính xác
-    """
-
     def __init__(
         self,
         embedding_model,
-        tokenizer: PreTrainedTokenizerFast = None,
         max_tokens: int = 512,
         min_tokens: int = 100,
         overlap_tokens: int = 64,
         similarity_threshold: float = 0.6,
     ):
         """
-        Args:
-            embedding_model: Instance của EmbeddingModel (singleton)
-            tokenizer: Tokenizer tương ứng (nếu không truyền, tự load từ model)
-            max_tokens: Số token tối đa mỗi chunk
-            min_tokens: Số token tối thiểu để tạo chunk
-            overlap_tokens: Số token overlap giữa các chunk
-            similarity_threshold: Ngưỡng similarity để coi là "thay đổi chủ đề"
+        Chunker chia nhỏ văn bản theo ngữ nghĩa, hỗ trợ tiếng Việt.
         """
         self.embedding_model = embedding_model
-        self.tokenizer = tokenizer or embedding_model.model.tokenizer
         self.max_tokens = max_tokens
         self.min_tokens = min_tokens
         self.overlap_tokens = overlap_tokens
         self.similarity_threshold = similarity_threshold
 
-        # Setup sentence tokenizer cho tiếng Việt
+        # Hỗ trợ tách câu tiếng Việt
         try:
             from underthesea import sent_tokenize as viet_sent_tokenize
             self.viet_sent_tokenize = viet_sent_tokenize
@@ -53,16 +34,16 @@ class Chunker(BaseChunker):
             self.viet_sent_tokenize = None
 
     def _count_tokens(self, text: str) -> int:
-        """Đếm số subword token"""
-        return len(self.tokenizer.encode(text))
+        """Đếm số token bằng tokenizer của embedding model"""
+        return len(self.embedding_model.model.tokenizer.encode(text))
 
     def _split_sentences(self, text: str) -> List[str]:
-        """Tách câu, tự động detect ngôn ngữ"""
-        if not text or not text.strip():
+        """Tách câu, tự động nhận diện tiếng Việt"""
+        if not text.strip():
             return []
         text = re.sub(r'\s+', ' ', text).strip()
 
-        # Detect language
+        # Detect tiếng Việt
         vi_chars = set('àáảãạâầấẩẫậăằắẳẵặèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ')
         sample = ''.join(filter(str.isalpha, text.lower()[:100]))
         is_vietnamese = any(c in vi_chars for c in sample)
@@ -79,21 +60,44 @@ class Chunker(BaseChunker):
         return [s.strip() for s in sentences if s.strip()]
 
     def _table_to_markdown(self, table: List[List[str]]) -> str:
-        """Chuyển bảng thành markdown table"""
+        """Chuyển bảng thành markdown"""
         if not table or not table[0]:
             return ""
         try:
-            header = "| " + " | ".join(table[0]) + " |"
-            separator = "| " + " | ".join(["---"] * len(table[0])) + " |"
+            cleaned_table = []
+            for row in table:
+                if not row:
+                    continue
+                cleaned_row = [cell if cell is not None else "" for cell in row]
+                cleaned_table.append(cleaned_row)
+
+            if not cleaned_table or not cleaned_table[0]:
+                return ""
+
+            header = "| " + " | ".join(cleaned_table[0]) + " |"
+            separator = "| " + " | ".join(["---"] * len(cleaned_table[0])) + " |"
             rows = [
                 "| " + " | ".join(row) + " |"
-                for row in table[1:] if row
+                for row in cleaned_table[1:] if row
             ]
             return "\n".join([header, separator] + rows)
         except Exception:
-            return "\n".join(["\t".join(row) for row in table if row])
+            # Fallback
+            try:
+                lines = []
+                for row in table:
+                    if row:
+                        cleaned_row = [cell if cell is not None else "" for cell in row]
+                        lines.append("\t".join(cleaned_row))
+                return "\n".join(lines)
+            except:
+                return "[Bảng không hợp lệ]"
 
     def _inject_tables(self, text: str, tables: List[List[List[str]]]) -> str:
+        """Chèn bảng vào đúng vị trí [TABLE]"""
+        if not tables:
+            return text
+
         table_iter = iter(tables)
         while '[TABLE]' in text:
             try:
@@ -104,13 +108,12 @@ class Chunker(BaseChunker):
                 break
         return text
 
-    def _split_by_structure(self, text: str) -> List[str]:
+    def _split_by_structure(self, text: str) -> List[Tuple[str, str]]:
         """
-        Tách text theo cấu trúc: heading, page break
-        Trả về danh sách các block
+        Tách theo cấu trúc: heading, subheading, page break
+        Trả về list (block_type, content)
         """
-        # Tách theo heading và page break
-        parts = re.split(r'(\[PAGE_BREAK\]|\[HEADING\][^\[]*\[/HEADING\])', text)
+        parts = re.split(r'(\[PAGE_BREAK\]|\[HEADING\][^\[]*\[/HEADING\]|\[SUBHEADING\][^\[]*\[/SUBHEADING\])', text)
         blocks = []
         current_block = ""
 
@@ -119,23 +122,31 @@ class Chunker(BaseChunker):
             if not part:
                 continue
 
-            if re.match(r'\[PAGE_BREAK\]|\[HEADING\]', part):
-                # Đóng block hiện tại
+            if part == "[PAGE_BREAK]":
                 if current_block:
-                    blocks.append(current_block.strip())
+                    blocks.append(("paragraph", current_block))
                     current_block = ""
-                # Thêm block cấu trúc
-                blocks.append(part)
+                blocks.append(("page_break", ""))
+            elif part.startswith("[HEADING]"):
+                if current_block:
+                    blocks.append(("paragraph", current_block))
+                    current_block = ""
+                blocks.append(("heading", part))
+            elif part.startswith("[SUBHEADING]"):
+                if current_block:
+                    blocks.append(("paragraph", current_block))
+                    current_block = ""
+                blocks.append(("subheading", part))
             else:
                 current_block += " " + part
 
-        if current_block.strip():
-            blocks.append(current_block.strip())
+        if current_block:
+            blocks.append(("paragraph", current_block))
 
         return blocks
 
     def _get_overlap_text(self, text: str, max_tokens: int) -> str:
-        """Lấy overlap từ cuối text"""
+        """Lấy phần overlap từ cuối"""
         sentences = self._split_sentences(text)
         overlap = ""
         for sent in reversed(sentences):
@@ -145,19 +156,21 @@ class Chunker(BaseChunker):
             overlap = candidate
         return overlap.strip()
 
-    def _make_chunk(self, content: str, chunk_index: int) -> DocumentChunk:
+    def _make_chunk(self, content: str, chunk_index: int, chunk_type: str = "content") -> DocumentChunk:
         """Tạo DocumentChunk"""
+        if not content or is_noisy_chunk(content):
+            return None
         return DocumentChunk(
             content=content.strip(),
             metadata=ChunkMetadata(
                 chunk_index=chunk_index,
                 word_count=len(content.split()),
-                chunking_strategy="semantic_chunk"
+                chunking_strategy="semantic_chunk",
             )
         )
 
     async def _embed_sentences(self, sentences: List[str]) -> np.ndarray:
-        """Embed danh sách câu bằng EmbeddingModel"""
+        """Embed danh sách câu"""
         if not sentences:
             return np.array([])
         try:
@@ -167,114 +180,97 @@ class Chunker(BaseChunker):
             raise RuntimeError(f"Embedding failed: {e}")
 
     async def _find_semantic_breaks(self, sentences: List[str]) -> List[int]:
-        """Tìm điểm ngắt ngữ nghĩa dựa trên similarity"""
+        """Tìm điểm ngắt ngữ nghĩa"""
         if len(sentences) < 2:
             return []
 
         embeddings = await self._embed_sentences(sentences)
         breaks = []
-
         for i in range(1, len(embeddings)):
             sim = cosine_similarity([embeddings[i-1]], [embeddings[i]])[0][0]
             if sim < self.similarity_threshold:
                 breaks.append(i)
-
         return breaks
 
     async def chunk_async(self, parsed_content: ParsedContent) -> List[DocumentChunk]:
         """
-        Chia parsed_content thành các chunk ngữ nghĩa.
-
-        Args:
-            parsed_content: Output từ parser (có .content, .tables)
-
-        Returns:
-            List[DocumentChunk]
+        Chia nhỏ nội dung theo ngữ nghĩa.
         """
         text = parsed_content.content
         tables = parsed_content.tables or []
 
-        # === BƯỚC 1: Inject bảng vào text ===
+        # Bước 1: Inject bảng
         if tables:
-            # Đảm bảo có placeholder
-            text = re.sub(r'\[TABLE_PLACEHOLDER\]', '[TABLE]', text)
             text = self._inject_tables(text, tables)
 
-        # === BƯỚC 2: Tách theo cấu trúc (heading, page break) ===
+        # Bước 2: Tách theo cấu trúc
         blocks = self._split_by_structure(text)
 
-        # === BƯỚC 3: Chunk từng block ===
+        # Bước 3: Chunk từng block
         chunks = []
         current_chunk = ""
         current_token_count = 0
         chunk_index = 0
 
-        for block in blocks:
-            block = block.strip()
-            if not block:
-                continue
-
-            if block == "[PAGE_BREAK]":
+        for block_type, content in blocks:
+            if block_type == "page_break":
                 if current_chunk and current_token_count >= self.min_tokens:
-                    chunks.append(self._make_chunk(current_chunk, chunk_index))
-                    chunk_index += 1
+                    chunk = self._make_chunk(current_chunk, chunk_index, "content")
+                    if chunk:
+                        chunks.append(chunk)
+                        chunk_index += 1
                     current_chunk = ""
                     current_token_count = 0
                 continue
 
-            if block.startswith("[HEADING]") and block.endswith("[/HEADING]"):
-                # Tạo chunk riêng cho heading
+            if block_type in ["heading", "subheading"]:
                 if current_chunk:
-                    chunks.append(self._make_chunk(current_chunk, chunk_index))
-                    chunk_index += 1
+                    chunk = self._make_chunk(current_chunk, chunk_index, "content")
+                    if chunk:
+                        chunks.append(chunk)
+                        chunk_index += 1
                     current_chunk = ""
                     current_token_count = 0
-                # Heading thành 1 chunk riêng
-                chunks.append(self._make_chunk(block, chunk_index))
-                chunk_index += 1
+                heading_chunk = self._make_chunk(content, chunk_index, block_type)
+                if heading_chunk:
+                    chunks.append(heading_chunk)
+                    chunk_index += 1
                 continue
 
-            # === Xử lý nội dung thường ===
-            sentences = self._split_sentences(block)
+            # Xử lý đoạn văn
+            sentences = self._split_sentences(content)
             if not sentences:
                 continue
 
-            # Tìm điểm ngắt ngữ nghĩa
             semantic_breaks = await self._find_semantic_breaks(sentences)
             split_points = sorted(set(semantic_breaks + [len(sentences)]))
 
             start = 0
             for end in split_points:
                 segment = " ".join(sentences[start:end])
-                segment_token_count = self._count_tokens(segment)
+                seg_token_count = self._count_tokens(segment)
 
-                # Kiểm tra nếu thêm vào sẽ vượt quá giới hạn
-                if current_chunk and current_token_count + segment_token_count > self.max_tokens:
-                    # Đóng chunk hiện tại
+                if current_chunk and current_token_count + seg_token_count > self.max_tokens:
                     if current_token_count >= self.min_tokens:
-                        chunks.append(self._make_chunk(current_chunk, chunk_index))
-                        chunk_index += 1
-
-                        # Overlap: lấy phần cuối của chunk trước
-                        overlap_text = self._get_overlap_text(current_chunk, self.overlap_tokens)
-                        current_chunk = overlap_text + " " + segment
+                        chunk = self._make_chunk(current_chunk, chunk_index, "content")
+                        if chunk:
+                            chunks.append(chunk)
+                            chunk_index += 1
+                        overlap = self._get_overlap_text(current_chunk, self.overlap_tokens)
+                        current_chunk = overlap + " " + segment
                         current_token_count = self._count_tokens(current_chunk)
                     else:
-                        # Nếu chunk hiện tại quá nhỏ, thay bằng segment mới
                         current_chunk = segment
-                        current_token_count = segment_token_count
+                        current_token_count = seg_token_count
                 else:
-                    # Thêm vào chunk hiện tại
-                    if current_chunk:
-                        current_chunk += " " + segment
-                    else:
-                        current_chunk = segment
-                    current_token_count += segment_token_count
-
+                    current_chunk = (current_chunk + " " + segment) if current_chunk else segment
+                    current_token_count += seg_token_count
                 start = end
 
-        # Đóng chunk cuối cùng
+        # Đóng chunk cuối
         if current_chunk and self._count_tokens(current_chunk) >= self.min_tokens:
-            chunks.append(self._make_chunk(current_chunk, chunk_index))
+            chunk = self._make_chunk(current_chunk, chunk_index, "content")
+            if chunk:
+                chunks.append(chunk)
 
         return chunks

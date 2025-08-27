@@ -11,7 +11,7 @@ from app.storage import MinioManager
 from core.cqrs import CommandHandler, CommandRegistry
 from bson import ObjectId
 from core.embedding import EmbeddingModel
-from rag.parser import parse_file
+from rag.parser import ParserFactory
 from rag.chunking import Chunker
 from shared.messages import DocumentMessage
 from app.nlp.diabetes_classifier import DiabetesClassifier
@@ -53,11 +53,8 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             embedding_model = await EmbeddingModel.get_instance()
             self.chunker = Chunker(
                 embedding_model=embedding_model,
-                tokenizer=embedding_model.model.tokenizer,
                 max_tokens=512,
-                min_tokens=100,
-                overlap_tokens=64,
-                similarity_threshold=0.6,
+                min_tokens=50,
             )
 
             # Lấy thông tin document job
@@ -159,7 +156,8 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
     async def _parse_content_async(self, job_id: str, temp_path: str):
         """Parse nội dung file"""
         await self._update_status_async(job_id=job_id, status=DocumentJobStatus.PROCESSING, progress=50, message="Phân tích nội dung")
-        return await parse_file(temp_path)
+        parser = ParserFactory.get_parser(temp_path)
+        return await parser.parse_async(temp_path)
 
     async def _create_chunks_async(self, job_id: str, content) -> List:
         """Chia nhỏ nội dung"""
@@ -225,7 +223,7 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
     async def _save_chunks_in_batches_async(self, document_job: DocumentJobModel, chunks: List, scores: List[float], batch_size: int = 500):
         """Lưu chunks theo batch, không xóa cũ, mỗi chunk có _id mới"""
         total = len(chunks)
-        self.logger.info(f"💾 Bắt đầu lưu {total} chunks mới (giữ chunk cũ)")
+        self.logger.info(f"Bắt đầu lưu {total} chunks mới (giữ chunk cũ)")
 
         for i in range(0, total, batch_size):
             batch = chunks[i:i + batch_size]

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
-from app.feature.train_ai import AddTrainingDocumentCommand
+from app.feature.train_ai import AddTrainingDocumentCommand, GetRetrievedContextQuery
 from core.cqrs import Mediator
 from utils import (
     get_logger,
@@ -39,28 +39,28 @@ async def add_training_document(req: AddTrainingDocumentCommand) -> JSONResponse
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# @router.get(
-#     "/get-retrieved-context",
-#     response_model=None,
-#     summary="Lấy context từ vector database",
-#     description="Lấy context từ vector database.",
-# )
-# async def get_retrieved_context(
-#     search: str = Query(..., description="Search query string")
-# ) -> JSONResponse:
-#     """
-#     Endpoint lấy context từ vector database.
+@router.get(
+    "/get-retrieved-context",
+    response_model=None,
+    summary="Lấy context từ vector database",
+    description="Lấy context từ vector database.",
+)
+async def get_retrieved_context(
+    search: str = Query(..., description="Search query string")
+) -> JSONResponse:
+    """
+    Endpoint lấy context từ vector database.
 
-#     Args:
-#         req (GetRetrievedContextQuery): Query chứa query cần lấy context
+    Args:
+        req (GetRetrievedContextQuery): Query chứa query cần lấy context
 
-#     Returns:
-#         JSONResponse
-#     """
-#     try:
-#         query = GetRetrievedContextQuery(query=search)
-#         result = await Mediator.send(query)
-#         return result.to_response()
-#     except Exception as e:
-#         logger.error(f"Lỗi khi thêm tài liệu vào vector database: {e}")
-#         raise HTTPException(status_code=500, detail=str(e))
+    Returns:
+        JSONResponse
+    """
+    try:
+        query = GetRetrievedContextQuery(query=search)
+        result = await Mediator.send(query)
+        return result.to_response()
+    except Exception as e:
+        logger.error(f"Lỗi khi thêm tài liệu vào vector database: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
