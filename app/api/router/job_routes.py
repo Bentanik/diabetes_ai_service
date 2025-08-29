@@ -21,6 +21,7 @@ logger = get_logger(__name__)
 )
 async def get_document_history(
     search: str = Query("", description="Tên cơ sở tri thức cần tìm kiếm"),
+    progress: Optional[int] = Query(None, description="Tiến trình"),
     type: Optional[DocumentJobType] = Query(None, description="Loại tài liệu"),
     status: Optional[DocumentJobStatus] = Query(None, description="Trạng thái"),
     sort_by: str = Query("created_at", description="Trường cần sắp xếp"),
@@ -34,6 +35,10 @@ async def get_document_history(
     collections = get_collections()
 
     query = {}
+
+    if progress:
+        query["processing_status.progress"] = {"$lt": progress}
+
     if type:
         query["type"] = type
     if status:

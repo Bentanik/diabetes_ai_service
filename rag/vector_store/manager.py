@@ -179,9 +179,9 @@ class VectorStoreManager:
                     collection_name=collection_name,
                     points_selector=models.FilterSelector(filter=query_filter)
                 )
-                logger.info(f"🗑️ Deleted {operation_info.deleted_count} points from '{collection_name}' with {conditions}")
+                logger.info(f"Deleted {operation_info.deleted_count} points from '{collection_name}' with {conditions}")
             except Exception as e:
-                logger.error(f"❌ Delete failed in '{collection_name}': {e}")
+                logger.error(f"Delete failed in '{collection_name}': {e}")
                 raise
 
         await asyncio.to_thread(_delete)

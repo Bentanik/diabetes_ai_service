@@ -1,7 +1,7 @@
 # Import từ commands
 from .commands import (
-    CreateDocumentCommand,
-    CreateDocumentCommandHandler,
+    CreateDocumentsCommand,
+    CreateDocumentsCommandHandler,
     ProcessDocumentUploadCommand,
     ProcessDocumentUploadCommandHandler,
     DeleteDocumentCommand,
@@ -24,12 +24,12 @@ from .queries import (
 
 __all__ = [
     # Commands
-    "CreateDocumentCommand",
+    "CreateDocumentsCommand",
     "ProcessDocumentUploadCommand",
     "DeleteDocumentCommand",
     "UpdateDocumentCommand",
     # Command Handlers
-    "CreateDocumentCommandHandler",
+    "CreateDocumentsCommandHandler",
     "ProcessDocumentUploadCommandHandler",
     "DeleteDocumentCommandHandler",
     "UpdateDocumentCommandHandler",

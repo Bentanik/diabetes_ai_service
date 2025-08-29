@@ -1,12 +1,12 @@
 # Commands
-from .create_document_command import CreateDocumentCommand
+from .create_documents_command import CreateDocumentsCommand
 from .process_document_upload_command import ProcessDocumentUploadCommand
 from .delete_document_command import DeleteDocumentCommand
 from .change_document_status_command import ChangeDocumentChunkStatusCommand
 from .update_document_command import UpdateDocumentCommand
 # Handlers
 from .handlers import (
-    CreateDocumentCommandHandler,
+    CreateDocumentsCommandHandler,
     ProcessDocumentUploadCommandHandler,
     DeleteDocumentCommandHandler,
     ChangeDocumentChunkStatusCommandHandler,
@@ -15,13 +15,13 @@ from .handlers import (
 
 __all__ = [
     # Commands
-    "CreateDocumentCommand",
+    "CreateDocumentsCommand",
     "ProcessDocumentUploadCommand",
     "DeleteDocumentCommand",
     "ChangeDocumentChunkStatusCommand",
     "UpdateDocumentCommand",
     # Handlers
-    "CreateDocumentCommandHandler",
+    "CreateDocumentsCommandHandler",
     "ProcessDocumentUploadCommandHandler",
     "DeleteDocumentCommandHandler",
     "ChangeDocumentChunkStatusCommandHandler",

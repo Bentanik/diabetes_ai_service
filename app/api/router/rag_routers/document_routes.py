@@ -14,7 +14,7 @@ File này cung cấp các REST API endpoints để thực hiện các thao tác 
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import JSONResponse, StreamingResponse
 from app.feature.document import (
-    CreateDocumentCommand,
+    CreateDocumentsCommand,
     GetDocumentsQuery,
     GetDocumentQuery,
     GetDocumentChunksQuery,
@@ -24,7 +24,7 @@ from app.feature.document import (
 from app.feature.document.commands.change_document_status_command import ChangeDocumentChunkStatusCommand
 from core.cqrs import Mediator
 from utils import get_logger, should_compress, compress_stream, get_best_compression
-from typing import cast
+from typing import List, cast
 from app.dto.models import DocumentModelDTO
 from app.storage import MinioManager
 import mimetypes
@@ -38,23 +38,23 @@ logger = get_logger(__name__)
 @router.post(
     "",
     response_model=None,
-    summary="Tạo tài liệu mới",
-    description="Tạo mới tài liệu trong hệ thống với file upload.",
+    summary="Tạo nhiều tài liệu mới",
+    description="Tạo mới nhiều tài liệu trong hệ thống với các file upload.",
 )
-async def create_document(
-    file: UploadFile = File(..., description="File tài liệu cần upload"),
+async def create_documents(
+    files: List[UploadFile] = File(..., description="Các file tài liệu cần upload"),
     knowledge_id: str = Form(..., description="ID của cơ sở tri thức chứa tài liệu"),
-    title: str = Form(..., description="Tiêu đề tài liệu"),
-    description: str = Form(..., description="Mô tả về tài liệu"),
+    titles: List[str] = Form(..., description="Các tiêu đề tài liệu"),
+    descriptions: List[str] = Form(..., description="Các mô tả về tài liệu"),
 ) -> JSONResponse:
     """
-    Endpoint tạo mới tài liệu.
+    Endpoint tạo mới nhiều tài liệu.
 
     Args:
-        file (UploadFile): File tài liệu cần upload
+        files (List[UploadFile]): Các file tài liệu cần upload
         knowledge_id (str): ID của cơ sở tri thức
-        title (str): Tiêu đề tài liệu
-        description (str): Mô tả tài liệu
+        titles (List[str]): Các tiêu đề tài liệu (phải khớp số lượng với files)
+        descriptions (List[str]): Các mô tả tài liệu (phải khớp số lượng với files)
 
     Returns:
         JSONResponse
@@ -62,13 +62,22 @@ async def create_document(
     Raises:
         HTTPException: Khi có lỗi xảy ra trong quá trình xử lý
     """
-    logger.info(f"Tạo tài liệu mới: {title}")
+    if len(files) != len(titles) or len(files) != len(descriptions):
+        raise HTTPException(status_code=400, detail="Số lượng files, titles và descriptions không khớp")
+
+    logger.info(f"Tạo {len(files)} tài liệu mới cho knowledge_id: {knowledge_id}")
     try:
-        command = CreateDocumentCommand(
-            file=file, knowledge_id=knowledge_id, title=title, description=description
+        command = CreateDocumentsCommand(
+            files=files,
+            knowledge_id=knowledge_id,
+            titles=titles,
+            descriptions=descriptions
         )
         result = await Mediator.send(command)
         return result.to_response()
+    except ValueError as ve:
+        logger.warning(f"Lỗi validation: {str(ve)}")
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.error(f"Lỗi tạo tài liệu: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Tạo tài liệu thất bại")

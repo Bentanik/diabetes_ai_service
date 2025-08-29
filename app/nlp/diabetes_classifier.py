@@ -28,7 +28,7 @@ class DiabetesClassifier:
                 model=model_name,
                 device=self.device,
                 torch_dtype=torch.float16 if self.device >= 0 else torch.float32,
-                truncation=True  # Quan trọng: tránh lỗi với text dài
+                truncation=True
             )
             logger.info(f"Model loaded on {'GPU' if self.device >= 0 else 'CPU'}")
         except Exception as e:
