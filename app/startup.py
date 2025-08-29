@@ -8,6 +8,7 @@ from app.nlp import DiabetesClassifier
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
+from core.llm import QwenLLM
 from core.embedding import EmbeddingModel
 from rag.vector_store.client import VectorStoreClient
 from utils import get_logger

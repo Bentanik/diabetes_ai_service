@@ -1,4 +1,3 @@
-# app/handlers/get_retrieved_context_query_handler.py
 from typing import List
 from app.database import get_collections
 from core.cqrs import QueryHandler, QueryRegistry
@@ -67,70 +66,38 @@ class GetRetrievedContextQueryHandler(QueryHandler[Result[List[SearchDocumentDTO
                 query_vector=query_vector,
                 top_k=setting.top_k,
                 score_threshold=setting.search_accuracy,
+                document_is_active=True,
+                metadata__is_active=True
             )
             
-            print(search_results)
-
             if not search_results:
-                return Result.success([])
+                return Result.success(code=RetrievalMessage.NOT_FOUND.code, message=RetrievalMessage.NOT_FOUND.message)
 
-            pass
+            # Bước 4: Lấy thông tin từ kết quả
+            doc_ids = [hit["payload"].get("metadata", {}).get("document_id") for hit in search_results]
+            contents = [hit["payload"].get("content") for hit in search_results]
+            scores = [hit["score"] for hit in search_results]
+            unique_doc_ids = list(dict.fromkeys(doc_ids))
+            
+            # Bước 5: Lấy thông tin từ DB
+            cursor = self.db.documents.find({
+                "_id": {"$in": [ObjectId(doc_id) for doc_id in unique_doc_ids if ObjectId.is_valid(doc_id)]}
+            })
+            document_docs = await cursor.to_list(length=None)
+            documents = [DocumentModel.from_dict(doc) for doc in document_docs]
+            
+            # Bước 6: Tạo DTO
+            result_dtos: List[SearchDocumentDTO] = []
+            for index, doc_id in enumerate(doc_ids):
+                index_doc = unique_doc_ids.index(doc_id)
+                dto = SearchDocumentDTO.from_model(
+                    model=documents[index_doc],
+                    content=contents[index],
+                    score=scores[index]
+                )
+                result_dtos.append(dto)
 
-            # # Bước 4: Trích thông tin từ kết quả
-            # doc_ids = [
-            #     hit["payload"].get("metadata", {}).get("document_id")
-            #     for hit in search_results
-            # ]
-            # contents = [hit["payload"].get("content") for hit in search_results]
-            # scores = [hit["score"] for hit in search_results]
-
-            # valid_data = [
-            #     (doc_id, content, score)
-            #     for doc_id, content, score in zip(doc_ids, contents, scores)
-            #     if doc_id and content is not None
-            # ]
-
-            # if not valid_data:
-            #     return Result.success([])
-
-            # # Loại trùng, giữ thứ tự
-            # unique_doc_ids = list(dict.fromkeys(d[0] for d in valid_data))
-            # doc_id_to_data = {
-            #     doc_id: (content, score)
-            #     for doc_id, content, score in valid_data
-            # }
-
-            # # Bước 5: Query MongoDB
-            # cursor = self.db.documents.find({
-            #     "_id": {"$in": [ObjectId(doc_id) for doc_id in unique_doc_ids if ObjectId.is_valid(doc_id)]}
-            # })
-            # document_docs = await cursor.to_list(length=None)
-
-            # if not document_docs:
-            #     return Result.success([])
-
-            # documents = [DocumentModel.from_dict(doc) for doc in document_docs]
-            # document_map = {doc.id: doc for doc in documents}
-
-            # # Bước 6: Tạo DTO
-            # result_dtos = []
-            # for doc_id, (content, score) in doc_id_to_data.items():
-            #     doc_model = document_map.get(doc_id)
-            #     if not doc_model:
-            #         self.logger.warning(f"Document not found in DB for ID: {doc_id}")
-            #         continue
-
-            #     dto = SearchDocumentDTO.from_model(
-            #         model=doc_model,
-            #         content=content,
-            #         score=score
-            #     )
-            #     result_dtos.append(dto)
-
-            # # Sắp xếp theo điểm
-            # result_dtos.sort(key=lambda x: x.score, reverse=True)
-
-            # return Result.success(result_dtos)
+            return Result.success(code=RetrievalMessage.FETCHED.code, message=RetrievalMessage.FETCHED.message, data=result_dtos)
 
         except Exception as e:
             self.logger.error(f"Error in GetRetrievedContextQueryHandler: {e}", exc_info=True)

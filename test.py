@@ -1,13 +1,18 @@
-# test_pipeline.py
 import asyncio
 import logging
 from pathlib import Path
 
+from core.llm import QwenLLM
 from rag.parser.pdf_parser import PDFParser
 from rag.chunking.chunker import Chunker
 from core.embedding import EmbeddingModel
 from rag.vector_store.manager import VectorStoreManager
 from rag.retrieval.retriever import Retriever
+import os
+import dotenv
+
+dotenv.load_dotenv()
+
 
 # Cấu hình logging
 logging.basicConfig(
@@ -152,6 +157,17 @@ async def search_retrieval():
         logger.error(f"❌ Lỗi trong quá trình search: {e}", exc_info=True)
         raise
 
+async def test_llm():
+    llm = QwenLLM(
+        model=os.getenv("QWEN_MODEL"),
+        base_url=os.getenv("QWEN_URL")
+    )
+    result = await llm.generate(
+        prompt="Tui bị đái tháo đường loại 2 thì nên làm gì",
+        temperature=0.7
+    )
+    print(result)
+
 
 # --- Hàm main ---
 async def main():
@@ -159,7 +175,9 @@ async def main():
     # await ingest_pdf_document()
 
     # Bước 2: Search
-    await search_retrieval()
+    # await search_retrieval()
+
+    await test_llm()
 
 
 if __name__ == "__main__":

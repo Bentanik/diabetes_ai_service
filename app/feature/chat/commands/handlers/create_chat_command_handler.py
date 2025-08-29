@@ -1,5 +1,7 @@
-from typing import List, Optional
+import os
+import dotenv
 
+from typing import List, Optional
 from datetime import datetime
 from bson import ObjectId
 from app.database import get_collections
@@ -8,14 +10,15 @@ from app.database.models import ChatHistoryModel, ChatSessionModel, SettingModel
 from app.dto.models import ChatHistoryModelDTO
 from core.cqrs import CommandRegistry, CommandHandler
 from core.embedding import EmbeddingModel
-from core.llm import OpenRouterLLM
+from core.llm import QwenLLM
 from core.result import Result
 from rag.vector_store import VectorStoreManager
-from shared.messages import ChatMessage
+from shared.messages import ChatMessage, SettingMessage
 from utils import get_logger
 from ..create_chat_command import CreateChatCommand
-from shared.default_rag_prompt import QA_PROMPT, EXTERNAL_QA_PROMPT, SYSTEM_PROMPT
+from shared.default_rag_prompt import SYSTEM_PROMPT
 
+dotenv.load_dotenv()
 
 @CommandRegistry.register_handler(CreateChatCommand)
 class CreateChatCommandHandler(CommandHandler):
@@ -25,81 +28,102 @@ class CreateChatCommandHandler(CommandHandler):
         self.db = get_collections()
         self.vector_store_manager = VectorStoreManager()
         self.embedding_model = EmbeddingModel()
-        self.llm_client = OpenRouterLLM(
-            qa_prompt=QA_PROMPT,
-            external_qa_prompt=EXTERNAL_QA_PROMPT,
-            system_prompt=SYSTEM_PROMPT,
-        )
+        self.llm_client = None
+
+    async def get_llm_client(self):
+        if self.llm_client is None:
+            self.llm_client = QwenLLM(
+                model=os.getenv("QWEN_MODEL"),
+                base_url=os.getenv("QWEN_URL")
+            )
+        return self.llm_client
 
     async def execute(self, command: CreateChatCommand) -> Result[None]:
-        # Lấy setting từ database
-        settings = await self.db.settings.find_one({})
+        try:
+            # 1. Lấy setting
+            settings_doc = await self.db.settings.find_one({})
+            if not settings_doc:
+                return Result.failure(
+                    code=SettingMessage.NOT_FOUND.code,
+                    message=SettingMessage.NOT_FOUND.message
+                )
+            settings = SettingModel.from_dict(settings_doc)
 
-        settings = SettingModel.from_dict(settings)
+            # 2. Tạo hoặc lấy session
+            session = await self.create_session(
+                user_id=command.user_id,
+                title=command.content,
+                session_id=command.session_id,
+                use_external_knowledge=command.use_external_knowledge
+            )
 
-        # Tạo session
-        session = await self.create_session(user_id=command.user_id, title=command.content, session_id=command.session_id, use_external_knowledge=command.use_external_knowledge)
+            # 3. Lưu câu hỏi của người dùng
+            user_chat = ChatHistoryModel(
+                session_id=session.id,
+                user_id=command.user_id,
+                content=command.content,
+                role=ChatRoleType.USER
+            )
+            await self.save_data(user_chat)
 
-        # Cải thiện query search
-        search_enhance = await self.enhance_query(command.content)
+            # 4. Lấy lịch sử hội thoại
+            histories = await self.get_histories(session_id=session.id)
+            histories.reverse()
 
-        # Lưu data câu hỏi vào trước
-        chat_user = ChatHistoryModel(
-            session_id=session.id,
-            user_id=command.user_id,
-            content=command.content,
-            role=ChatRoleType.USER
-        )
+            # 5. Retrieval
+            context_texts = []
+            if settings.list_knowledge_ids and not command.use_external_knowledge:
+                enhanced_query = await self.enhance_query(command.content)
+                context_texts = await self.search_data(enhanced_query, settings)
 
-        # Lưu câu hỏi vào database
-        await self.save_data(data=chat_user)
-        
-        # Lấy lịch sử trò chuyện từ database
-        chat_histories: List[ChatHistoryModel] = []
-        if session is not None:
-           chat_histories = await self.get_histories(session_id=session.id)
+            # 6. Sinh câu trả lời
+            gen_text = await self.gen_data_with_llm(
+                message=command.content,
+                contexts=context_texts,
+                histories=histories,
+                settings=settings,
+                use_external_knowledge=command.use_external_knowledge
+            )
 
-        if len(chat_histories) > 0:
-            chat_histories.reverse()
+            # 7. Lưu câu trả lời của AI
+            ai_chat = ChatHistoryModel(
+                session_id=session.id,
+                user_id=command.user_id,
+                content=gen_text,
+                role=ChatRoleType.AI
+            )
+            await self.save_data(ai_chat)
 
-        # Tìm kiếm data trong vector store
-        search_result = await self.search_data(search=search_enhance, settings=settings)
+            # 8. Cập nhật session
+            await self.update_session(session_id=session.id)
 
-        # Đưa vô LLM gen ra với các thông tin như kết quả tìm kiếm, lịch sử trò chuyện
-        gen_text = await self.gen_data_with_llm(
-            message = search_enhance,
-            contexts = search_result,
-            histories=chat_histories,
-            use_external_knowledge=command.use_external_knowledge
-        )
+            # 9. Trả kết quả
+            dto = ChatHistoryModelDTO.from_model(ai_chat)
+            return Result.success(
+                code=ChatMessage.CHAT_CREATED.code,
+                message=ChatMessage.CHAT_CREATED.message,
+                data=dto
+            )
 
-        # Lưu câu trả lời của AI vào database
-        chat_ai = ChatHistoryModel(
-            session_id=session.id,
-            user_id=command.user_id,
-            content=gen_text,
-            role=ChatRoleType.AI
-        )
-        await self.save_data(data=chat_ai)
+        except Exception as e:
+            self.logger.error(f"Error in CreateChatCommandHandler: {e}", exc_info=True)
+            return Result.failure(
+                code=ChatMessage.CHAT_ERROR.code,
+                message=ChatMessage.CHAT_ERROR.message
+            )
 
-        # Cập nhật thời gian của session
-        await self.update_session(session_id=session.id)
-
-        chat_history_dto = ChatHistoryModelDTO.from_model(chat_ai)
-
-        return Result.success(
-            code=ChatMessage.CHAT_CREATED.code,
-            message=ChatMessage.CHAT_CREATED.message,
-            data=chat_history_dto,
-        )
-
-    async def create_session(self, user_id: str, title: str, session_id: Optional[str], use_external_knowledge: Optional[bool] = False) -> ChatSessionModel:
-        # Trường hợp admin
+    async def create_session(
+        self,
+        user_id: str,
+        title: str,
+        session_id: Optional[str],
+        use_external_knowledge: bool = False
+    ) -> ChatSessionModel:
+        # Admin case
         if user_id == "admin":
-            chat_session = await self.db.chat_sessions.find_one({"user_id": user_id})
+            chat_session = await self.db.chat_sessions.find_one({"user_id": "admin"})
             if chat_session:
                 return ChatSessionModel.from_dict(chat_session)
-            # Tạo mới
             session = ChatSessionModel(
                 user_id="admin",
                 title="Test AI",
@@ -108,7 +132,7 @@ class CreateChatCommandHandler(CommandHandler):
             await self.db.chat_sessions.insert_one(session.to_dict())
             return session
 
-        # Trường hợp session_id được truyền
+        # Dùng session_id nếu có
         if session_id:
             chat_session = await self.db.chat_sessions.find_one({"_id": ObjectId(session_id)})
             if chat_session:
@@ -124,101 +148,94 @@ class CreateChatCommandHandler(CommandHandler):
         return session
 
     async def update_session(self, session_id: str) -> bool:
-        """Update session với thời gian mới nhất"""
         try:
             await self.db.chat_sessions.update_one(
                 {"_id": ObjectId(session_id)},
-                {
-                    "$set": {
-                        "updated_at": datetime.utcnow()
-                    }
-                }
+                {"$set": {"updated_at": datetime.utcnow()}}
             )
             return True
         except Exception as e:
-            self.logger.error(f"Error updating session {session_id}: {str(e)}")
+            self.logger.error(f"Error updating session {session_id}: {e}")
             return False
 
     async def enhance_query(self, content: str) -> str:
         return content
 
     async def get_histories(self, session_id: str) -> List[ChatHistoryModel]:
-        chat_history_cursor = self.db.chat_histories.find(
-            {"session_id": session_id}
-        ).sort("updated_at", -1).limit(20)
+        cursor = self.db.chat_histories.find({"session_id": session_id}).sort("updated_at", -1).limit(20)
+        docs = await cursor.to_list(length=20)
+        return [ChatHistoryModel.from_dict(doc) for doc in docs]
 
-        chat_history_list = await chat_history_cursor.to_list(length=20)
-
-        if not chat_history_list:
-            return []
-
-        chat_histories = [ChatHistoryModel.from_dict(doc) for doc in chat_history_list]
-        
-        return chat_histories
-    
     async def search_data(self, search: str, settings: SettingModel) -> List[str]:
         text_embedding = await self.embedding_model.embed(search)
-
-        search_results = await self.vector_store_manager.search_async(
+        results = await self.vector_store_manager.search_async(
             collections=settings.list_knowledge_ids,
             query_vector=text_embedding,
             top_k=settings.top_k,
-            search_accuracy=settings.search_accuracy
+            score_threshold=settings.search_accuracy
         )
+        contents = []
+        for hits in results.values():
+            for hit in hits:
+                content = hit["payload"].get("content")
+                if content:
+                    contents.append(content)
+        return contents
 
-        searchs = []
-        for items in search_results.values():
-            for item in items:
-                searchs.append(item["payload"]["content"])
-
-        return searchs
-    
     async def gen_data_with_llm(
         self,
         message: str,
         contexts: List[str],
-        histories: Optional[List[ChatHistoryModel]] = None,
-        use_external_knowledge: Optional[bool] = False
+        histories: List[ChatHistoryModel],
+        settings: SettingModel,
+        use_external_knowledge: bool
     ) -> str:
+        llm = await self.get_llm_client()
 
-        if use_external_knowledge == False and len(contexts) == 0:
-            return "Không tìm thấy trong tài liệu. Bạn có muốn hỏi lại với kiến thức ngoài không?"
+        if not contexts and not use_external_knowledge:
+            return "Không tìm thấy thông tin liên quan. Bạn có muốn hỏi với kiến thức ngoài không?"
 
-        context_str = "\n".join(contexts)
-        prompt = EXTERNAL_QA_PROMPT if use_external_knowledge is True else QA_PROMPT
+        prompt_lines = []
 
-        # Chuyển histories sang dict với role + content
-        history_dicts = []
-        if histories:
-            for msg in histories:
-                mapped_role = "assistant" if msg.role == ChatRoleType.AI else "user"
+        system_prompt = SYSTEM_PROMPT
+        if use_external_knowledge:
+            system_prompt += "\nBạn có thể sử dụng kiến thức chung để trả lời."
+        else:
+            top_k = settings.top_k
+            selected_contexts = contexts[:top_k]
+            if not selected_contexts:
+                return "Không có thông tin liên quan để trả lời."
 
-                history_dicts.append({
-                    "role": mapped_role,
-                    "content": msg.content
-                })
+            cleaned_contexts = []
+            for i, ctx in enumerate(selected_contexts):
+                ctx = ctx.replace("[HEADING]", "### ").replace("[/HEADING]", "")
+                cleaned_contexts.append(f"[Tài liệu {i+1}]\n{ctx}")
 
-        chat = await self.llm_client.chat_async(
-            question=message,
-            context=context_str,
-            prompt_template=prompt,
-            history=history_dicts
-        )
+            context_str = "\n\n".join(cleaned_contexts)
+            system_prompt += f"\nThông tin tham khảo:\n{context_str}"
 
-        not_found_keywords = [
-                "thông tin trong tài liệu không đủ để trả lời câu hỏi này một cách đầy đủ và chính xác",
-                "tôi chỉ có thể dựa trên những gì được ghi trong tài liệu"
-            ]
-        
-        if any(keyword in chat.lower() for keyword in not_found_keywords):
-            return "Không tìm thấy trong tài liệu. Bạn có muốn hỏi lại với kiến thức ngoài không?"
+        prompt_lines.append(f"<|im_start|>system\n{system_prompt}<|im_end|>")
 
-        return chat
+        for msg in histories:
+            role = "assistant" if msg.role == ChatRoleType.AI else "user"
+            prompt_lines.append(f"<|im_start|>{role}\n{msg.content}<|im_end|>")
+
+        prompt_lines.append(f"<|im_start|>user\n{message}<|im_end|>")
+        prompt_lines.append("<|im_start|>assistant")
+
+        final_prompt = "\n".join(prompt_lines)
+
+        try:
+            response = await llm.generate(prompt=final_prompt, temperature=settings.temperature)
+            return response
+        except Exception as e:
+            self.logger.error(f"LLM generation error: {e}")
+            return "Xin lỗi, đã xảy ra lỗi khi tạo câu trả lời."
 
     async def save_data(self, data: ChatHistoryModel) -> bool:
         try:
             await self.db.chat_histories.insert_one(data.to_dict())
             return True
-        except:
+        except Exception as e:
+            self.logger.error(f"Error saving chat history: {e}")
             return False
-    

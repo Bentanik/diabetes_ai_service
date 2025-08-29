@@ -1,6 +1,6 @@
 from bson import ObjectId
 import torch
-from app.database.enums import DocumentJobStatus, DocumentType, DocumentJobType
+from app.database.enums import DocumentJobStatus, DocumentType
 from app.database import get_collections
 from app.database.models import DocumentJobModel, DocumentChunkModel
 from core.cqrs import CommandHandler, CommandRegistry
