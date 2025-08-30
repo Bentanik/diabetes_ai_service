@@ -8,8 +8,7 @@ from app.nlp import DiabetesClassifier
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
-from core.llm import QwenLLM
-from core.embedding import EmbeddingModel
+from core.embedding import EmbeddingModel, RerankModel
 from rag.vector_store.client import VectorStoreClient
 from utils import get_logger
 
@@ -27,6 +26,7 @@ async def lifespan(app: FastAPI):
     try:
         # Tải model embedding
         await EmbeddingModel.get_instance()
+        await RerankModel.get_instance()
 
         # Tải model classifier
         DiabetesClassifier()

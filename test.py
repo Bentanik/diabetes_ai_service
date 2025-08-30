@@ -23,7 +23,7 @@ logger = logging.getLogger("test_pdf_pipeline")
 
 # Cấu hình
 PDF_PATH = Path("diabetes.pdf")
-COLLECTION_NAME = "diabetes_kb"
+COLLECTION_NAME = "68b2a701f5cf267abd685844"
 DOCUMENT_ID = "diabetes_main_page"
 KNOWLEDGE_ID = "diabetes_2025_vn"
 EMBEDDING_MODEL = None
@@ -119,10 +119,6 @@ async def search_retrieval():
         # 3. Các câu hỏi test
         queries = [
             "Bệnh tiểu đường là gì?",
-            "Đái tháo đường loại 2 là gì?",
-            "Bệnh tiểu đường có thể được phòng ngừa bằng cách nào?",
-            "Bệnh tiểu đường có thể gây ra những hậu quả gì?",
-            "Bệnh tiểu đường có thể được điều trị bằng cách nào?",
         ]
 
         # 4. Tìm kiếm cho từng query
@@ -175,9 +171,9 @@ async def main():
     # await ingest_pdf_document()
 
     # Bước 2: Search
-    # await search_retrieval()
+    await search_retrieval()
 
-    await test_llm()
+    # await test_llm()
 
 
 if __name__ == "__main__":

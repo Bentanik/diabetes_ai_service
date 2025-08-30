@@ -47,10 +47,10 @@ class VectorStoreManager:
                     collection_name=name,
                     vectors_config=models.VectorParams(size=size, distance=distance)
                 )
-                logger.info(f"✅ Created collection '{name}' with {distance} on {size}D vectors.")
+                logger.info(f"Created collection '{name}' with {distance} on {size}D vectors.")
                 return True
             except Exception as e:
-                logger.error(f"❌ Failed to create collection '{name}': {e}")
+                logger.error(f"Failed to create collection '{name}': {e}")
                 raise
 
         return await asyncio.to_thread(_create)
@@ -96,10 +96,10 @@ class VectorStoreManager:
                         payloads=final_payloads
                     )
                 )
-                logger.info(f"✅ Inserted {len(ids)} points into '{name}'.")
+                logger.info(f"Inserted {len(ids)} points into '{name}'.")
                 return ids
             except Exception as e:
-                logger.error(f"❌ Insert failed in '{name}': {e}")
+                logger.error(f"Insert failed in '{name}': {e}")
                 raise
 
         return await asyncio.to_thread(_insert)
@@ -153,10 +153,10 @@ class VectorStoreManager:
                         }
                         for hit in hits
                     ]
-                    logger.debug(f"🔍 Found {len(hits)} results in '{col}'")
+                    logger.debug(f"Found {len(hits)} results in '{col}'")
 
                 except Exception as e:
-                    logger.warning(f"⚠️ Search failed on collection '{col}': {e}")
+                    logger.warning(f"Search failed on collection '{col}': {e}")
                     results[col] = []
 
             return results
@@ -209,7 +209,7 @@ class VectorStoreManager:
                         payload=payload_updates,
                         points=[point_id]
                     )
-                    logger.info(f"✏️ Updated point {point_id} in '{collection_name}'")
+                    logger.info(f"Updated point {point_id} in '{collection_name}'")
                 else:
                     query_filter = self._build_filter(**filter_conditions)
                     all_points = []
@@ -230,10 +230,10 @@ class VectorStoreManager:
                             break
                         offset = next_offset
                     else:
-                        logger.warning(f"⚠️ Reached max iterations while scrolling. Only processed {len(all_points)} points.")
+                        logger.warning(f"Reached max iterations while scrolling. Only processed {len(all_points)} points.")
 
                     if not all_points:
-                        logger.debug(f"🔍 No points matched filter {filter_conditions}")
+                        logger.debug(f"No points matched filter {filter_conditions}")
                         return
 
                     self.client.set_payload(
@@ -241,9 +241,9 @@ class VectorStoreManager:
                         payload=payload_updates,
                         points=all_points
                     )
-                    logger.info(f"✏️ Updated {len(all_points)} points in '{collection_name}'")
+                    logger.info(f"Updated {len(all_points)} points in '{collection_name}'")
             except Exception as e:
-                logger.error(f"❌ Update payload failed: {e}")
+                logger.error(f"Update payload failed: {e}")
                 raise
 
         await asyncio.to_thread(_update)

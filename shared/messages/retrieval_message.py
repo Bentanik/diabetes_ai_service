@@ -11,3 +11,4 @@ class RetrievalMessage(BaseResultCode):
     RETRIEVAL_FAILED = ("RETRIEVAL_FAILED", "Lỗi lấy kết quả tìm kiếm")
     FETCHED = ("RETRIEVAL_FETCHED", "Kết quả tìm kiếm đã được lấy thành công")
     NOT_FOUND = ("RETRIEVAL_NOT_FOUND", "Không tìm thấy kết quả tìm kiếm")
+    QUERY_EMPTY = ("QUERY_EMPTY", "Query trống")
