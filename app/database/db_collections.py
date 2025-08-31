@@ -98,6 +98,16 @@ class DBCollections:
         """
         return self.db["settings"]
 
+    @property
+    def user_profiles(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin hồ sơ người dùng
+        """
+        return self.db["user_profiles"]
 
-
-   
+    @property
+    def health_records(self) -> AsyncIOMotorCollection:
+        """
+        Collection lưu trữ thông tin hồ sơ người dùng
+        """
+        return self.db["health_records"]

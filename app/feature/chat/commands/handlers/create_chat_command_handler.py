@@ -29,9 +29,9 @@ class CreateChatCommandHandler(CommandHandler):
         self.logger = get_logger(__name__)
         self.db = get_collections()
         self.vector_store_manager = VectorStoreManager()
-        self.embedding_model = None  # Lazy load
-        self.llm_client = None       # Lazy load
-        self.retriever_cache = {}    # Cache retriever
+        self.embedding_model = None
+        self.llm_client = None
+        self.retriever_cache = {}
 
     async def get_llm_client(self) -> QwenLLM:
         """Khởi tạo LLM client (lazy)"""
@@ -45,7 +45,7 @@ class CreateChatCommandHandler(CommandHandler):
     async def get_embedding_model(self) -> EmbeddingModel:
         """Khởi tạo embedding model (lazy)"""
         if self.embedding_model is None:
-            self.embedding_model = EmbeddingModel()  # giả sử __init__ đã load model
+            self.embedding_model = EmbeddingModel()
         return self.embedding_model
 
     def get_retriever(self, collections: List[str]) -> Retriever:

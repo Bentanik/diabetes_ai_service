@@ -34,4 +34,10 @@ COLLECTION_INDEX_CONFIG = {
         {"fields": [("session_id", 1)], "name": "idx_session_id"},
         {"fields": [("created_at", -1)], "name": "idx_created_at"},
     ],
+    "user_profiles": [
+        {"fields": [("user_id", 1)], "name": "idx_user_id"},
+    ],
+    "health_records": [
+        {"fields": [("user_id", 1)], "name": "idx_user_id"},
+    ]
 }
