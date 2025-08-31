@@ -19,7 +19,9 @@ class QwenLLM:
     async def generate(
         self,
         prompt: str,
-        temperature: float = None
+        temperature: float = None,
+        max_tokens: int = None,
+        top_p: float = None
     ) -> str:
         temp = temperature if temperature is not None else self.temperature
 
@@ -28,9 +30,16 @@ class QwenLLM:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": temp
+                "temperature": temp,
             }
         }
+
+        if max_tokens is not None:
+            payload["options"]["max_tokens"] = max_tokens
+
+        if top_p is not None:
+            payload["options"]["top_p"] = top_p
+
         try:
             response = await self.client.post(f"{self.base_url}/api/generate", json=payload)
             response.raise_for_status()

@@ -1,6 +1,6 @@
 from .logger_utils import get_logger
 from .file_hash_utils import FileHashUtils
-
+from .cache import LRUCache
 from .compression_utils import compress_stream, get_best_compression, should_compress
 
 
@@ -10,4 +10,5 @@ __all__ = [
     "should_compress",
     "compress_stream",
     "get_best_compression",
+    "LRUCache",
 ]

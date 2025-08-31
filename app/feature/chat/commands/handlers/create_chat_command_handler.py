@@ -1,16 +1,15 @@
 import os
 import dotenv
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 from bson import ObjectId
-
-from sklearn.metrics.pairwise import cosine_similarity
 
 from core.cqrs import CommandRegistry, CommandHandler
 from core.embedding import EmbeddingModel
 from core.llm import QwenLLM
 from core.result import Result
 from rag.vector_store import VectorStoreManager
+from rag.retrieval.retriever import Retriever
 from shared.messages import ChatMessage, SettingMessage
 from app.database import get_collections
 from app.database.enums import ChatRoleType
@@ -18,9 +17,10 @@ from app.database.models import ChatHistoryModel, ChatSessionModel, SettingModel
 from app.dto.models import ChatHistoryModelDTO
 from utils import get_logger
 from ..create_chat_command import CreateChatCommand
-from shared.default_rag_prompt import SYSTEM_PROMPT
+from shared.rag_templates import render_template
 
 dotenv.load_dotenv()
+
 
 @CommandRegistry.register_handler(CreateChatCommand)
 class CreateChatCommandHandler(CommandHandler):
@@ -29,17 +29,34 @@ class CreateChatCommandHandler(CommandHandler):
         self.logger = get_logger(__name__)
         self.db = get_collections()
         self.vector_store_manager = VectorStoreManager()
-        self.embedding_model = EmbeddingModel()
-        self.llm_client: Optional[QwenLLM] = None
+        self.embedding_model = None  # Lazy load
+        self.llm_client = None       # Lazy load
+        self.retriever_cache = {}    # Cache retriever
 
     async def get_llm_client(self) -> QwenLLM:
-        """Lazily initialize LLM client"""
+        """Khởi tạo LLM client (lazy)"""
         if self.llm_client is None:
             self.llm_client = QwenLLM(
                 model=os.getenv("QWEN_MODEL", "qwen2.5:3b-instruct"),
                 base_url=os.getenv("QWEN_URL", "http://localhost:11434")
             )
         return self.llm_client
+
+    async def get_embedding_model(self) -> EmbeddingModel:
+        """Khởi tạo embedding model (lazy)"""
+        if self.embedding_model is None:
+            self.embedding_model = EmbeddingModel()  # giả sử __init__ đã load model
+        return self.embedding_model
+
+    def get_retriever(self, collections: List[str]) -> Retriever:
+        """Cache retriever theo danh sách collections"""
+        key = ",".join(sorted(collections))
+        if key not in self.retriever_cache:
+            self.retriever_cache[key] = Retriever(
+                collections=collections,
+                vector_store_manager=self.vector_store_manager
+            )
+        return self.retriever_cache[key]
 
     async def execute(self, command: CreateChatCommand) -> Result[None]:
         try:
@@ -56,8 +73,7 @@ class CreateChatCommandHandler(CommandHandler):
             session = await self.create_session(
                 user_id=command.user_id,
                 title=command.content,
-                session_id=command.session_id,
-                use_external_knowledge=command.use_external_knowledge
+                session_id=command.session_id
             )
 
             # 3. Lưu tin nhắn người dùng
@@ -69,23 +85,54 @@ class CreateChatCommandHandler(CommandHandler):
             )
             await self.save_data(user_chat)
 
-            # 4. Lấy lịch sử trò chuyện (mới nhất trước)
+            # 4. Lấy lịch sử trò chuyện (mới nhất ở dưới)
             histories = await self.get_histories(session_id=session.id)
-            histories.reverse()
+            histories.reverse()  # để tin mới nhất ở cuối
 
-            # 5. Retrieval: tìm kiếm thông tin liên quan
+            # 5. Retrieval (tối ưu)
             context_texts = []
-            if settings.list_knowledge_ids and not command.use_external_knowledge:
-                enhanced_query = await self.enhance_query(command.content)
-                context_texts = await self.search_data(enhanced_query, settings)
+            if settings.list_knowledge_ids:
+                try:
+                    # Viết lại query nếu có tham chiếu
+                    rewritten_query = await self.rewrite_query_if_needed(command.content, histories)
 
-            # 6. Sinh câu trả lời
-            gen_text = await self.gen_data_with_llm(
+                    # Embed query
+                    embedding_model = await self.get_embedding_model()
+                    query_vector = await embedding_model.embed(rewritten_query)
+
+                    # Dùng retriever đã cache
+                    retriever = self.get_retriever(settings.list_knowledge_ids)
+                    raw_results = await retriever.retrieve(
+                        query_vector=query_vector,
+                        top_k=settings.top_k * 2
+                    )
+
+                    # Lọc theo score từ retriever
+                    score_threshold = getattr(settings, "search_accuracy", 0.5)
+                    filtered_results = [
+                        hit for hit in raw_results
+                        if hit["score"] >= score_threshold
+                    ]
+
+                    # Lấy nội dung
+                    context_texts = [
+                        hit["payload"]["content"]
+                        for hit in filtered_results
+                        if hit["payload"] and hit["payload"].get("content")
+                    ]
+                    context_texts = context_texts[:settings.top_k]
+
+                    self.logger.info(f"Retrieved {len(context_texts)} contexts for: '{rewritten_query}'")
+
+                except Exception as e:
+                    self.logger.error(f"Retrieval failed: {e}", exc_info=True)
+
+            # 6. Sinh câu trả lời tự nhiên, có Markdown
+            gen_text = await self.gen_natural_response(
                 message=command.content,
                 contexts=context_texts,
                 histories=histories,
-                settings=settings,
-                use_external_knowledge=command.use_external_knowledge
+                settings=settings
             )
 
             # 7. Lưu câu trả lời AI
@@ -97,10 +144,10 @@ class CreateChatCommandHandler(CommandHandler):
             )
             await self.save_data(ai_chat)
 
-            # 8. Cập nhật thời gian session
+            # 8. Cập nhật thời gian phiên
             await self.update_session(session_id=session.id)
 
-            # 9. Trả kết quả
+            # 9. Trả về DTO thành công
             dto = ChatHistoryModelDTO.from_model(ai_chat)
             return Result.success(
                 code=ChatMessage.CHAT_CREATED.code,
@@ -119,41 +166,32 @@ class CreateChatCommandHandler(CommandHandler):
         self,
         user_id: str,
         title: str,
-        session_id: Optional[str],
-        use_external_knowledge: bool = False
+        session_id: str = None
     ) -> ChatSessionModel:
-        """Tạo hoặc lấy session hiện có"""
-        # Admin luôn dùng session riêng
+        """Tạo hoặc lấy session"""
         if user_id == "admin":
-            chat_session = await self.db.chat_sessions.find_one({"user_id": "admin"})
-            if chat_session:
-                return ChatSessionModel.from_dict(chat_session)
-            session = ChatSessionModel(
-                user_id="admin",
-                title="Test AI",
-                external_knowledge=use_external_knowledge
-            )
+            doc = await self.db.chat_sessions.find_one({"user_id": "admin"})
+            if doc:
+                return ChatSessionModel.from_dict(doc)
+            session = ChatSessionModel(user_id="admin", title="Test AI")
             await self.db.chat_sessions.insert_one(session.to_dict())
             return session
 
-        # Dùng session_id nếu có
         if session_id:
-            chat_session = await self.db.chat_sessions.find_one({"_id": ObjectId(session_id)})
-            if chat_session:
-                return ChatSessionModel.from_dict(chat_session)
+            doc = await self.db.chat_sessions.find_one({"_id": ObjectId(session_id)})
+            if doc:
+                return ChatSessionModel.from_dict(doc)
 
-        # Tạo session mới
         session_title = title[:100] + "..." if len(title) > 100 else title
         session = ChatSessionModel(
             user_id=user_id,
-            title=session_title,
-            external_knowledge=False
+            title=session_title
         )
         await self.db.chat_sessions.insert_one(session.to_dict())
         return session
 
     async def update_session(self, session_id: str) -> bool:
-        """Cập nhật thời gian cập nhật session"""
+        """Cập nhật updated_at"""
         try:
             result = await self.db.chat_sessions.update_one(
                 {"_id": ObjectId(session_id)},
@@ -161,131 +199,21 @@ class CreateChatCommandHandler(CommandHandler):
             )
             return result.modified_count > 0
         except Exception as e:
-            self.logger.error(f"Error updating session {session_id}: {e}", exc_info=True)
+            self.logger.error(f"Update session failed: {e}", exc_info=True)
             return False
 
-    async def enhance_query(self, query: str) -> str:
-        """Mở rộng câu hỏi để retrieval tốt hơn bằng LLM"""
-        if len(query.strip()) < 5:
-            return query
-
-        llm = await self.get_llm_client()
-
-        prompt = """
-Hãy mở rộng câu hỏi sau thành các câu hỏi con hoặc cụm từ tìm kiếm liên quan giúp tìm thông tin tốt hơn.
-Chỉ liệt kê mỗi dòng một cụm, không giải thích.
-
-Ví dụ:
-Câu hỏi: "Tác dụng của vitamin C?"
-Trả lời:
-- Tác dụng của vitamin C
-- Vitamin C có lợi gì cho sức khỏe
-- Vitamin C hỗ trợ miễn dịch như thế nào
-- Liều lượng vitamin C hàng ngày
-
-Câu hỏi: {query}
-Trả lời:
-""".strip().format(query=query)
-
-        try:
-            enhanced = await llm.generate(prompt=prompt, temperature=0.7)
-            lines = [line.strip("- ").strip() for line in enhanced.strip().split("\n") if line.strip()]
-            expanded = " ".join(lines)
-            return f"{query} {expanded}"
-        except Exception as e:
-            self.logger.warning(f"Query enhancement failed: {e}")
-            return query  # fallback
-
     async def get_histories(self, session_id: str) -> List[ChatHistoryModel]:
-        """Lấy lịch sử chat (tối đa 20 tin gần nhất)"""
+        """Lấy 20 tin nhắn gần nhất"""
         cursor = self.db.chat_histories.find({"session_id": session_id}) \
             .sort("updated_at", -1).limit(20)
         docs = await cursor.to_list(length=20)
-        return [ChatHistoryModel.from_dict(doc) for doc in docs]
-
-    async def search_data(self, search: str, settings: SettingModel) -> List[str]:
-        """Tìm kiếm vector trong các knowledge collections"""
-        try:
-            text_embedding = await self.embedding_model.embed(search)
-            results = await self.vector_store_manager.search_async(
-                collections=settings.list_knowledge_ids,
-                query_vector=text_embedding,
-                top_k=settings.top_k * 2,
-                score_threshold=settings.search_accuracy
-            )
-            contents = []
-            for hits in results.values():
-                for hit in hits:
-                    content = hit["payload"].get("content")
-                    if content:
-                        contents.append(content)
-            return contents
-        except Exception as e:
-            self.logger.error(f"Vector search error: {e}", exc_info=True)
-            return []
-
-    async def filter_relevant_contexts(self, question: str, contexts: List[str], threshold: float = 0.55) -> List[str]:
-        """Lọc context chỉ giữ lại những đoạn liên quan đến câu hỏi"""
-        if not contexts:
-            return []
-        try:
-            embeddings = await self.embedding_model.embed_batch([question] + contexts)
-            question_emb = embeddings[0]
-            context_embs = embeddings[1:]
-            sims = cosine_similarity([question_emb], context_embs)[0]
-            return [ctx for ctx, sim in zip(contexts, sims) if sim >= threshold]
-        except Exception as e:
-            self.logger.warning(f"Context filtering failed: {e}", exc_info=True)
-            return contexts
-
-    async def gen_data_with_llm(
-        self,
-        message: str,
-        contexts: List[str],
-        histories: List[ChatHistoryModel],
-        settings: SettingModel,
-        use_external_knowledge: bool
-    ) -> str:
-        """Sinh câu trả lời bằng LLM với context và lịch sử"""
-        llm = await self.get_llm_client()
-
-        if use_external_knowledge:
-            system_prompt = f"{SYSTEM_PROMPT}\nBạn có thể sử dụng kiến thức chung để trả lời."
-            context_str = ""
-        else:
-            # Lọc context chỉ giữ phần liên quan
-            filtered_contexts = await self.filter_relevant_contexts(message, contexts)
-            selected_contexts = filtered_contexts[:settings.top_k]
-
-            if not selected_contexts:
-                return "Không tìm thấy thông tin liên quan. Bạn có muốn hỏi với kiến thức ngoài không?"
-
-            # Làm sạch thẻ và định dạng
-            cleaned_contexts = []
-            for i, ctx in enumerate(selected_contexts):
-                ctx = ctx.replace("[HEADING]", "### ").replace("[/HEADING]", "")
-                ctx = ctx.replace("[SUBHEADING]", "#### ").replace("[/SUBHEADING]", "")
-                cleaned_contexts.append(f"[Tài liệu {i+1}]\n{ctx}")
-
-            context_str = "\n\n".join(cleaned_contexts)
-            system_prompt = f"{SYSTEM_PROMPT}\n\n### Thông tin tham khảo:\n{context_str}"
-
-        # Xây dựng prompt theo ChatML
-        prompt_lines = [f"<|im_start|>system\n{system_prompt}<|im_end|>"]
-        for msg in histories:
-            role = "assistant" if msg.role == ChatRoleType.AI else "user"
-            prompt_lines.append(f"<|im_start|>{role}\n{msg.content}<|im_end|>")
-        prompt_lines.append(f"<|im_start|>user\n{message}<|im_end|>")
-        prompt_lines.append("<|im_start|>assistant")
-
-        final_prompt = "\n".join(prompt_lines)
-
-        try:
-            response = await llm.generate(prompt=final_prompt, temperature=settings.temperature)
-            return response.strip()
-        except Exception as e:
-            self.logger.error(f"LLM generation error: {e}", exc_info=True)
-            return "Xin lỗi, đã xảy ra lỗi khi tạo câu trả lời."
+        histories = []
+        for doc in docs:
+            model = ChatHistoryModel.from_dict(doc)
+            if isinstance(model.role, str):
+                model.role = ChatRoleType.USER if model.role.lower() == "user" else ChatRoleType.AI
+            histories.append(model)
+        return histories
 
     async def save_data(self, data: ChatHistoryModel) -> bool:
         """Lưu tin nhắn vào DB"""
@@ -293,5 +221,133 @@ Trả lời:
             result = await self.db.chat_histories.insert_one(data.to_dict())
             return result.acknowledged
         except Exception as e:
-            self.logger.error(f"Error saving chat history: {e}", exc_info=True)
+            self.logger.error(f"Save chat history failed: {e}", exc_info=True)
             return False
+
+    async def rewrite_query_if_needed(self, query: str, histories: List[ChatHistoryModel]) -> str:
+        """Viết lại query nếu có từ tham chiếu (rule-based)"""
+        if len(histories) < 2:
+            return query
+
+        pronouns = ["nó", "vậy", "đó", "kia", "trên", "dưới", "trước", "sau", "ý", "cái"]
+        if not any(p in query.lower() for p in pronouns):
+            return query
+
+        for msg in reversed(histories):
+            if msg.role == ChatRoleType.AI:
+                content = msg.content.lower()
+                if "đái tháo đường" in content:
+                    query = query.replace("nó", "đái tháo đường").replace("đó", "đái tháo đường")
+                elif "insulin" in content:
+                    query = query.replace("nó", "insulin")
+                elif "chế độ ăn" in content:
+                    query = query.replace("nó", "chế độ ăn")
+                break
+        return query
+
+    async def gen_natural_response(
+        self,
+        message: str,
+        contexts: List[str],
+        histories: List[ChatHistoryModel],
+        settings: SettingModel
+    ) -> str:
+        """Sinh câu trả lời tự nhiên, mềm dẻo, dưới dạng Markdown"""
+        llm = await self.get_llm_client()
+
+        if not contexts:
+            return "Tôi không tìm thấy thông tin liên quan trong tài liệu để trả lời câu hỏi này."
+
+        # Làm sạch context
+        cleaned_contexts = "\n\n".join([
+            ctx.strip()
+            .replace("[HEADING]", "### ").replace("[/HEADING]", "\n")
+            .replace("[SUBHEADING]", "#### ").replace("[/SUBHEADING]", "\n")
+            for ctx in contexts if ctx.strip()
+        ])
+
+        # Đọc system prompt
+        try:
+            with open("shared/rag_templates/system_prompt.txt", "r", encoding="utf-8") as f:
+                system_prompt = f.read().strip()
+        except Exception as e:
+            self.logger.warning(f"Không thể đọc system_prompt: {e}")
+            system_prompt = "Bạn là chuyên gia y tế, trả lời rõ ràng, dùng Markdown."
+
+        # Render template
+        try:
+            prompt_text = render_template(
+                template_name="response.j2",
+                system_prompt=system_prompt,
+                contexts=cleaned_contexts,
+                question=message
+            )
+        except Exception as e:
+            self.logger.error(f"Render template thất bại: {e}")
+            return "Xin lỗi, đã xảy ra lỗi khi tạo câu trả lời."
+
+        # Xây dựng prompt ChatML
+        prompt_lines = [f"<|im_start|>system\n{prompt_text}<|im_end|>"]
+        for msg in histories:
+            role = "assistant" if getattr(msg.role, 'value', msg.role) == "ai" else "user"
+            prompt_lines.append(f"<|im_start|>{role}\n{msg.content}<|im_end|>")
+        prompt_lines.append(f"<|im_start|>user\n{message}<|im_end|>")
+        prompt_lines.append("<|im_start|>assistant")  # đúng cú pháp
+
+        final_prompt = "\n".join(prompt_lines)
+
+        try:
+            response = await llm.generate(
+                prompt=final_prompt,
+                temperature=0.75,
+                max_tokens=1800,
+                top_p=0.9
+            )
+            text = response.strip()
+
+            # Làm sạch đầu ra, đảm bảo Markdown
+            text = self._clean_and_ensure_markdown(text)
+            return text if text else "Không thể tạo câu trả lời."
+        except Exception as e:
+            self.logger.error(f"LLM generation failed: {e}", exc_info=True)
+            return "Xin lỗi, đã xảy ra lỗi khi tạo câu trả lời."
+
+    def _clean_and_ensure_markdown(self, text: str) -> str:
+        """Làm sạch và đảm bảo định dạng Markdown hợp lệ"""
+        if not text.strip():
+            return text
+
+        import re
+
+        # Chuẩn hóa in đậm
+        text = re.sub(r'\*\*(.*?)\*\*', r'**\1**', text)
+        text = re.sub(r'__(.*?)__', r'**\1**', text)
+
+        # Chuẩn hóa in nghiêng
+        text = re.sub(r'\*(.*?)\*', r'*\1*', text)
+        text = re.sub(r'_(.*?)_', r'*\1*', text)
+
+        # Đảm bảo tiêu đề có xuống dòng
+        text = re.sub(r'(^|\n)(#{1,6} )', r'\1\n\2', text)
+
+        # Loại bỏ phần leak
+        lines = text.split('\n')
+        cleaned = []
+        in_leak = False
+        leak_keywords = [
+            "hãy suy nghĩ", "phân tích câu hỏi", "trích xuất", "suy luận",
+            "gợi ý mở đầu", "gợi ý kết thúc", "trả lời theo cấu trúc"
+        ]
+
+        for line in lines:
+            lower_line = line.lower()
+            if any(kw in lower_line for kw in leak_keywords):
+                in_leak = True
+                continue
+            if line.startswith("### ") and in_leak:
+                in_leak = False
+                cleaned.append(line)
+            elif not in_leak and line.strip():
+                cleaned.append(line)
+
+        return '\n'.join(cleaned).strip()
