@@ -175,11 +175,10 @@ class VectorStoreManager:
             query_filter = self._build_filter(**conditions)
 
             try:
-                operation_info = self.client.delete(
+                self.client.delete(
                     collection_name=collection_name,
                     points_selector=models.FilterSelector(filter=query_filter)
                 )
-                logger.info(f"Deleted {operation_info.deleted_count} points from '{collection_name}' with {conditions}")
             except Exception as e:
                 logger.error(f"Delete failed in '{collection_name}': {e}")
                 raise

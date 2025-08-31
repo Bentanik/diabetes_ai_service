@@ -51,8 +51,10 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             embedding_model = await EmbeddingModel.get_instance()
             self.chunker = Chunker(
                 embedding_model=embedding_model,
-                max_tokens=512,
-                min_tokens=50,
+                max_tokens = 512,
+                min_tokens = 50,
+                overlap_tokens = 64,
+                similarity_threshold = 0.7
             )
 
             document_job = await self._get_document_job(job_id)

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 class ChunkMetadata:
     chunk_index: int
     word_count: int
+    section: str
     chunking_strategy: str
 
 

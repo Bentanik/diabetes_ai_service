@@ -8,8 +8,9 @@ from app.nlp import DiabetesClassifier
 from app.storage import MinioManager
 from app.worker import worker_start_all, worker_stop_all
 from app.config import MinioConfig
-from core.embedding import EmbeddingModel, RerankModel
+from core.embedding import EmbeddingModel
 from rag.vector_store.client import VectorStoreClient
+import nltk
 from utils import get_logger
 
 load_dotenv()
@@ -24,9 +25,16 @@ async def lifespan(app: FastAPI):
     logger.info(f"{app.title} v{app.version}")
 
     try:
+        try:
+            nltk.data.find('tokenizers/punkt')
+            logger.info("NLTK punkt đã sẵn sàng.")
+        except LookupError:
+            logger.info("Đang tải NLTK punkt...")
+            nltk.download('punkt', quiet=True)
+            logger.info("Tải NLTK punkt thành công.")
+
         # Tải model embedding
         await EmbeddingModel.get_instance()
-        await RerankModel.get_instance()
 
         # Tải model classifier
         DiabetesClassifier()
