@@ -56,7 +56,7 @@ class MultiQueryRetriever:
         histories: List[ChatHistoryModel],
         retriever: Retriever,
         top_k_per_query: int = 2,
-        final_top_k: int = 8  # ← tăng để có nhiều context hơn
+        final_top_k: int = 8
     ) -> List[str]:
         if not query.strip():
             return []

@@ -58,7 +58,7 @@ class CreateDocumentsCommandHandler(CommandHandler):
 
         results = []
         for idx, res in enumerate(enqueue_results):
-            title = cmd.titles[idx]  # Get title for error reporting
+            title = cmd.titles[idx]
             if isinstance(res, Exception):
                 self.logger.error(f"Lỗi tạo tài liệu '{title}': {str(res)}")
                 results.append({
@@ -67,7 +67,7 @@ class CreateDocumentsCommandHandler(CommandHandler):
                     "message": f"Tạo thất bại: {str(res)}"
                 })
             else:
-                document_id = res  # res is the document_id if successful
+                document_id = res
                 results.append({
                     "document_id": document_id,
                     "title": title,
