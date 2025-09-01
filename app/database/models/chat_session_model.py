@@ -21,11 +21,10 @@ class ChatSessionModel(BaseModel):
             external_knowledge (bool): Có sử dụng tri thức bên ngoài hay không
     """
 
-    def __init__(self, user_id: str, title: str, external_knowledge, **kwargs):
+    def __init__(self, user_id: str, title: str, **kwargs):
         super().__init__(**kwargs)
         self.user_id = user_id
         self.title = title
-        self.external_knowledge = external_knowledge
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ChatSessionModel":
@@ -39,6 +38,5 @@ class ChatSessionModel(BaseModel):
         # Thông tin cơ bản
         user_id = str(data.pop("user_id", ""))
         title = data.pop("title", "")
-        external_knowledge = data.pop("external_knowledge", False)
 
-        return cls(user_id=user_id, title=title, external_knowledge=external_knowledge, **data)
+        return cls(user_id=user_id, title=title, **data)

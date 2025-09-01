@@ -16,7 +16,10 @@ env = Environment(
 # Pre-load và kiểm tra các template bắt buộc
 _REQUIRED_TEMPLATES = [
     "system_prompt.txt",
-    "response.j2"
+    "polite_response.j2",
+    "trend_response.j2",
+    "rag_only.j2",
+    "personalized.j2"
 ]
 
 def _validate_templates():
