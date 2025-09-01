@@ -289,7 +289,11 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
-    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str) -> str:
+    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str, user_id: str) -> str:
+        profile = await self.get_user_profile(user_id)
+        if not profile:
+            return "Không tìm thấy hồ sơ người dùng."
+        full_name = profile.full_name
         try:
             with open("shared/rag_templates/system_prompt.txt", "r", encoding="utf-8") as f:
                 system_prompt = f.read().strip()
@@ -304,7 +308,8 @@ Câu hỏi: "{question}"
                 system_prompt=system_prompt,
                 contexts=cleaned_contexts,
                 user_context=user_context,
-                question=message
+                question=message,
+                full_name=full_name
             )
         except Exception as e:
             return "Xin lỗi, không thể tạo câu trả lời."
@@ -518,7 +523,7 @@ Câu hỏi: "{question}"
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
                 user_context = await self.get_relevant_user_context(command.user_id, command.content)
                 if context_texts and user_context:
-                    gen_text = await self._gen_personalized_response(command.content, context_texts, user_context)
+                    gen_text = await self._gen_personalized_response(command.content, context_texts, user_context, command.user_id)
                 elif context_texts:
                     gen_text = await self._gen_rag_only_response(command.content, context_texts)
                 else:
