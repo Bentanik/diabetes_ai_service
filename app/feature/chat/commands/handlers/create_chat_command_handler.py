@@ -1,5 +1,6 @@
 import os
 import dotenv
+import asyncio
 from datetime import datetime
 from typing import List, Optional
 from bson import ObjectId
@@ -37,6 +38,13 @@ class CreateChatCommandHandler(CommandHandler):
         self.embedding_model = None
         self.llm_client = None
         self.retriever_cache = {}
+        
+        # Timeout settings
+        self.RAG_TIMEOUT = 30  # RAG retrieval timeout
+        self.LLM_TIMEOUT = 45  # LLM generation timeout  
+        self.EMBEDDING_TIMEOUT = 20  # Embedding timeout
+        self.DB_TIMEOUT = 10  # Database query timeout
+        self.TOTAL_TIMEOUT = 120  # Total process timeout
 
     async def get_llm_client(self) -> QwenLLM:
         if self.llm_client is None:
@@ -50,6 +58,22 @@ class CreateChatCommandHandler(CommandHandler):
         if self.embedding_model is None:
             self.embedding_model = EmbeddingModel()
         return self.embedding_model
+    
+    async def _with_timeout(self, coro, timeout_seconds: int, operation_name: str):
+        """Wrapper để thêm timeout cho các async operations"""
+        try:
+            start_time = asyncio.get_event_loop().time()
+            result = await asyncio.wait_for(coro, timeout=timeout_seconds)
+            elapsed = asyncio.get_event_loop().time() - start_time
+            self.logger.debug(f"{operation_name} completed in {elapsed:.2f}s")
+            return result
+        except asyncio.TimeoutError:
+            self.logger.error(f"TIMEOUT: {operation_name} exceeded {timeout_seconds}s")
+            raise asyncio.TimeoutError(f"{operation_name} timeout after {timeout_seconds}s")
+        except Exception as e:
+            elapsed = asyncio.get_event_loop().time() - start_time
+            self.logger.error(f"{operation_name} failed after {elapsed:.2f}s: {e}")
+            raise
 
     async def create_session(
         self,
@@ -183,7 +207,11 @@ Câu hỏi: "{question}"
 """.strip()
 
         try:
-            response = await llm.generate(prompt=prompt, max_tokens=20, temperature=0.1)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt, max_tokens=20, temperature=0.1),
+                self.LLM_TIMEOUT,
+                "Question Classification"
+            )
             response = response.strip().lower()
             if response in ["rag_only", "personal", "trend", "invalid"]:
                 return response
@@ -224,40 +252,29 @@ Câu hỏi: "{question}"
                 parts.append(f"BMI: {profile.bmi:.1f}")
         return "\n".join(parts)
 
-    async def _is_content_relevant(self, question: str, content: str) -> bool:
-        llm = await self.get_llm_client()
-        prompt = f"""
-Bạn là hệ thống kiểm tra độ phù hợp nội dung.
-
-Hãy kiểm tra xem đoạn văn bản có trả lời được câu hỏi hay không.
-
-Chỉ trả về 1 từ: YES hoặc NO.
-
-Câu hỏi: "{question}"
-
-Đoạn văn bản:
-"{content[:500]}..."
-
-Có trả lời được không?
-""".strip()
-
-        try:
-            response = await llm.generate(prompt=prompt, max_tokens=10, temperature=0.1)
-            return response.strip().upper() == "YES"
-        except Exception as e:
-            self.logger.error(f"Relevance check failed: {e}")
-            return False
-
     async def _retrieve_rag_context(self, query: str, histories: List[ChatHistoryModel], settings: SettingModel) -> List[str]:
         if not settings.list_knowledge_ids:
             return []
 
         try:
+            # Rewrite query
             rewritten = await self.rewrite_query_if_needed(query, histories)
+            
+            # Get embedding with timeout
             embedding = await self.get_embedding_model()
-            query_vector = await embedding.embed(rewritten)
+            query_vector = await self._with_timeout(
+                embedding.embed(rewritten),
+                self.EMBEDDING_TIMEOUT,
+                "Query Embedding"
+            )
+            
+            # Vector search with timeout
             retriever = self.get_retriever(settings.list_knowledge_ids)
-            results = await retriever.retrieve(query_vector, top_k=settings.top_k * 2)
+            results = await self._with_timeout(
+                retriever.retrieve(query_vector, top_k=settings.top_k * 2),
+                self.RAG_TIMEOUT,
+                "Vector Search"
+            )
 
             score_threshold = getattr(settings, "search_accuracy", 0.75)
             filtered = [hit for hit in results if hit["score"] >= score_threshold]
@@ -266,17 +283,20 @@ Có trả lời được không?
                 self.logger.info(f"Không tìm thấy tài liệu đủ liên quan cho: '{rewritten}'")
                 return []
 
-            top_content = filtered[0]["payload"]["content"]
-            if not await self._is_content_relevant(rewritten, top_content):
-                self.logger.info(f"Kết quả RAG không phù hợp: '{rewritten}'")
-                return []
-
-            return [
+            # Đưa tất cả kết quả cho LLM, không làm relevance check ở đây
+            # LLM sẽ tự quyết định sử dụng thông tin nào phù hợp
+            contexts = [
                 hit["payload"]["content"]
                 for hit in filtered
                 if hit["payload"] and hit["payload"].get("content")
             ][:settings.top_k]
+            
+            self.logger.debug(f"✅ Found {len(contexts)} contexts for query: '{rewritten}'")
+            return contexts
 
+        except asyncio.TimeoutError as e:
+            self.logger.error(f"RAG retrieval timeout: {e}")
+            return []
         except Exception as e:
             self.logger.error(f"RAG retrieval failed: {e}")
             return []
@@ -315,8 +335,14 @@ Có trả lời được không?
 
         llm = await self.get_llm_client()
         try:
-            response = await llm.generate(prompt=prompt_text, max_tokens=1800)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=1800),
+                self.LLM_TIMEOUT,
+                "RAG Response Generation"
+            )
             return self._ensure_markdown(response.strip())
+        except asyncio.TimeoutError:
+            return "Xin lỗi, tôi đang bận. Vui lòng thử lại sau."
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
@@ -351,8 +377,14 @@ Có trả lời được không?
 
         llm = await self.get_llm_client()
         try:
-            response = await llm.generate(prompt=prompt_text, max_tokens=1800)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=1800),
+                self.LLM_TIMEOUT,
+                "RAG Response Generation"
+            )
             return self._ensure_markdown(response.strip())
+        except asyncio.TimeoutError:
+            return "Xin lỗi, tôi đang bận. Vui lòng thử lại sau."
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
@@ -394,8 +426,14 @@ Có trả lời được không?
             return "Không thể tạo phản hồi chi tiết."
         llm = await self.get_llm_client()
         try:
-            response = await llm.generate(prompt=prompt_text, max_tokens=500)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=500),
+                self.LLM_TIMEOUT,
+                "Health Analysis Response"
+            )
             return self._ensure_markdown(response.strip())
+        except asyncio.TimeoutError:
+            return "Xin lỗi, tôi đang xử lý. Vui lòng thử lại sau."
         except Exception as e:
             return "Xin lỗi, tôi đang xử lý. Vui lòng thử lại sau."
 
@@ -443,8 +481,14 @@ Có trả lời được không?
             return "Không thể tạo phản hồi chi tiết."
         llm = await self.get_llm_client()
         try:
-            response = await llm.generate(prompt=prompt_text, max_tokens=500)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=500),
+                self.LLM_TIMEOUT,
+                "Blood Pressure Analysis"
+            )
             return self._ensure_markdown(response.strip())
+        except asyncio.TimeoutError:
+            return "Xin lỗi, tôi đang xử lý. Vui lòng thử lại."
         except Exception as e:
             return "Xin lỗi, tôi đang xử lý. Vui lòng thử lại."
 
@@ -494,8 +538,14 @@ Có trả lời được không?
             return "Không thể tạo phản hồi chi tiết."
         llm = await self.get_llm_client()
         try:
-            response = await llm.generate(prompt=prompt_text, max_tokens=600)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=600),
+                self.LLM_TIMEOUT,
+                "Overall Health Analysis"
+            )
             return self._ensure_markdown(response.strip())
+        except asyncio.TimeoutError:
+            return "Xin lỗi, tôi đang bận. Vui lòng thử lại."
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
@@ -522,8 +572,19 @@ Có trả lời được không?
                 )
             llm = await self.get_llm_client()
             try:
-                response = await llm.generate(prompt=prompt_text, max_tokens=500)
+                response = await self._with_timeout(
+                    llm.generate(prompt=prompt_text, max_tokens=500),
+                    self.LLM_TIMEOUT,
+                    "No Profile Response"
+                )
                 return self._ensure_markdown(response.strip())
+            except asyncio.TimeoutError:
+                return (
+                    "**Tôi hiểu** rằng việc chia sẻ thông tin cá nhân có thể khiến bạn cảm thấy không thoải mái, "
+                    "nhưng để tôi hỗ trợ bạn tốt nhất, bạn vui lòng cập nhật một số thông tin cơ bản như tuổi và loại bệnh lý.\n\n"
+                    "Chỉ cần vài phút thời gian — sẽ giúp tôi đưa ra lời khuyên **chính xác và phù hợp với hoàn cảnh của bạn**.\n\n"
+                    "Bạn không đơn độc trong hành trình này — tôi luôn ở đây để đồng hành."
+                )
             except Exception as e:
                 return (
                     "**Tôi hiểu** rằng việc chia sẻ thông tin cá nhân có thể khiến bạn cảm thấy không thoải mái, "
@@ -549,8 +610,17 @@ Có trả lời được không?
                 )
             llm = await self.get_llm_client()
             try:
-                response = await llm.generate(prompt=prompt_text, max_tokens=500)
+                response = await self._with_timeout(
+                    llm.generate(prompt=prompt_text, max_tokens=500),
+                    self.LLM_TIMEOUT,
+                    "No Data Response"
+                )
                 return self._ensure_markdown(response.strip())
+            except asyncio.TimeoutError:
+                return (
+                    "**Chúng ta chưa có** dữ liệu gần đây.\n\n"
+                    "Hãy thử **đo và ghi lại** – tôi sẽ giúp bạn phân tích ngay khi có số liệu."
+                )
             except Exception as e:
                 return (
                     "**Chúng ta chưa có** dữ liệu gần đây.\n\n"
@@ -572,8 +642,14 @@ Có trả lời được không?
                     return "**Chưa có dữ liệu** đường huyết."
                 llm = await self.get_llm_client()
                 try:
-                    response = await llm.generate(prompt=prompt_text, max_tokens=500)
+                    response = await self._with_timeout(
+                        llm.generate(prompt=prompt_text, max_tokens=500),
+                        self.LLM_TIMEOUT,
+                        "No Glucose Data Response"
+                    )
                     return self._ensure_markdown(response.strip())
+                except asyncio.TimeoutError:
+                    return "Hãy bắt đầu đo đường huyết mỗi ngày."
                 except Exception as e:
                     return "Hãy bắt đầu đo đường huyết mỗi ngày."
             return await self._analyze_blood_glucose_only(user_id, question, first_time, has_previous_trend)
@@ -593,8 +669,16 @@ Có trả lời được không?
             )
         llm = await self.get_llm_client()
         try:
-            response = await llm.generate(prompt=prompt_text, max_tokens=500)
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=500),
+                self.LLM_TIMEOUT,
+                "Polite Response"
+            )
             return self._ensure_markdown(response.strip())
+        except asyncio.TimeoutError:
+            return (
+                "**Sức khỏe của bạn rất quan trọng**. Hãy tìm sự hỗ trợ — bạn không đơn độc."
+            )
         except Exception as e:
             return (
                 "**Sức khỏe của bạn rất quan trọng**. Hãy tìm sự hỗ trợ — bạn không đơn độc."
@@ -636,6 +720,27 @@ Có trả lời được không?
         return result if result else "Tôi chưa có thông tin để trả lời."
 
     async def execute(self, command: CreateChatCommand) -> Result[None]:
+        try:
+            # Wrap entire execution with total timeout
+            return await self._with_timeout(
+                self._execute_internal(command),
+                self.TOTAL_TIMEOUT,
+                "Complete Chat Processing"
+            )
+        except asyncio.TimeoutError as e:
+            self.logger.error(f"Total execution timeout: {e}")
+            return Result.failure(
+                code=ChatMessage.CHAT_CREATED_FAILED.code,
+                message="Xin lỗi, xử lý quá lâu. Vui lòng thử lại."
+            )
+        except Exception as e:
+            self.logger.error(f"Error in _execute_internal: {e}", exc_info=True)
+            return Result.failure(
+                code=ChatMessage.CHAT_CREATED_FAILED.code,
+                message=ChatMessage.CHAT_CREATED_FAILED.message
+            )
+    
+    async def _execute_internal(self, command: CreateChatCommand) -> Result[None]:
         try:
             settings_doc = await self.db.settings.find_one({})
             if not settings_doc:
@@ -737,7 +842,7 @@ Có trả lời được không?
             )
 
         except Exception as e:
-            self.logger.error(f"Error in CreateChatCommandHandler: {e}", exc_info=True)
+            self.logger.error(f"Error in _execute_internal: {e}", exc_info=True)
             return Result.failure(
                 code=ChatMessage.CHAT_CREATED_FAILED.code,
                 message=ChatMessage.CHAT_CREATED_FAILED.message
