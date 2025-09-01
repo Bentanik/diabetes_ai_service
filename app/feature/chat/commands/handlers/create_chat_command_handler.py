@@ -1,8 +1,6 @@
-# app/handlers/chat/create_chat_command_handler.py
 import os
 import dotenv
-import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 from bson import ObjectId
 
@@ -53,7 +51,6 @@ class CreateChatCommandHandler(CommandHandler):
             self.embedding_model = EmbeddingModel()
         return self.embedding_model
 
-    # =================== SESSION MANAGEMENT ===================
     async def create_session(
         self,
         user_id: str,
@@ -98,7 +95,6 @@ class CreateChatCommandHandler(CommandHandler):
             self.logger.error(f"Update session failed: {e}", exc_info=True)
             return False
 
-    # =================== CHAT HISTORY ===================
     async def get_histories(self, session_id: str) -> List[ChatHistoryModel]:
         try:
             obj_id = ObjectId(session_id)
@@ -126,7 +122,6 @@ class CreateChatCommandHandler(CommandHandler):
             self.logger.error(f"Save chat history failed: {e}", exc_info=True)
             return False
 
-    # =================== RAG & QUERY REWRITE ===================
     def get_retriever(self, collections: List[str]) -> Retriever:
         key = ",".join(sorted(collections))
         if key not in self.retriever_cache:
@@ -151,7 +146,6 @@ class CreateChatCommandHandler(CommandHandler):
                     return query.replace("nó", "insulin")
         return query
 
-    # =================== USER PROFILE & HEALTH RECORDS ===================
     async def get_user_profile(self, user_id: str) -> Optional[UserProfileModel]:
         try:
             doc = await self.db.user_profiles.find_one({"user_id": user_id})
@@ -172,12 +166,7 @@ class CreateChatCommandHandler(CommandHandler):
             self.logger.error(f"Lỗi lấy chỉ số: {e}")
             return []
 
-    # =================== NLP NHẸ: PHÂN LOẠI CÂU HỎI BẰNG LLM ===================
     async def classify_question_type(self, question: str) -> str:
-        """
-        Dùng LLM nhẹ để phân loại câu hỏi
-        Trả về: 'rag_only', 'personal', 'trend', 'invalid'
-        """
         llm = await self.get_llm_client()
         prompt = f"""
 Bạn là hệ thống phân loại câu hỏi y tế.
@@ -203,7 +192,6 @@ Câu hỏi: "{question}"
             self.logger.error(f"Classification failed: {e}")
             return "rag_only"
 
-    # =================== CONTEXT CÁ NHÂN HÓA ===================
     async def get_relevant_user_context(self, user_id: str, question: str) -> str:
         profile = await self.get_user_profile(user_id)
         if not profile or user_id == "admin":
@@ -236,29 +224,72 @@ Câu hỏi: "{question}"
                 parts.append(f"BMI: {profile.bmi:.1f}")
         return "\n".join(parts)
 
-    # =================== TRA CỨU RAG ===================
+    async def _is_content_relevant(self, question: str, content: str) -> bool:
+        llm = await self.get_llm_client()
+        prompt = f"""
+Bạn là hệ thống kiểm tra độ phù hợp nội dung.
+
+Hãy kiểm tra xem đoạn văn bản có trả lời được câu hỏi hay không.
+
+Chỉ trả về 1 từ: YES hoặc NO.
+
+Câu hỏi: "{question}"
+
+Đoạn văn bản:
+"{content[:500]}..."
+
+Có trả lời được không?
+""".strip()
+
+        try:
+            response = await llm.generate(prompt=prompt, max_tokens=10, temperature=0.1)
+            return response.strip().upper() == "YES"
+        except Exception as e:
+            self.logger.error(f"Relevance check failed: {e}")
+            return False
+
     async def _retrieve_rag_context(self, query: str, histories: List[ChatHistoryModel], settings: SettingModel) -> List[str]:
         if not settings.list_knowledge_ids:
             return []
+
         try:
             rewritten = await self.rewrite_query_if_needed(query, histories)
             embedding = await self.get_embedding_model()
             query_vector = await embedding.embed(rewritten)
             retriever = self.get_retriever(settings.list_knowledge_ids)
             results = await retriever.retrieve(query_vector, top_k=settings.top_k * 2)
-            score_threshold = getattr(settings, "search_accuracy", 0.5)
+
+            score_threshold = getattr(settings, "search_accuracy", 0.75)
             filtered = [hit for hit in results if hit["score"] >= score_threshold]
+
+            if not filtered:
+                self.logger.info(f"Không tìm thấy tài liệu đủ liên quan cho: '{rewritten}'")
+                return []
+
+            top_content = filtered[0]["payload"]["content"]
+            if not await self._is_content_relevant(rewritten, top_content):
+                self.logger.info(f"Kết quả RAG không phù hợp: '{rewritten}'")
+                return []
+
             return [
                 hit["payload"]["content"]
                 for hit in filtered
                 if hit["payload"] and hit["payload"].get("content")
             ][:settings.top_k]
+
         except Exception as e:
             self.logger.error(f"RAG retrieval failed: {e}")
             return []
 
-    # =================== SINH CÂU TRẢ LỜI ===================
     async def _gen_rag_only_response(self, message: str, contexts: List[str]) -> str:
+        if not contexts:
+            return (
+                "**Hiện tôi chưa có tài liệu** liên quan đến câu hỏi này.\n\n"
+                "Nếu bạn có câu hỏi về **đường huyết, insulin, chế độ ăn cho người tiểu đường**, "
+                "tôi rất sẵn lòng hỗ trợ.\n\n"
+                "Bạn cũng có thể cung cấp thêm chi tiết để tôi tìm hiểu kỹ hơn."
+            )
+
         try:
             with open("shared/rag_templates/system_prompt.txt", "r", encoding="utf-8") as f:
                 system_prompt = f.read().strip()
@@ -289,11 +320,13 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
-    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str, user_id: str) -> str:
+    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str, user_id: str, first_time: bool = True) -> str:
         profile = await self.get_user_profile(user_id)
         if not profile:
             return "Không tìm thấy hồ sơ người dùng."
         full_name = profile.full_name
+        age = profile.age
+
         try:
             with open("shared/rag_templates/system_prompt.txt", "r", encoding="utf-8") as f:
                 system_prompt = f.read().strip()
@@ -309,7 +342,9 @@ Câu hỏi: "{question}"
                 contexts=cleaned_contexts,
                 user_context=user_context,
                 question=message,
-                full_name=full_name
+                full_name=full_name,
+                age=age,
+                first_time=first_time
             )
         except Exception as e:
             return "Xin lỗi, không thể tạo câu trả lời."
@@ -321,8 +356,7 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
-    # =================== PHÂN TÍCH XU HƯỚNG ===================
-    async def _analyze_blood_glucose_only(self, user_id: str, question: str) -> str:
+    async def _analyze_blood_glucose_only(self, user_id: str, question: str, first_time: bool = True, has_previous_trend: bool = False) -> str:
         profile = await self.get_user_profile(user_id)
         if not profile:
             return "Không tìm thấy hồ sơ người dùng."
@@ -336,13 +370,25 @@ Câu hỏi: "{question}"
         status = "cao" if avg > 8.0 else "trung bình" if avg > 6.0 else "thấp"
         health_summary = f"Đường huyết: trung bình {avg:.1f} mmol/l, gần nhất {latest:.1f} mmol/l — mức {status}, xu hướng {trend}"
         user_context = await self.get_relevant_user_context(user_id, question)
+
+        history_context = ""
+        if not first_time:
+            if has_previous_trend:
+                history_context = "Lần trước, tôi đã phân tích xu hướng cho bác."
+            else:
+                history_context = "Bác đã hỏi trước đó, nhưng chưa phân tích xu hướng."
+
         try:
             prompt_text = render_template(
                 template_name="trend_response.j2",
                 user_context=user_context,
                 health_summary=health_summary,
                 question=question,
-                full_name=profile.full_name
+                full_name=profile.full_name,
+                age=profile.age,
+                first_time=first_time,
+                has_previous_trend=has_previous_trend,
+                history_context=history_context
             )
         except Exception as e:
             return "Không thể tạo phản hồi chi tiết."
@@ -353,7 +399,7 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang xử lý. Vui lòng thử lại sau."
 
-    async def _analyze_blood_pressure_only(self, user_id: str, question: str) -> str:
+    async def _analyze_blood_pressure_only(self, user_id: str, question: str, first_time: bool = True, has_previous_trend: bool = False) -> str:
         profile = await self.get_user_profile(user_id)
         if not profile:
             return "Không tìm thấy hồ sơ người dùng."
@@ -373,13 +419,25 @@ Câu hỏi: "{question}"
             bp_status = "ổn định"
         health_summary = f"Huyết áp: trung bình {avg_sys:.0f}/{avg_dia:.0f} mmHg — mức {bp_status}"
         user_context = await self.get_relevant_user_context(user_id, question)
+
+        history_context = ""
+        if not first_time:
+            if has_previous_trend:
+                history_context = "Lần trước, tôi đã phân tích huyết áp cho bác."
+            else:
+                history_context = "Bác đã hỏi trước đó, nhưng chưa phân tích xu hướng."
+
         try:
             prompt_text = render_template(
                 template_name="trend_response.j2",
                 user_context=user_context,
                 health_summary=health_summary,
                 question=question,
-                full_name=profile.full_name
+                full_name=profile.full_name,
+                age=profile.age,
+                first_time=first_time,
+                has_previous_trend=has_previous_trend,
+                history_context=history_context
             )
         except Exception as e:
             return "Không thể tạo phản hồi chi tiết."
@@ -390,7 +448,7 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang xử lý. Vui lòng thử lại."
 
-    async def _analyze_overall_status(self, user_id: str, question: str) -> str:
+    async def _analyze_overall_status(self, user_id: str, question: str, first_time: bool = True, has_previous_trend: bool = False) -> str:
         profile = await self.get_user_profile(user_id)
         if not profile:
             return "Không tìm thấy hồ sơ người dùng."
@@ -412,13 +470,25 @@ Câu hỏi: "{question}"
             return "Chưa có dữ liệu sức khỏe gần đây để đánh giá."
         health_summary = "\n".join(parts)
         user_context = await self.get_relevant_user_context(user_id, question)
+
+        history_context = ""
+        if not first_time:
+            if has_previous_trend:
+                history_context = "Lần trước, tôi đã tổng hợp tình trạng sức khỏe cho bác."
+            else:
+                history_context = "Bác đã hỏi trước đó, nhưng chưa phân tích tổng quát."
+
         try:
             prompt_text = render_template(
                 template_name="trend_response.j2",
                 user_context=user_context,
                 health_summary=health_summary,
                 question=question,
-                full_name=profile.full_name
+                full_name=profile.full_name,
+                age=profile.age,
+                first_time=first_time,
+                has_previous_trend=has_previous_trend,
+                history_context=history_context
             )
         except Exception as e:
             return "Không thể tạo phản hồi chi tiết."
@@ -429,14 +499,86 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
-    async def generate_health_status_response(self, user_id: str, question: str) -> str:
+    async def generate_health_status_response(
+        self,
+        user_id: str,
+        question: str,
+        first_time: bool = True,
+        has_previous_trend: bool = False
+    ) -> str:
+        profile = await self.get_user_profile(user_id)
+        if not profile:
+            try:
+                prompt_text = render_template(
+                    template_name="no_profile_response.j2",
+                    question=question
+                )
+            except Exception as e:
+                return (
+                    "**Tôi hiểu** rằng việc chia sẻ thông tin cá nhân có thể khiến bạn cảm thấy không thoải mái, "
+                    "nhưng để tôi hỗ trợ bạn tốt nhất, bạn vui lòng cập nhật một số thông tin cơ bản như tuổi và loại bệnh lý.\n\n"
+                    "Chỉ cần vài phút thời gian — sẽ giúp tôi đưa ra lời khuyên **chính xác và phù hợp với hoàn cảnh của bạn**.\n\n"
+                    "Bạn không đơn độc trong hành trình này — tôi luôn ở đây để đồng hành."
+                )
+            llm = await self.get_llm_client()
+            try:
+                response = await llm.generate(prompt=prompt_text, max_tokens=500)
+                return self._ensure_markdown(response.strip())
+            except Exception as e:
+                return (
+                    "**Tôi hiểu** rằng việc chia sẻ thông tin cá nhân có thể khiến bạn cảm thấy không thoải mái, "
+                    "nhưng để tôi hỗ trợ bạn tốt nhất, bạn vui lòng cập nhật một số thông tin cơ bản như tuổi và loại bệnh lý.\n\n"
+                    "Chỉ cần vài phút thời gian — sẽ giúp tôi đưa ra lời khuyên **chính xác và phù hợp với hoàn cảnh của bạn**.\n\n"
+                    "Bạn không đơn độc trong hành trình này — tôi luôn ở đây để đồng hành."
+                )
+
+        glucose_records = await self.get_recent_health_records(user_id, "BloodGlucose", top=1)
+        bp_records = await self.get_recent_health_records(user_id, "BloodPressure", top=1)
+
+        if not glucose_records and not bp_records:
+            try:
+                prompt_text = render_template(
+                    template_name="no_data_response.j2",
+                    question=question,
+                    full_name=profile.full_name
+                )
+            except Exception as e:
+                return (
+                    "**Hiện tôi chưa thấy** có dữ liệu sức khỏe gần đây.\n\n"
+                    "Hãy bắt đầu **ghi lại đường huyết 1–2 lần mỗi ngày**."
+                )
+            llm = await self.get_llm_client()
+            try:
+                response = await llm.generate(prompt=prompt_text, max_tokens=500)
+                return self._ensure_markdown(response.strip())
+            except Exception as e:
+                return (
+                    "**Chúng ta chưa có** dữ liệu gần đây.\n\n"
+                    "Hãy thử **đo và ghi lại** – tôi sẽ giúp bạn phân tích ngay khi có số liệu."
+                )
+
         q = question.lower()
         if "huyết áp" in q:
-            return await self._analyze_blood_pressure_only(user_id, question)
+            return await self._analyze_blood_pressure_only(user_id, question, first_time, has_previous_trend)
         elif any(kw in q for kw in ["đường huyết", "glucose"]):
-            return await self._analyze_blood_glucose_only(user_id, question)
+            if not glucose_records:
+                try:
+                    prompt_text = render_template(
+                        template_name="no_glucose_data.j2",
+                        question=question,
+                        full_name=profile.full_name
+                    )
+                except Exception as e:
+                    return "**Chưa có dữ liệu** đường huyết."
+                llm = await self.get_llm_client()
+                try:
+                    response = await llm.generate(prompt=prompt_text, max_tokens=500)
+                    return self._ensure_markdown(response.strip())
+                except Exception as e:
+                    return "Hãy bắt đầu đo đường huyết mỗi ngày."
+            return await self._analyze_blood_glucose_only(user_id, question, first_time, has_previous_trend)
         else:
-            return await self._analyze_overall_status(user_id, question)
+            return await self._analyze_overall_status(user_id, question, first_time, has_previous_trend)
 
     async def get_polite_response_for_invalid_question(self, question: str) -> str:
         try:
@@ -445,13 +587,18 @@ Câu hỏi: "{question}"
                 question=question
             )
         except Exception as e:
-            return "Tôi hiểu bạn có thể đang cảm thấy mệt mỏi, nhưng sức khỏe của bạn rất quan trọng."
+            return (
+                "**Tôi hiểu** bạn có thể đang cảm thấy mệt mỏi, nhưng **sức khỏe của bạn rất quan trọng**.\n\n"
+                "Hãy tìm sự hỗ trợ từ bác sĩ hoặc người thân – bạn không đơn độc."
+            )
         llm = await self.get_llm_client()
         try:
             response = await llm.generate(prompt=prompt_text, max_tokens=500)
             return self._ensure_markdown(response.strip())
         except Exception as e:
-            return "Sức khỏe của bạn rất quan trọng. Hãy tìm sự hỗ trợ — bạn không đơn độc."
+            return (
+                "**Sức khỏe của bạn rất quan trọng**. Hãy tìm sự hỗ trợ — bạn không đơn độc."
+            )
 
     def _ensure_markdown(self, text: str) -> str:
         if not text.strip():
@@ -459,10 +606,19 @@ Câu hỏi: "{question}"
         import re
         text = re.sub(r'\*\*(.*?)\*\*', r'**\1**', text)
         text = re.sub(r'\*(.*?)\*', r'*\1*', text)
+
+        if "**" not in text and "*" not in text and "###" not in text:
+            if "Xin lỗi" in text:
+                text = text.replace("Xin lỗi", "**Xin lỗi**")
+            if "cập nhật" in text.lower():
+                text = text.replace("cập nhật", "**cập nhật**")
+            if "hãy bắt đầu" in text.lower():
+                text = text.replace("hãy bắt đầu", "**Hãy bắt đầu**")
+
         lines = text.split('\n')
         cleaned = []
         in_leak = False
-        leak_keywords = ["hãy suy nghĩ", "phân tích", "tôi cần trả lời", "let me think", "gợi ý mở đầu"]
+        leak_keywords = ["hãy suy nghĩ", "phân tích", "tôi cần trả lời", "let me think"]
         for line in lines:
             lower_line = line.lower()
             if any(kw in lower_line for kw in leak_keywords):
@@ -474,6 +630,7 @@ Câu hỏi: "{question}"
             elif not in_leak and line.strip():
                 cleaned.append(line)
         result = '\n'.join(cleaned).strip()
+
         if result and (result.startswith(("I ", "You ")) or "cannot" in result or "Sorry" in result):
             return "Xin lỗi, tôi chỉ hỗ trợ bằng tiếng Việt."
         return result if result else "Tôi chưa có thông tin để trả lời."
@@ -507,30 +664,59 @@ Câu hỏi: "{question}"
             histories = await self.get_histories(session.id)
             histories.reverse()
 
-            # Dùng LLM để phân loại
-            question_type = await self.classify_question_type(command.content)
+            ai_messages = [msg for msg in histories if msg.role == ChatRoleType.AI]
+            first_time = len(ai_messages) == 0
+
+            # Không dùng has_analyzed_trend
+            has_previous_trend = any(
+                "xu hướng" in msg.content.lower() or
+                "gần đây" in msg.content.lower() or
+                "đánh giá" in msg.content.lower() or
+                "phân tích" in msg.content.lower()
+                for msg in ai_messages
+            )
+
+            content_lower = command.content.lower()
+
+            rag_safe_keywords = [
+                "đường huyết sau ăn", "người tiểu đường nên ăn gì", "biến chứng tiểu đường",
+                "cách tiêm insulin", "chỉ số hba1c", "đái tháo đường là gì",
+                "insulin hoạt động bao lâu", "ăn gì khi bị tiểu đường"
+            ]
+
+            sensitive_keywords = [
+                "chết", "bỏ thuốc", "ăn đường cả ngày", "không cần kiểm soát",
+                "làm sao để", "có nên bỏ", "tôi mệt quá"
+            ]
+
+            if any(kw in content_lower for kw in rag_safe_keywords):
+                question_type = "rag_only"
+            elif any(kw in content_lower for kw in sensitive_keywords):
+                question_type = "invalid"
+            else:
+                question_type = await self.classify_question_type(command.content)
 
             gen_text = ""
 
             if question_type == "invalid":
                 gen_text = await self.get_polite_response_for_invalid_question(command.content)
             elif question_type == "trend":
-                gen_text = await self.generate_health_status_response(command.user_id, command.content)
+                gen_text = await self.generate_health_status_response(command.user_id, command.content, first_time, has_previous_trend)
             elif question_type == "rag_only":
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
-                gen_text = await self._gen_rag_only_response(command.content, context_texts) if context_texts else "Tôi chưa có tài liệu liên quan."
+                gen_text = await self._gen_rag_only_response(command.content, context_texts)
             elif question_type == "personal":
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
                 user_context = await self.get_relevant_user_context(command.user_id, command.content)
                 if context_texts and user_context:
-                    gen_text = await self._gen_personalized_response(command.content, context_texts, user_context, command.user_id)
+                    gen_text = await self._gen_personalized_response(command.content, context_texts, user_context, command.user_id, first_time)
                 elif context_texts:
                     gen_text = await self._gen_rag_only_response(command.content, context_texts)
                 else:
-                    gen_text = await self.generate_health_status_response(command.user_id, command.content)
+                    gen_text = await self.generate_health_status_response(command.user_id, command.content, first_time, has_previous_trend)
             else:
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
-                gen_text = await self._gen_rag_only_response(command.content, context_texts) if context_texts else "Tôi chưa có thông tin để trả lời."
+                gen_text = await self._gen_rag_only_response(command.content, context_texts)
 
             gen_text = self._ensure_markdown(gen_text)
 
@@ -553,6 +739,6 @@ Câu hỏi: "{question}"
         except Exception as e:
             self.logger.error(f"Error in CreateChatCommandHandler: {e}", exc_info=True)
             return Result.failure(
-                code=ChatMessage.CHAT_ERROR.code,
-                message=ChatMessage.CHAT_ERROR.message
+                code=ChatMessage.CHAT_CREATED_FAILED.code,
+                message=ChatMessage.CHAT_CREATED_FAILED.message
             )

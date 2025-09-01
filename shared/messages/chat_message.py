@@ -22,3 +22,11 @@ class ChatMessage(BaseResultCode):
         "CHAT_HISTORIES_FETCHED_FAILED",
         "Lịch sử cuộc trò chuyện không tồn tại",
     )
+    CHAT_HISTORY_SAVED_SUCCESS = (
+        "CHAT_HISTORY_SAVED_SUCCESS",
+        "Lịch sử cuộc trò chuyện đã được lưu thành công",
+    )
+    CHAT_HISTORY_SAVED_FAILED = (
+        "CHAT_HISTORY_SAVED_FAILED",
+        "Lịch sử cuộc trò chuyện không được lưu",
+    )

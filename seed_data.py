@@ -1,167 +1,125 @@
 # seed_data.py
 import asyncio
-from datetime import datetime, timedelta
-import sys
 import os
+import sys
+from datetime import datetime, timedelta
 
-from app.database.manager import initialize_database
+from app.database.db_collections import DBCollections
 
-# Thêm root vào path để import được các module
+# Thêm root vào path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import get_collections
 from app.database.models import UserProfileModel, HealthRecordModel
-from bson import ObjectId
+from utils import get_logger
 
-async def seed_data():
-    # Lấy kết nối DB
-    await initialize_database()
+logger = get_logger(__name__)
+async def seed_user_profile(user_id: str, full_name: str, age: int, gender: str, diabetes_type: str):
     db = get_collections()
-    print("✅ Kết nối MongoDB thành công")
-
-    # Xóa dữ liệu cũ (tùy chọn)
-    await db.user_profiles.delete_many({})
-    await db.health_records.delete_many({})
-    print("🧹 Đã xóa dữ liệu cũ trong user_profiles và health_records")
-
-    # === 1. Tạo hồ sơ người dùng mẫu ===
-    user_001 = UserProfileModel(
-        user_id="user_001",
-        patient_id="PT001",
-        full_name="Nguyễn Thị Lan",
-        age=65,
-        gender="Nữ",
-        bmi=26.5,
-        diabetes_type="Tuýp 2",
-        insulin_schedule="Insulin buổi sáng (10 đơn vị)",
-        treatment_method="Uống thuốc kết hợp tiêm insulin",
-        complications=["Bệnh tim mạch", "Tổn thương thần kinh"],
-        past_diseases=["Tăng huyết áp", "Rối loạn mỡ máu"],
-        lifestyle="Ít vận động, ăn nhiều tinh bột, ngủ không đủ."
+    profile = UserProfileModel(
+        user_id=user_id,
+        patient_id=f"P{user_id[-3:]}",
+        full_name=full_name,
+        age=age,
+        gender=gender,
+        bmi=24.5 if gender == "Nam" else 23.8,
+        diabetes_type=diabetes_type,
+        insulin_schedule="Buổi sáng và buổi tối",
+        treatment_method="Insulin + thuốc uống",
+        complications=["Bệnh võng mạc"] if user_id == "user_001" else ["Bệnh thần kinh"],
+        past_diseases=["Tăng huyết áp"],
+        lifestyle="Ăn nhiều rau, ít tinh bột, đi bộ 30 phút mỗi ngày"
     )
-
-    user_002 = UserProfileModel(
-        user_id="user_002",
-        patient_id="PT002",
-        full_name="Trần Văn Minh",
-        age=42,
-        gender="Nam",
-        bmi=24.0,
-        diabetes_type="Tuýp 1",
-        insulin_schedule="Insulin trước mỗi bữa ăn (8-10 đơn vị)",
-        treatment_method="Tiêm insulin liên tục",
-        complications=["Hạ đường huyết thường xuyên"],
-        past_diseases=[],
-        lifestyle="Vận động thể thao 3 buổi/tuần, ăn uống điều độ."
+    await db.user_profiles.update_one(
+        {"user_id": user_id},
+        {"$set": profile.to_dict()},
+        upsert=True
     )
+    logger.info(f"✅ Đã tạo hồ sơ cho {user_id} - {full_name}")
 
-    # Lưu vào MongoDB
-    result1 = await db.user_profiles.insert_one(user_001.to_dict())
-    result2 = await db.user_profiles.insert_one(user_002.to_dict())
+async def seed_health_records(user_id: str, patient_id: str):
+    now = datetime.utcnow()
+    db = get_collections()
 
-    print(f"✅ Đã chèn hồ sơ người dùng: {user_001.full_name} (ID: {result1.inserted_id})")
-    print(f"✅ Đã chèn hồ sơ người dùng: {user_002.full_name} (ID: {result2.inserted_id})")
-
-    # === 2. Tạo chỉ số sức khỏe mẫu ===
-    now = datetime.now()
-
-    records_user_001 = [
-        # Đường huyết
-        HealthRecordModel(
-            user_id="user_001",
-            patient_id="PT001",
+    # Dữ liệu đường huyết (3 ngày gần nhất)
+    glucose_values = [9.2, 8.7, 9.5] if user_id == "user_001" else [7.8, 8.1, 7.6]
+    for i, value in enumerate(glucose_values):
+        record = HealthRecordModel(
+            user_id=user_id,
+            patient_id=patient_id,
             type="BloodGlucose",
-            value=9.5,
+            value=value,
             unit="mmol/l",
-            timestamp=now - timedelta(hours=2)
-        ),
-        HealthRecordModel(
-            user_id="user_001",
-            patient_id="PT001",
-            type="BloodGlucose",
-            value=8.7,
-            unit="mmol/l",
-            timestamp=now - timedelta(days=1)
-        ),
-        HealthRecordModel(
-            user_id="user_001",
-            patient_id="PT001",
-            type="BloodGlucose",
-            value=10.1,
-            unit="mmol/l",
-            timestamp=now - timedelta(days=2)
-        ),
-        # Huyết áp
-        HealthRecordModel(
-            user_id="user_001",
-            patient_id="PT001",
+            timestamp=now - timedelta(days=i)
+        )
+        await db.health_records.insert_one(record.to_dict())
+
+    # Dữ liệu huyết áp (2 ngày gần nhất)
+    bp_sys_values = [145, 142] if user_id == "user_001" else [138, 135]
+    for i, sys in enumerate(bp_sys_values):
+        # Tâm thu
+        record_sys = HealthRecordModel(
+            user_id=user_id,
+            patient_id=patient_id,
             type="BloodPressure",
-            value=145,
+            value=sys,
             unit="mmHg",
             subtype="tâm thu",
-            timestamp=now - timedelta(hours=1)
-        ),
-        HealthRecordModel(
-            user_id="user_001",
-            patient_id="PT001",
+            timestamp=now - timedelta(days=i)
+        )
+        await db.health_records.insert_one(record_sys.to_dict())
+
+        # Tâm trương
+        dia = 90 if user_id == "user_001" else 85
+        record_dia = HealthRecordModel(
+            user_id=user_id,
+            patient_id=patient_id,
             type="BloodPressure",
-            value=90,
+            value=dia,
             unit="mmHg",
             subtype="tâm trương",
-            timestamp=now - timedelta(hours=1)
-        ),
-    ]
+            timestamp=now - timedelta(days=i)
+        )
+        await db.health_records.insert_one(record_dia.to_dict())
 
-    records_user_002 = [
-        # Đường huyết
-        HealthRecordModel(
-            user_id="user_002",
-            patient_id="PT002",
-            type="BloodGlucose",
-            value=7.2,
-            unit="mmol/l",
-            timestamp=now - timedelta(hours=1)
-        ),
-        HealthRecordModel(
-            user_id="user_002",
-            patient_id="PT002",
-            type="BloodGlucose",
-            value=6.8,
-            unit="mmol/l",
-            timestamp=now - timedelta(days=1)
-        ),
-        HealthRecordModel(
-            user_id="user_002",
-            patient_id="PT002",
-            type="BloodGlucose",
-            value=12.0,
-            unit="mmol/l",
-            timestamp=now - timedelta(days=2)
-        ),
-    ]
+    logger.info(f"✅ Đã tạo chỉ số sức khỏe cho {user_id}")
 
-    # Lưu vào MongoDB
-    if records_user_001:
-        await db.health_records.insert_many([r.to_dict() for r in records_user_001])
-        print(f"✅ Đã chèn {len(records_user_001)} chỉ số cho {user_001.full_name}")
+async def seed_all():
+    logger.info("🌱 BẮT ĐẦU SEED DỮ LIỆU MẪU")
+    db = get_collections()
+    # Xóa dữ liệu cũ
+    await db.user_profiles.delete_many({"user_id": {"$in": ["user_001", "user_002"]}})
+    await db.health_records.delete_many({"user_id": {"$in": ["user_001", "user_002"]}})
+    logger.info("🧹 Đã xóa dữ liệu cũ")
 
-    if records_user_002:
-        await db.health_records.insert_many([r.to_dict() for r in records_user_002])
-        print(f"✅ Đã chèn {len(records_user_002)} chỉ số cho {user_002.full_name}")
+    # Seed user_001
+    await seed_user_profile(
+        user_id="user_001",
+        full_name="Nguyễn Văn A",
+        age=65,
+        gender="Nam",
+        diabetes_type="Loại 2"
+    )
+    user1 = await db.user_profiles.find_one({"user_id": "user_001"})
+    await seed_health_records("user_001", user1["patient_id"])
 
-    # === 3. In thông tin để kiểm tra ===
-    print("\n🌱 Seed data hoàn tất!")
-    print("──────────────────────────────────────")
-    print("👤 user_001: Nguyễn Thị Lan")
-    print("   - 65 tuổi, nữ, tiểu đường tuýp 2")
-    print("   - Biến chứng: tim mạch, tổn thương thần kinh")
-    print("   - Đường huyết: 9.5, 8.7, 10.1 mmol/l")
-    print("   - Huyết áp: 145/90 mmHg")
+    # Seed user_002
+    await seed_user_profile(
+        user_id="user_002",
+        full_name="Trần Thị B",
+        age=58,
+        gender="Nữ",
+        diabetes_type="Loại 2"
+    )
+    user2 = await db.user_profiles.find_one({"user_id": "user_002"})
+    await seed_health_records("user_002", user2["patient_id"])
 
-    print("\n👤 user_002: Trần Văn Minh")
-    print("   - 42 tuổi, nam, tiểu đường tuýp 1")
-    print("   - Hạ đường huyết thường xuyên")
-    print("   - Đường huyết: 7.2, 6.8, 12.0 mmol/l")
+    logger.info("🎉 SEED DỮ LIỆU HOÀN TẤT!")
+
+async def main():
+    from app.database.manager import initialize_database
+    await initialize_database()
+    await seed_all()
 
 if __name__ == "__main__":
-    asyncio.run(seed_data())
+    asyncio.run(main())

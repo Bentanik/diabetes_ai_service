@@ -19,7 +19,10 @@ _REQUIRED_TEMPLATES = [
     "polite_response.j2",
     "trend_response.j2",
     "rag_only.j2",
-    "personalized.j2"
+    "personalized.j2",
+    "no_data_response.j2",
+    "response_with_rag.j2",
+    "no_profile_response.j2"
 ]
 
 def _validate_templates():
