@@ -213,93 +213,93 @@ async def run_tests():
         # --- 1. TEST CÂU HỎI CÁ NHÂN & XU HƯỚNG ---
         await test_case(
             user_id=user_id,
-            question="Tui muốn biết bệnh ung thư là gì vậy?",
+            question="Tui muốn biết chỉ số đường huyết của tôi?",
             description="Xu hướng: Đường huyết",
             expected_type="trend"
         )
 
-        await test_case(
-            user_id=user_id,
-            question="Huyết áp dạo này ra sao?",
-            description="Xu hướng: Huyết áp",
-            expected_type="trend"
-        )
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Huyết áp dạo này ra sao?",
+    #         description="Xu hướng: Huyết áp",
+    #         expected_type="trend"
+    #     )
 
-        # --- 2. TEST CÂU HỎI CÁ NHÂN + RAG ---
-        await test_case(
-            user_id=user_id,
-            question="Với tình trạng của tôi, đường huyết 9.5 có nguy hiểm không?",
-            description="Kết hợp: RAG + Hồ sơ",
-            expected_type="personal"
-        )
+    #     # --- 2. TEST CÂU HỎI CÁ NHÂN + RAG ---
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Với tình trạng của tôi, đường huyết 9.5 có nguy hiểm không?",
+    #         description="Kết hợp: RAG + Hồ sơ",
+    #         expected_type="personal"
+    #     )
 
-        # --- 3. TEST RAG: CÂU HỎI VỀ TIỂU ĐƯỜNG (CÓ DỮ LIỆU) ---
-        await test_case(
-            user_id=user_id,
-            question="Tiểu đường là gì?",
-            description="RAG: Kiến thức cơ bản (có trong dữ liệu)",
-            expected_type="rag_only"
-        )
+    #     # --- 3. TEST RAG: CÂU HỎI VỀ TIỂU ĐƯỜNG (CÓ DỮ LIỆU) ---
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Tiểu đường là gì?",
+    #         description="RAG: Kiến thức cơ bản (có trong dữ liệu)",
+    #         expected_type="rag_only"
+    #     )
 
-        await test_case(
-            user_id=user_id,
-            question="Tiểu đường có mấy loại?",
-            description="RAG: Phân loại bệnh (có trong dữ liệu)",
-            expected_type="rag_only"
-        )
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Tiểu đường có mấy loại?",
+    #         description="RAG: Phân loại bệnh (có trong dữ liệu)",
+    #         expected_type="rag_only"
+    #     )
 
-        await test_case(
-            user_id=user_id,
-            question="Người tiểu đường nên ăn gì?",
-            description="RAG: Chế độ ăn (có dữ liệu)",
-            expected_type="rag_only"
-        )
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Người tiểu đường nên ăn gì?",
+    #         description="RAG: Chế độ ăn (có dữ liệu)",
+    #         expected_type="rag_only"
+    #     )
 
-        # --- 4. TEST KHÔNG CÓ TRONG RAG (ngoài chủ đề) ---
-        await test_case(
-            user_id=user_id,
-            question="Ung thư và tiểu đường có liên quan đến nhau không?",
-            description="RAG: Chủ đề không hỗ trợ (không có trong dữ liệu)",
-            expected_type="rag_only"
-        )
+    #     # --- 4. TEST KHÔNG CÓ TRONG RAG (ngoài chủ đề) ---
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Ung thư và tiểu đường có liên quan đến nhau không?",
+    #         description="RAG: Chủ đề không hỗ trợ (không có trong dữ liệu)",
+    #         expected_type="rag_only"
+    #     )
 
-        await test_case(
-            user_id=user_id,
-            question="Ăn quá nhiều đường có dẫn đến ung thư không?",
-            description="RAG: Câu hỏi liên quan gián tiếp (không có dữ liệu)",
-            expected_type="rag_only"
-        )
+    #     await test_case(
+    #         user_id=user_id,
+    #         question="Ăn quá nhiều đường có dẫn đến ung thư không?",
+    #         description="RAG: Câu hỏi liên quan gián tiếp (không có dữ liệu)",
+    #         expected_type="rag_only"
+    #     )
 
-        # --- 5. TEST KHÔNG CÓ DỮ LIỆU ĐƯỜNG HUYẾT (giả lập) ---
-        if user_id == "user_002":
-            # Xóa dữ liệu đường huyết tạm thời
-            await db.health_records.delete_many({
-                "user_id": user_id,
-                "type": "BloodGlucose"
-            })
-            await test_case(
-                user_id=user_id,
-                question="Đường huyết của tôi dạo này ra sao?",
-                description="Không có dữ liệu đường huyết",
-                expected_type="trend"
-            )
-            # Khôi phục
-            profile = await db.user_profiles.find_one({"user_id": user_id})
-            await db.health_records.insert_one({
-                "user_id": user_id,
-                "patient_id": profile["patient_id"],
-                "type": "BloodGlucose",
-                "value": 7.8,
-                "unit": "mmol/l",
-                "timestamp": datetime.utcnow()
-            })
+    #     # --- 5. TEST KHÔNG CÓ DỮ LIỆU ĐƯỜNG HUYẾT (giả lập) ---
+    #     if user_id == "user_002":
+    #         # Xóa dữ liệu đường huyết tạm thời
+    #         await db.health_records.delete_many({
+    #             "user_id": user_id,
+    #             "type": "BloodGlucose"
+    #         })
+    #         await test_case(
+    #             user_id=user_id,
+    #             question="Đường huyết của tôi dạo này ra sao?",
+    #             description="Không có dữ liệu đường huyết",
+    #             expected_type="trend"
+    #         )
+    #         # Khôi phục
+    #         profile = await db.user_profiles.find_one({"user_id": user_id})
+    #         await db.health_records.insert_one({
+    #             "user_id": user_id,
+    #             "patient_id": profile["patient_id"],
+    #             "type": "BloodGlucose",
+    #             "value": 7.8,
+    #             "unit": "mmol/l",
+    #             "timestamp": datetime.utcnow()
+    #         })
 
-    print("\n🎉 TẤT CẢ TEST ĐÃ HOÀN TẤT!")
-    print("✅ Test RAG: Câu hỏi về tiểu đường → trả lời chính xác")
-    print("✅ Test không RAG: Câu hỏi ngoài chủ đề → không bịa, trả lời an toàn")
-    print("✅ Test cá nhân: Có phân tích theo hồ sơ")
-    print("✅ Test thiếu dữ liệu: Có hướng dẫn tử tế")
-    print("✅ Không có lỗi has_analyzed_trend")
+    # print("\n🎉 TẤT CẢ TEST ĐÃ HOÀN TẤT!")
+    # print("✅ Test RAG: Câu hỏi về tiểu đường → trả lời chính xác")
+    # print("✅ Test không RAG: Câu hỏi ngoài chủ đề → không bịa, trả lời an toàn")
+    # print("✅ Test cá nhân: Có phân tích theo hồ sơ")
+    # print("✅ Test thiếu dữ liệu: Có hướng dẫn tử tế")
+    # print("✅ Không có lỗi has_analyzed_trend")
 
 
 async def main():

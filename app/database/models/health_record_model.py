@@ -11,7 +11,7 @@ class HealthRecordModel(BaseModel):
         type: str,            # "BloodGlucose" hoặc "BloodPressure"
         value: float,
         unit: str,            # "mmol/l" hoặc "mmHg"
-        subtype: Optional[str] = None,
+        subtype: Optional[str] = None, # "tâm thu" hoặc "tâm trương"
         timestamp: Optional[datetime] = None,
         **kwargs
     ):

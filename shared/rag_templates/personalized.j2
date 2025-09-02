@@ -1,59 +1,482 @@
-{{ system_prompt }}
+# create_chat_command_handler.py
+import os
+import dotenv
+import asyncio
+from datetime import datetime
+from typing import List, Optional, Dict
+from bson import ObjectId
 
-{% if histories %}
-### Ngữ cảnh trước đó
-{% for msg in histories | reverse | slice(4) %}
-- {% if msg.role == "user" %}Người hỏi{% else %}Trả lời{% endif %}: {{ msg.content }}
-{% endfor %}
-{% endif %}
+from core.cqrs import CommandRegistry, CommandHandler, Mediator
+from core.llm import QwenLLM
+from core.result import Result
+from shared.messages import ChatMessage, SettingMessage
+from shared.queries import GetRetrievedContextQuery
+from app.database import get_collections
+from app.database.enums import ChatRoleType
+from app.database.models import (
+    ChatHistoryModel,
+    ChatSessionModel,
+    SettingModel,
+    UserProfileModel,
+    HealthRecordModel
+)
+from app.dto.models import ChatHistoryModelDTO
+from utils import get_logger
+from ..create_chat_command import CreateChatCommand
+from shared.rag_templates import render_template
 
-{% if first_time %}
-{% if age >= 50 %}
-Chào bác {{ full_name }},
-{% else %}
-Chào anh/chị {{ full_name }},
-{% endif %}
-{% endif %}
+dotenv.load_dotenv()
 
-### Vấn đề của {{ "bác" if age >= 50 else "anh/chị" }}
-"{{ question }}"
 
-### Thông tin cá nhân
-{{ user_context }}
+@CommandRegistry.register_handler(CreateChatCommand)
+class CreateChatCommandHandler(CommandHandler):
+    def __init__(self):
+        super().__init__()
+        self.logger = get_logger(__name__)
+        self.db = get_collections()
+        self.llm_client = None
 
-### Bằng chứng y khoa
-{{ contexts }}
+        # Timeout
+        self.LLM_TIMEOUT = 60
+        self.TOTAL_TIMEOUT = 120
 
-### Hướng dẫn trả lời
-1. **Giọng nói**: Như đang trò chuyện thật – không máy móc, không báo cáo.
-2. **Không được chào lại** nếu không phải lần đầu.
-3. **Gọi đúng xưng hô**:
-   - Dùng "bác" nếu bệnh nhân ≥ 50 tuổi
-   - Dùng "anh/chị" nếu < 50 tuổi
-4. **Không được tự xưng**: "tôi là bác sĩ", "hệ thống", "trợ lý AI"
-5. **Không ký tên**, không dùng "Trân trọng", "Kính gửi"
-6. **Không nhắc lại ví dụ** – chỉ dùng để tham khảo phong cách
-7. **Dùng từ tự nhiên**:
-   - "Bạn biết không…"
-   - "Điều đáng lo là…"
-   - "May mắn là…"
-   - "Chỉ cần điều chỉnh nhỏ, đã khác biệt lớn"
-8. **Dùng Markdown**:
-   - `**in đậm**` cho từ khóa
-   - `*in nghiêng*` cho khái niệm
-   - Danh sách (`*`) khi liệt kê
-   - `###` cho tiêu đề nhỏ (nếu cần)
-9. **Không dùng**: "kết luận", "phân tích", "theo tài liệu", "dựa trên thông tin"
-10. **Không leak reasoning**: không dùng "hãy suy nghĩ", "tôi cần phân tích"
+    async def get_llm_client(self) -> QwenLLM:
+        if self.llm_client is None:
+            self.llm_client = QwenLLM(
+                model=os.getenv("QWEN_MODEL", "qwen2.5:3b-instruct"),
+                base_url=os.getenv("QWEN_URL", "http://localhost:11434")
+            )
+        return self.llm_client
 
-### Ví dụ tốt (chỉ để tham khảo – KHÔNG SAO CHÉP):
-> Bạn biết không, với người 65 tuổi như bác Lan, đang có biến chứng tim mạch, mức 9.5 mmol/l là cần lưu ý.
->
-> *Nguyên nhân* có thể do ăn nhiều tinh bột hoặc tiêm insulin muộn.
->
-> May mắn là bác đang theo dõi đều đặn. Tôi khuyên:
-> * Đo đường huyết 2 lần mỗi ngày
-> * Ăn chậm lại, ưu tiên rau xanh trước
-> * Đi bộ 15 phút sau bữa ăn
->
-> Bác đang làm rất tốt. Cứ tiếp tục như vậy nhé!
+    async def _with_timeout(self, coro, timeout_seconds: int, operation_name: str):
+        try:
+            start_time = asyncio.get_event_loop().time()
+            result = await asyncio.wait_for(coro, timeout=timeout_seconds)
+            elapsed = asyncio.get_event_loop().time() - start_time
+            self.logger.debug(f"{operation_name} completed in {elapsed:.2f}s")
+            return result
+        except asyncio.TimeoutError:
+            self.logger.error(f"TIMEOUT: {operation_name} exceeded {timeout_seconds}s")
+            raise asyncio.TimeoutError(f"{operation_name} timeout after {timeout_seconds}s")
+        except Exception as e:
+            elapsed = asyncio.get_event_loop().time() - start_time
+            self.logger.error(f"{operation_name} failed after {elapsed:.2f}s: {e}")
+            raise
+
+    async def create_session(
+        self,
+        user_id: str,
+        title: str,
+        session_id: str = None
+    ) -> Optional[ChatSessionModel]:
+        try:
+            if user_id == "admin":
+                doc = await self.db.chat_sessions.find_one({"user_id": "admin"})
+                if doc:
+                    return ChatSessionModel.from_dict(doc)
+                session = ChatSessionModel(user_id="admin", title="Test AI")
+                result = await self.db.chat_sessions.insert_one(session.to_dict())
+                session._id = result.inserted_id
+                return session
+
+            if session_id:
+                obj_id = ObjectId(session_id)
+                doc = await self.db.chat_sessions.find_one({"_id": obj_id})
+                if doc:
+                    return ChatSessionModel.from_dict(doc)
+
+            session_title = title[:100] + "..." if len(title) > 100 else title
+            session = ChatSessionModel(user_id=user_id, title=session_title)
+            result = await self.db.chat_sessions.insert_one(session.to_dict())
+            session._id = result.inserted_id
+            return session
+
+        except Exception as e:
+            self.logger.error(f"Error creating session: {e}", exc_info=True)
+            return None
+
+    async def update_session(self, session_id: str) -> bool:
+        try:
+            obj_id = ObjectId(session_id)
+            result = await self.db.chat_sessions.update_one(
+                {"_id": obj_id},
+                {"$set": {"updated_at": datetime.utcnow()}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            self.logger.error(f"Update session failed: {e}", exc_info=True)
+            return False
+
+    async def get_histories(self, session_id: str) -> List[ChatHistoryModel]:
+        try:
+            obj_id = ObjectId(session_id)
+            cursor = self.db.chat_histories.find({"session_id": str(obj_id)}) \
+                .sort("updated_at", -1).limit(20)
+            docs = await cursor.to_list(length=20)
+            histories = []
+            for doc in docs:
+                model = ChatHistoryModel.from_dict(doc)
+                if isinstance(model.role, str):
+                    model.role = ChatRoleType.USER if model.role.lower() == "user" else ChatRoleType.AI
+                histories.append(model)
+            return histories
+        except Exception as e:
+            self.logger.error(f"Cannot get chat history: {e}", exc_info=True)
+            return []
+
+    async def save_data(self,  ChatHistoryModel) -> bool:
+        try:
+            if isinstance(data.session_id, ObjectId):
+                data.session_id = str(data.session_id)
+            result = await self.db.chat_histories.insert_one(data.to_dict())
+            return result.acknowledged
+        except Exception as e:
+            self.logger.error(f"Save chat history failed: {e}", exc_info=True)
+            return False
+
+    async def get_user_profile(self, user_id: str) -> Optional[UserProfileModel]:
+        try:
+            doc = await self.db.user_profiles.find_one({"user_id": user_id})
+            return UserProfileModel.from_dict(doc) if doc else None
+        except Exception as e:
+            self.logger.error(f"Không thể lấy hồ sơ người dùng {user_id}: {e}")
+            return None
+
+    async def get_recent_health_records(self, user_id: str, record_type: str, top: int = 3) -> List[HealthRecordModel]:
+        try:
+            cursor = self.db.health_records.find({
+                "user_id": user_id,
+                "type": record_type
+            }).sort("timestamp", -1).limit(top)
+            docs = await cursor.to_list(length=top)
+            return [HealthRecordModel.from_dict(doc) for doc in docs if doc]
+        except Exception as e:
+            self.logger.error(f"Lỗi lấy chỉ số: {e}")
+            return []
+
+    async def get_relevant_user_context(self, user_id: str, question: str) -> str:
+        profile = await self.get_user_profile(user_id)
+        if not profile or user_id == "admin":
+            return ""
+
+        parts = [
+            f"Bệnh nhân: {profile.full_name} (ID: {profile.patient_id}), {profile.age} tuổi, {profile.gender}, "
+            f"tiểu đường loại {profile.diabetes_type}"
+        ]
+
+        if profile.complications:
+            parts.append(f"Biến chứng: {', '.join(profile.complications)}")
+        if profile.lifestyle:
+            parts.append(f"Lối sống: {profile.lifestyle}")
+        if profile.bmi:
+            parts.append(f"BMI: {profile.bmi:.1f}")
+
+        q = question.lower()
+
+        # Luôn thêm chỉ số nếu hỏi về sức khỏe
+        if any(kw in q for kw in ["chỉ số", "gần đây", "ổn không", "sức khỏe", "tình trạng"]):
+            glucose_records = await self.get_recent_health_records(user_id, "BloodGlucose", top=3)
+            if glucose_records:
+                avg = sum(r.value for r in glucose_records) / len(glucose_records)
+                latest = glucose_records[0].value
+                parts.append(f"Đường huyết: trung bình {avg:.1f} mmol/l, gần nhất {latest:.1f}")
+            else:
+                parts.append("Đường huyết: chưa có dữ liệu gần đây")
+
+            bp_records = await self.get_recent_health_records(user_id, "BloodPressure", top=2)
+            if bp_records:
+                sys_values = [r.value for r in bp_records if r.subtype == "tâm thu"]
+                if sys_values:
+                    avg_sys = sum(sys_values) / len(sys_values)
+                    parts.append(f"Huyết áp tâm thu: trung bình {avg_sys:.0f} mmHg")
+            else:
+                parts.append("Huyết áp: chưa có dữ liệu gần đây")
+
+        return "\n".join(parts)
+
+    async def classify_question_type(self, question: str, histories: List[ChatHistoryModel]) -> Dict[str, any]:
+        llm = await self.get_llm_client()
+
+        history_text = "\n".join([
+            f"- {msg.role}: {msg.content}"
+            for msg in histories[-3:]
+        ]) if histories else "Không có lịch sử."
+
+        prompt = f"""
+Bạn là hệ thống phân loại câu hỏi y tế thông minh.
+
+Hãy đọc câu hỏi và lịch sử trò chuyện, sau đó trả về **chính xác 1 loại** dưới đây:
+
+- `greeting`: Lời chào: "xin chào", "chào bạn"
+- `invalid`: Câu hỏi về tự tử, bỏ điều trị
+- `personal_info`: Hỏi về chỉ số, thuốc, biến chứng của bản thân
+- `trend_analysis`: Có yếu tố thời gian: "gần đây", "xu hướng"
+- `relational`: So sánh tiểu đường với bệnh khác
+- `rag_only`: Kiến thức chung, không liên quan trực tiếp
+
+Chỉ được trả về **1 từ duy nhất**, không giải thích, không viết hoa.
+
+---
+
+### Câu hỏi hiện tại
+"{question}"
+
+### Lịch sử trò chuyện (nếu có)
+{history_text}
+
+---
+
+Loại:
+""".strip()
+
+        try:
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt, max_tokens=20, temperature=0.01),
+                self.LLM_TIMEOUT,
+                "Question Classification"
+            )
+            response = response.strip().lower()
+            valid_types = ["greeting", "invalid", "personal_info", "trend_analysis", "relational", "rag_only"]
+            return {"type": response} if response in valid_types else {"type": "rag_only"}
+        except Exception as e:
+            self.logger.error(f"LLM classification failed: {e}")
+            q = question.lower()
+            if any(kw in q for kw in ["chết", "bỏ thuốc", "mệt quá"]):
+                return {"type": "invalid"}
+            if any(kw in q for kw in ["chào", "hello"]):
+                return {"type": "greeting"}
+            if any(kw in q for kw in ["gần đây", "xu hướng"]):
+                return {"type": "trend_analysis"}
+            if any(kw in q for kw in ["so với", "liên quan"]):
+                return {"type": "relational"}
+            if any(phrase in q for phrase in ["của tôi", "tình trạng tôi"]):
+                return {"type": "personal_info"}
+            return {"type": "rag_only"}
+
+    async def _gen_rag_only_response(self, message: str, contexts: List[str], histories: List[ChatHistoryModel]) -> str:
+        if not contexts:
+            q = message.lower()
+            if any(kw in q for kw in ["có mấy loại", "ngoài loại 1 và 2"]):
+                return (
+                    "**Ngoài tiểu đường loại 1 và loại 2**, còn có một số dạng khác:\n\n"
+                    "1. **Tiểu đường thai kỳ**: Xảy ra trong thai kỳ, thường hết sau sinh.\n"
+                    "2. **Tiểu đường do gen (MODY)**: Hiếm, di truyền.\n\n"
+                    "Tuy nhiên, **loại 1 và loại 2 chiếm 95%** các trường hợp."
+                )
+            return (
+                "**Hiện tôi chưa có tài liệu** liên quan đến câu hỏi này.\n\n"
+                "Nếu bạn có câu hỏi về **đường huyết, insulin, chế độ ăn**, tôi rất sẵn lòng hỗ trợ."
+            )
+
+        try:
+            with open("shared/rag_templates/system_prompt.txt", "r", encoding="utf-8") as f:
+                system_prompt = f.read().strip()
+        except Exception:
+            system_prompt = "Bạn là chuyên gia y tế."
+
+        full_context = "\n\n---\n\n".join([
+            f"[TÀI LIỆU {i+1}]\n{ctx.strip()}" for i, ctx in enumerate(contexts)
+        ]) if contexts else "Không có tài liệu liên quan."
+
+        try:
+            prompt_text = render_template(
+                template_name="rag_only.j2",
+                system_prompt=system_prompt,
+                contexts=full_context,
+                question=message,
+                histories=histories
+            )
+        except Exception as e:
+            self.logger.error(f"Template rendering failed: {e}")
+            return "Xin lỗi, hiện tôi chưa thể xử lý."
+
+        llm = await self.get_llm_client()
+        try:
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=400),
+                self.LLM_TIMEOUT,
+                "RAG Response Generation"
+            )
+            return response.strip() or "Tôi chưa có thông tin."
+        except asyncio.TimeoutError:
+            return "Xin lỗi, tôi đang xử lý chậm."
+
+    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str, user_id: str, first_time: bool, histories: List[ChatHistoryModel]) -> str:
+        profile = await self.get_user_profile(user_id)
+        if not profile:
+            return "Không tìm thấy hồ sơ người dùng."
+
+        try:
+            with open("shared/rag_templates/system_prompt.txt", "r", encoding="utf-8") as f:
+                system_prompt = f.read().strip()
+        except Exception:
+            system_prompt = "Bạn là bác sĩ nội tiết."
+
+        full_context = "\n\n---\n\n".join([
+            f"[TÀI LIỆU {i+1}]\n{ctx.strip()}" for i, ctx in enumerate(contexts)
+        ]) if contexts else "Không có tài liệu liên quan."
+
+        try:
+            prompt_text = render_template(
+                template_name="personalized.j2",
+                system_prompt=system_prompt,
+                contexts=full_context,
+                user_context=user_context,
+                question=message,
+                full_name=profile.full_name,
+                age=profile.age,
+                first_time=first_time,
+                histories=histories
+            )
+        except Exception as e:
+            self.logger.error(f"Template personalized.j2 rendering failed: {e}")
+            return "Xin lỗi, hiện tôi chưa thể xử lý."
+
+        llm = await self.get_llm_client()
+        try:
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt_text, max_tokens=500),
+                self.LLM_TIMEOUT,
+                "Personalized Response Generation"
+            )
+            return response.strip() or "Tôi chưa có thông tin."
+        except asyncio.TimeoutError:
+            return f"Chào {'bác' if profile.age >= 50 else 'anh/chị'} {profile.full_name}, hiện tôi đang xử lý chậm. Hãy tiếp tục theo dõi nhé!"
+        except Exception as e:
+            self.logger.error(f"LLM generation failed: {e}")
+            return "Xin lỗi, hiện tôi chưa thể trả lời chi tiết."
+
+    async def execute(self, command: CreateChatCommand) -> Result[None]:
+        try:
+            return await self._with_timeout(
+                self._execute_internal(command),
+                self.TOTAL_TIMEOUT,
+                "Complete Chat Processing"
+            )
+        except asyncio.TimeoutError as e:
+            self.logger.error(f"Total execution timeout: {e}")
+            return Result.failure(
+                code=ChatMessage.CHAT_CREATED_FAILED.code,
+                message="Xin lỗi, xử lý quá lâu. Vui lòng thử lại."
+            )
+        except Exception as e:
+            self.logger.error(f"Error in _execute_internal: {e}", exc_info=True)
+            return Result.failure(
+                code=ChatMessage.CHAT_CREATED_FAILED.code,
+                message=ChatMessage.CHAT_CREATED_FAILED.message
+            )
+
+    async def _execute_internal(self, command: CreateChatCommand) -> Result[None]:
+        try:
+            settings_doc = await self.db.settings.find_one({})
+            if not settings_doc:
+                return Result.failure(
+                    code=SettingMessage.NOT_FOUND.code,
+                    message=SettingMessage.NOT_FOUND.message
+                )
+            settings = SettingModel.from_dict(settings_doc)
+
+            session = await self.create_session(
+                user_id=command.user_id,
+                title=command.content,
+                session_id=command.session_id
+            )
+            if not session:
+                return Result.failure(message="Không tạo được session.")
+
+            user_chat = ChatHistoryModel(
+                session_id=str(session.id),
+                user_id=command.user_id,
+                content=command.content,
+                role=ChatRoleType.USER
+            )
+            await self.save_data(user_chat)
+
+            histories = await self.get_histories(session.id)
+            histories.reverse()
+
+            ai_messages = [msg for msg in histories if msg.role == ChatRoleType.AI]
+            first_time = len(ai_messages) == 0
+            has_previous_trend = any(
+                kw in msg.content.lower()
+                for kw in ["xu hướng", "gần đây", "đánh giá", "phân tích", "thay đổi"]
+                for msg in ai_messages
+            )
+
+            retrieval_result: Result = await Mediator.send(GetRetrievedContextQuery(query=command.content))
+            self.logger.info(f"RAG Retrieval Result: success={retrieval_result.is_success}, data_count={len(retrieval_result.data) if retrieval_result.data else 0}")
+
+            contexts = []
+            if retrieval_result.is_success() and retrieval_result.
+                contexts = [dto.content for dto in retrieval_result.data]
+
+            classification = await self.classify_question_type(command.content, histories)
+            question_type = classification["type"]
+            self.logger.info(f"🔍 Question: '{command.content}' → Type: {question_type}")
+
+            gen_text = ""
+
+            if question_type == "greeting":
+                profile = await self.get_user_profile(command.user_id)
+                name = profile.full_name if profile else "bạn"
+                gen_text = f"Chào {'bác' if profile and profile.age >= 50 else 'anh/chị'} {name}, tôi là trợ lý y tế hỗ trợ về bệnh tiểu đường.\n\nChị muốn biết điều gì hôm nay?"
+
+            elif question_type == "invalid":
+                gen_text = await self.get_polite_response_for_invalid_question(command.content)
+
+            elif question_type == "trend_analysis":
+                gen_text = await self._gen_personalized_response(
+                    message=command.content,
+                    contexts=contexts,
+                    user_context=await self.get_relevant_user_context(command.user_id, command.content),
+                    user_id=command.user_id,
+                    first_time=first_time,
+                    histories=histories
+                )
+
+            elif question_type == "personal_info":
+                user_context = await self.get_relevant_user_context(command.user_id, command.content)
+                if "chưa có dữ liệu" in user_context:
+                    gen_text = (
+                        "Chào chị, hiện tôi chưa thấy có dữ liệu sức khỏe gần đây của chị.\n\n"
+                        "Chị vui lòng đo và ghi lại đường huyết, huyết áp 1–2 lần mỗi ngày "
+                        "để tôi hỗ trợ tốt hơn nhé."
+                    )
+                else:
+                    gen_text = await self._gen_personalized_response(
+                        message=command.content,
+                        contexts=contexts,
+                        user_context=user_context,
+                        user_id=command.user_id,
+                        first_time=first_time,
+                        histories=histories
+                    )
+
+            elif question_type == "relational":
+                gen_text = await self._gen_rag_only_response(command.content, contexts, histories)
+
+            else:
+                gen_text = await self._gen_rag_only_response(command.content, contexts, histories)
+
+            ai_chat = ChatHistoryModel(
+                session_id=str(session.id),
+                user_id=command.user_id,
+                content=gen_text,
+                role=ChatRoleType.AI
+            )
+            await self.save_data(ai_chat)
+            await self.update_session(session.id)
+
+            dto = ChatHistoryModelDTO.from_model(ai_chat)
+            return Result.success(
+                code=ChatMessage.CHAT_CREATED.code,
+                message=ChatMessage.CHAT_CREATED.message,
+                data=dto
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error in _execute_internal: {e}", exc_info=True)
+            return Result.failure(
+                code=ChatMessage.CHAT_CREATED_FAILED.code,
+                message=ChatMessage.CHAT_CREATED_FAILED.message
+            )
