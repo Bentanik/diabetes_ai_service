@@ -213,7 +213,7 @@ async def run_tests():
         # --- 1. TEST CÂU HỎI CÁ NHÂN & XU HƯỚNG ---
         await test_case(
             user_id=user_id,
-            question="Gần đây đường huyết của tôi thế nào?",
+            question="Tui muốn biết bệnh ung thư là gì vậy?",
             description="Xu hướng: Đường huyết",
             expected_type="trend"
         )

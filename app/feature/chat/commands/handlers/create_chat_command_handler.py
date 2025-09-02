@@ -39,12 +39,11 @@ class CreateChatCommandHandler(CommandHandler):
         self.llm_client = None
         self.retriever_cache = {}
         
-        # Timeout settings
-        self.RAG_TIMEOUT = 30  # RAG retrieval timeout
-        self.LLM_TIMEOUT = 45  # LLM generation timeout  
-        self.EMBEDDING_TIMEOUT = 20  # Embedding timeout
-        self.DB_TIMEOUT = 10  # Database query timeout
-        self.TOTAL_TIMEOUT = 120  # Total process timeout
+        self.RAG_TIMEOUT = 30
+        self.LLM_TIMEOUT = 45  
+        self.EMBEDDING_TIMEOUT = 20 
+        self.DB_TIMEOUT = 10 
+        self.TOTAL_TIMEOUT = 120
 
     async def get_llm_client(self) -> QwenLLM:
         if self.llm_client is None:
@@ -60,7 +59,6 @@ class CreateChatCommandHandler(CommandHandler):
         return self.embedding_model
     
     async def _with_timeout(self, coro, timeout_seconds: int, operation_name: str):
-        """Wrapper để thêm timeout cho các async operations"""
         try:
             start_time = asyncio.get_event_loop().time()
             result = await asyncio.wait_for(coro, timeout=timeout_seconds)
@@ -155,21 +153,6 @@ class CreateChatCommandHandler(CommandHandler):
             )
         return self.retriever_cache[key]
 
-    async def rewrite_query_if_needed(self, query: str, histories: List[ChatHistoryModel]) -> str:
-        if len(histories) < 2:
-            return query
-        pronouns = ["nó", "vậy", "đó", "kia"]
-        if not any(p in query.lower() for p in pronouns):
-            return query
-        for msg in reversed(histories):
-            if msg.role == ChatRoleType.AI:
-                content = msg.content.lower()
-                if "đái tháo đường" in content:
-                    return query.replace("nó", "đái tháo đường").replace("đó", "đái tháo đường")
-                elif "insulin" in content:
-                    return query.replace("nó", "insulin")
-        return query
-
     async def get_user_profile(self, user_id: str) -> Optional[UserProfileModel]:
         try:
             doc = await self.db.user_profiles.find_one({"user_id": user_id})
@@ -189,36 +172,6 @@ class CreateChatCommandHandler(CommandHandler):
         except Exception as e:
             self.logger.error(f"Lỗi lấy chỉ số: {e}")
             return []
-
-    async def classify_question_type(self, question: str) -> str:
-        llm = await self.get_llm_client()
-        prompt = f"""
-Bạn là hệ thống phân loại câu hỏi y tế.
-
-Phân loại câu hỏi sau vào đúng loại:
-- rag_only: Câu hỏi kiến thức chung, không liên quan đến cá nhân
-- personal: Có từ như 'tôi', 'của tôi', 'tình trạng của tôi'
-- trend: Có từ như 'gần đây', 'xu hướng', 'thống kê', 'trong 3 tháng'
-- invalid: Câu hỏi không phù hợp, nguy hiểm
-
-Chỉ trả về 1 từ: rag_only, personal, trend, hoặc invalid.
-
-Câu hỏi: "{question}"
-""".strip()
-
-        try:
-            response = await self._with_timeout(
-                llm.generate(prompt=prompt, max_tokens=20, temperature=0.1),
-                self.LLM_TIMEOUT,
-                "Question Classification"
-            )
-            response = response.strip().lower()
-            if response in ["rag_only", "personal", "trend", "invalid"]:
-                return response
-            return "rag_only"
-        except Exception as e:
-            self.logger.error(f"Classification failed: {e}")
-            return "rag_only"
 
     async def get_relevant_user_context(self, user_id: str, question: str) -> str:
         profile = await self.get_user_profile(user_id)
@@ -252,23 +205,113 @@ Câu hỏi: "{question}"
                 parts.append(f"BMI: {profile.bmi:.1f}")
         return "\n".join(parts)
 
+    async def classify_question_type(self, question: str) -> str:
+        llm = await self.get_llm_client()
+        prompt = f"""
+Bạn là hệ thống phân loại câu hỏi y tế tự động. 
+Nhiệm vụ của bạn là phân loại câu hỏi người dùng vào đúng 1 trong 4 loại: `rag_only`, `personal`, `trend`, `invalid`.
+
+Chỉ được trả về **1 từ duy nhất**: rag_only, personal, trend, hoặc invalid.
+Không giải thích, không thêm ký tự, không viết hoa.
+
+---
+
+### 🔍 BƯỚC 1: XÁC ĐỊNH CÓ PHẢI CÂU HỎI NGUY HIỂM?
+Kiểm tra xem câu hỏi có chứa nội dung tiêu cực, tự tử, bỏ điều trị không:
+- Từ khóa: "chết", "bỏ thuốc", "mệt quá", "sống làm gì", "không cần kiểm soát"
+→ Nếu CÓ → trả về: `invalid`
+
+---
+
+### 🔍 BƯỚC 2: XÁC ĐỊNH CÓ PHẢI THEO DÕI XU HƯỚNG?
+Kiểm tra từ liên quan đến thời gian, so sánh:
+- Từ khóa: "gần đây", "xu hướng", "3 tháng qua", "so với tuần trước", "thay đổi thế nào", "dạo này"
+→ Nếu CÓ → trả về: `trend`
+
+---
+
+### 🔍 BƯỚC 3: XÁC ĐỊNH CÓ PHẢI CHIA SẺ CÁ NHÂN?
+Kiểm tra xem người hỏi có chia sẻ tình trạng, chỉ số, triệu chứng cá nhân không:
+- Từ khóa: "tôi bị", "của tôi", "tình trạng của tôi", "đường huyết của tôi", "huyết áp tôi", "bác sĩ nói tôi"
+→ Nếu CÓ → trả về: `personal`
+
+---
+
+### 🔍 BƯỚC 4: CÂU HỎI KIẾN THỨC CHUNG?
+Nếu không thuộc 3 loại trên, dù có dùng "tôi muốn biết", "người tiểu đường nên ăn gì", "có mấy loại", "là gì":
+→ Trả về: `rag_only`
+
+---
+
+### 📏 LUẬT RÕ RÀNG
+- rag_only: Câu hỏi về kiến thức y học chung, không liên quan đến người hỏi
+- personal: Người hỏi đang chia sẻ bản thân, có chỉ số, triệu chứng
+- trend: Có yếu tố thời gian, so sánh, đánh giá thay đổi
+- invalid: Nguy hiểm, tiêu cực, tự tử
+
+---
+
+### ✅ VÍ DỤ CHUẨN
+- "Người tiểu đường nên ăn gì?" → rag_only
+- "Tôi bị tiểu đường 5 năm rồi, nên ăn gì?" → personal
+- "Đường huyết gần đây của tôi thế nào?" → trend
+- "Làm sao để chết nhanh?" → invalid
+- "Biến chứng tiểu đường gồm những gì?" → rag_only
+- "Tôi mệt quá, sống làm gì?" → invalid
+- "Huyết áp dạo này ra sao?" → trend
+- "Insulin hoạt động trong bao lâu?" → rag_only
+
+---
+
+### ❌ LƯU Ý QUAN TRỌNG
+- Không phân loại nhầm "người tiểu đường" thành "cá nhân"
+- Không coi "tôi muốn biết" là "personal" nếu không có chia sẻ
+- Không trả về nhiều từ, không viết thêm
+
+---
+
+Câu hỏi: "{question}"
+""".strip()
+
+        try:
+            response = await self._with_timeout(
+                llm.generate(prompt=prompt, max_tokens=20, temperature=0.05),
+                self.LLM_TIMEOUT,
+                "Question Classification"
+            )
+            response = response.strip().lower()
+            if response in ["rag_only", "personal", "trend", "invalid"]:
+                return response
+            if any(kw in response for kw in ["kiến thức", "chung", "là gì", "có mấy loại"]):
+                return "rag_only"
+            if any(kw in response for kw in ["tôi bị", "của tôi", "tình trạng"]):
+                return "personal"
+            return "rag_only"
+        except Exception as e:
+            self.logger.error(f"Classification failed: {e}")
+            return "rag_only"
+
+    def _is_valid_context(self, content: str) -> bool:
+        text = content.strip().lower()
+        if len(text) < 30:
+            return False
+        suspicious = ["import ", "def ", "class ", "from ", "os.", "dotenv", "error", "exception", "traceback", "not found", "file not found"]
+        if any(s in text for s in suspicious):
+            return False
+        return True
+
     async def _retrieve_rag_context(self, query: str, histories: List[ChatHistoryModel], settings: SettingModel) -> List[str]:
         if not settings.list_knowledge_ids:
             return []
 
         try:
-            # Rewrite query
-            rewritten = await self.rewrite_query_if_needed(query, histories)
-            
-            # Get embedding with timeout
             embedding = await self.get_embedding_model()
             query_vector = await self._with_timeout(
-                embedding.embed(rewritten),
+                embedding.embed(query),
                 self.EMBEDDING_TIMEOUT,
                 "Query Embedding"
             )
             
-            # Vector search with timeout
             retriever = self.get_retriever(settings.list_knowledge_ids)
             results = await self._with_timeout(
                 retriever.retrieve(query_vector, top_k=settings.top_k * 2),
@@ -279,19 +322,18 @@ Câu hỏi: "{question}"
             score_threshold = getattr(settings, "search_accuracy", 0.75)
             filtered = [hit for hit in results if hit["score"] >= score_threshold]
 
-            if not filtered:
-                self.logger.info(f"Không tìm thấy tài liệu đủ liên quan cho: '{rewritten}'")
-                return []
-
-            # Đưa tất cả kết quả cho LLM, không làm relevance check ở đây
-            # LLM sẽ tự quyết định sử dụng thông tin nào phù hợp
             contexts = [
                 hit["payload"]["content"]
                 for hit in filtered
                 if hit["payload"] and hit["payload"].get("content")
+                and self._is_valid_context(hit["payload"]["content"])
             ][:settings.top_k]
             
-            self.logger.debug(f"✅ Found {len(contexts)} contexts for query: '{rewritten}'")
+            if not contexts:
+                self.logger.info(f"Không tìm thấy tài liệu đủ liên quan cho: '{query}'")
+                return []
+
+            self.logger.debug(f"Found {len(contexts)} valid contexts for query: '{query}'")
             return contexts
 
         except asyncio.TimeoutError as e:
@@ -301,7 +343,7 @@ Câu hỏi: "{question}"
             self.logger.error(f"RAG retrieval failed: {e}")
             return []
 
-    async def _gen_rag_only_response(self, message: str, contexts: List[str]) -> str:
+    async def _gen_rag_only_response(self, message: str, contexts: List[str], histories: List[ChatHistoryModel]) -> str:
         if not contexts:
             return (
                 "**Hiện tôi chưa có tài liệu** liên quan đến câu hỏi này.\n\n"
@@ -328,7 +370,8 @@ Câu hỏi: "{question}"
                 template_name="rag_only.j2",
                 system_prompt=system_prompt,
                 contexts=cleaned_contexts,
-                question=message
+                question=message,
+                histories=histories
             )
         except Exception as e:
             return "Xin lỗi, không thể tạo câu trả lời."
@@ -346,7 +389,7 @@ Câu hỏi: "{question}"
         except Exception as e:
             return "Xin lỗi, tôi đang bận."
 
-    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str, user_id: str, first_time: bool = True) -> str:
+    async def _gen_personalized_response(self, message: str, contexts: List[str], user_context: str, user_id: str, first_time: bool = True, histories: List[ChatHistoryModel] = None) -> str:
         profile = await self.get_user_profile(user_id)
         if not profile:
             return "Không tìm thấy hồ sơ người dùng."
@@ -370,7 +413,8 @@ Câu hỏi: "{question}"
                 question=message,
                 full_name=full_name,
                 age=age,
-                first_time=first_time
+                first_time=first_time,
+                histories=histories
             )
         except Exception as e:
             return "Xin lỗi, không thể tạo câu trả lời."
@@ -687,22 +731,22 @@ Câu hỏi: "{question}"
     def _ensure_markdown(self, text: str) -> str:
         if not text.strip():
             return "Tôi chưa thể tạo câu trả lời phù hợp."
+
+        lower_text = text.lower()
+        if any(kw in lower_text for kw in ["import ", "def ", "class ", "from ", "os.", "dotenv"]):
+            return (
+                "**Hiện tôi chưa có tài liệu** liên quan đến câu hỏi này.\n\n"
+                "Hãy hỏi về **đường huyết, insulin, chế độ ăn** để tôi hỗ trợ tốt hơn."
+            )
+
         import re
         text = re.sub(r'\*\*(.*?)\*\*', r'**\1**', text)
         text = re.sub(r'\*(.*?)\*', r'*\1*', text)
 
-        if "**" not in text and "*" not in text and "###" not in text:
-            if "Xin lỗi" in text:
-                text = text.replace("Xin lỗi", "**Xin lỗi**")
-            if "cập nhật" in text.lower():
-                text = text.replace("cập nhật", "**cập nhật**")
-            if "hãy bắt đầu" in text.lower():
-                text = text.replace("hãy bắt đầu", "**Hãy bắt đầu**")
-
         lines = text.split('\n')
         cleaned = []
         in_leak = False
-        leak_keywords = ["hãy suy nghĩ", "phân tích", "tôi cần trả lời", "let me think"]
+        leak_keywords = ["hãy suy nghĩ", "phân tích", "tôi cần trả lời", "let me think", "step by step"]
         for line in lines:
             lower_line = line.lower()
             if any(kw in lower_line for kw in leak_keywords):
@@ -721,7 +765,6 @@ Câu hỏi: "{question}"
 
     async def execute(self, command: CreateChatCommand) -> Result[None]:
         try:
-            # Wrap entire execution with total timeout
             return await self._with_timeout(
                 self._execute_internal(command),
                 self.TOTAL_TIMEOUT,
@@ -772,7 +815,6 @@ Câu hỏi: "{question}"
             ai_messages = [msg for msg in histories if msg.role == ChatRoleType.AI]
             first_time = len(ai_messages) == 0
 
-            # Không dùng has_analyzed_trend
             has_previous_trend = any(
                 "xu hướng" in msg.content.lower() or
                 "gần đây" in msg.content.lower() or
@@ -783,23 +825,7 @@ Câu hỏi: "{question}"
 
             content_lower = command.content.lower()
 
-            rag_safe_keywords = [
-                "đường huyết sau ăn", "người tiểu đường nên ăn gì", "biến chứng tiểu đường",
-                "cách tiêm insulin", "chỉ số hba1c", "đái tháo đường là gì",
-                "insulin hoạt động bao lâu", "ăn gì khi bị tiểu đường"
-            ]
-
-            sensitive_keywords = [
-                "chết", "bỏ thuốc", "ăn đường cả ngày", "không cần kiểm soát",
-                "làm sao để", "có nên bỏ", "tôi mệt quá"
-            ]
-
-            if any(kw in content_lower for kw in rag_safe_keywords):
-                question_type = "rag_only"
-            elif any(kw in content_lower for kw in sensitive_keywords):
-                question_type = "invalid"
-            else:
-                question_type = await self.classify_question_type(command.content)
+            question_type = await self.classify_question_type(command.content)
 
             gen_text = ""
 
@@ -809,19 +835,28 @@ Câu hỏi: "{question}"
                 gen_text = await self.generate_health_status_response(command.user_id, command.content, first_time, has_previous_trend)
             elif question_type == "rag_only":
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
-                gen_text = await self._gen_rag_only_response(command.content, context_texts)
+                gen_text = await self._gen_rag_only_response(command.content, context_texts, histories)
             elif question_type == "personal":
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
                 user_context = await self.get_relevant_user_context(command.user_id, command.content)
                 if context_texts and user_context:
-                    gen_text = await self._gen_personalized_response(command.content, context_texts, user_context, command.user_id, first_time)
+                    gen_text = await self._gen_personalized_response(command.content, context_texts, user_context, command.user_id, first_time, histories)
                 elif context_texts:
-                    gen_text = await self._gen_rag_only_response(command.content, context_texts)
+                    gen_text = await self._gen_rag_only_response(command.content, context_texts, histories)
                 else:
-                    gen_text = await self.generate_health_status_response(command.user_id, command.content, first_time, has_previous_trend)
+                    health_keywords = ["đường huyết", "huyết áp", "tiểu đường", "insulin"]
+                    if any(kw in content_lower for kw in health_keywords):
+                        gen_text = await self.generate_health_status_response(command.user_id, command.content, first_time, has_previous_trend)
+                    else:
+                        gen_text = (
+                            "**Tôi hiểu** bạn muốn tìm hiểu thêm.\n\n"
+                            f"Hiện tôi chưa có tài liệu về **\"{command.content}\"**.\n\n"
+                            "Nếu bạn có câu hỏi về **đường huyết, insulin, chế độ ăn**, "
+                            "tôi rất sẵn lòng hỗ trợ."
+                        )
             else:
                 context_texts = await self._retrieve_rag_context(command.content, histories, settings)
-                gen_text = await self._gen_rag_only_response(command.content, context_texts)
+                gen_text = await self._gen_rag_only_response(command.content, context_texts, histories)
 
             gen_text = self._ensure_markdown(gen_text)
 

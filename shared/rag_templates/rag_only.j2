@@ -1,5 +1,12 @@
 {{ system_prompt }}
 
+{% if histories %}
+### Ngữ cảnh trước đó
+{% for msg in histories | reverse | slice(4) %}
+- {% if msg.role == "user" %}Người hỏi{% else %}Trả lời{% endif %}: {{ msg.content }}
+{% endfor %}
+{% endif %}
+
 ### Câu hỏi
 "{{ question }}"
 
