@@ -85,6 +85,8 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
             # Lưu vào Qdrant, dùng chunk.id đã có
             await self._insert_into_vector_store_async(document_job, saved_chunks)
 
+            await self._update_knowledge_stats(document_job.knowledge_id, os.path.getsize(temp_path))
+
             # Cập nhật trạng thái hoàn tất
             await self._update_status_async(
                 job_id=job_id,
@@ -228,6 +230,16 @@ class ProcessDocumentUploadCommandHandler(CommandHandler):
                 raise
 
         return saved_chunks
+
+    async def _update_knowledge_stats(self, knowledge_id: str, size_bytes: int):
+        """Cập nhật thống kê của knowledge"""
+        await self.collections.knowledges.update_one(
+            {"_id": ObjectId(knowledge_id)},
+            {"$inc": {
+                "document_count": 1,
+                "total_size_bytes": size_bytes
+            }}
+        )
 
     async def _save_document_async(self, job_id: str, document_job: DocumentJobModel, temp_path: str):
         """
