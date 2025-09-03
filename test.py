@@ -2,7 +2,7 @@
 import asyncio
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 
 # Thêm root vào path để import
@@ -54,7 +54,7 @@ async def seed_health_records(user_id: str, patient_id: str):
         record = HealthRecordModel(
             user_id=user_id,
             patient_id=patient_id,
-            type="BloodGlucose",
+            type="Đường huyết",
             value=value,
             unit="mmol/l",
             timestamp=now - timedelta(days=i)
@@ -67,10 +67,10 @@ async def seed_health_records(user_id: str, patient_id: str):
         record_sys = HealthRecordModel(
             user_id=user_id,
             patient_id=patient_id,
-            type="BloodPressure",
+            type="Huyết áp",
             value=sys,
             unit="mmHg",
-            subtype="tâm thu",
+            subtype="Tâm thu",
             timestamp=now - timedelta(days=i)
         ).to_dict()
         await db.health_records.insert_one(record_sys)
@@ -78,10 +78,10 @@ async def seed_health_records(user_id: str, patient_id: str):
         record_dia = HealthRecordModel(
             user_id=user_id,
             patient_id=patient_id,
-            type="BloodPressure",
+            type="Huyết áp",
             value=90 if user_id == "user_001" else 85,
             unit="mmHg",
-            subtype="tâm trương",
+            subtype="Tâm trương",
             timestamp=now - timedelta(days=i)
         ).to_dict()
         await db.health_records.insert_one(record_dia)

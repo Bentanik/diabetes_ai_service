@@ -47,7 +47,7 @@ async def seed_health_records(user_id: str, patient_id: str):
         record = HealthRecordModel(
             user_id=user_id,
             patient_id=patient_id,
-            type="BloodGlucose",
+            type="Đường huyết",
             value=value,
             unit="mmol/l",
             timestamp=now - timedelta(days=i)
@@ -61,7 +61,7 @@ async def seed_health_records(user_id: str, patient_id: str):
         record_sys = HealthRecordModel(
             user_id=user_id,
             patient_id=patient_id,
-            type="BloodPressure",
+            type="Huyết áp",
             value=sys,
             unit="mmHg",
             subtype="tâm thu",
@@ -74,7 +74,7 @@ async def seed_health_records(user_id: str, patient_id: str):
         record_dia = HealthRecordModel(
             user_id=user_id,
             patient_id=patient_id,
-            type="BloodPressure",
+            type="Huyết áp",
             value=dia,
             unit="mmHg",
             subtype="tâm trương",
